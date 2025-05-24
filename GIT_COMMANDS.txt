@@ -1,0 +1,46 @@
+# Git Commands to Update Repository with Pi Setup Guide
+
+# Navigate to the project root directory
+cd C:\Users\Admin\Documents\pi-wireless-monitor
+
+# Check current git status (see what files are new/changed)
+git status
+
+# Add the new setup guide and updated README
+git add raspberry-pi/PI_SETUP_GUIDE.md
+git add README.md
+
+# Or add all changes at once
+git add .
+
+# Commit the changes with a descriptive message
+git commit -m "Add comprehensive Raspberry Pi setup guide
+
+- Added detailed Pi OS installation instructions
+- Included SSH setup and WiFi configuration
+- Added troubleshooting section
+- Updated main README to reference setup guide
+- Covers both automated and manual installation methods"
+
+# Push changes to GitHub
+git push origin main
+
+# Alternative if your default branch is 'master'
+git push origin master
+
+# Check that push was successful
+git log --oneline -n 5
+
+# Additional useful commands:
+
+# View what has changed since last commit
+git diff HEAD
+
+# View commit history
+git log --oneline
+
+# Check remote repository status
+git remote -v
+
+# Pull latest changes (if working with others)
+git pull origin main 

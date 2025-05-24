@@ -139,6 +139,18 @@ docker-compose up -d
 
 ## 📡 Raspberry Pi Setup
 
+⚠️ **For complete step-by-step Raspberry Pi setup instructions, see [raspberry-pi/PI_SETUP_GUIDE.md](raspberry-pi/PI_SETUP_GUIDE.md)**
+
+This guide covers:
+- Raspberry Pi OS installation
+- WiFi configuration
+- SSH setup
+- Complete software installation
+- Service configuration
+- Troubleshooting
+
+### Quick Setup Summary
+
 ### Enable Monitor Mode (Optional, for advanced features)
 
 ```bash
