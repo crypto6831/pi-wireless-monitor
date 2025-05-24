@@ -43,4 +43,103 @@ git log --oneline
 git remote -v
 
 # Pull latest changes (if working with others)
-git pull origin main 
+git pull origin main
+
+# Add detailed Step 6 configuration guide
+git add raspberry-pi/STEP6_DETAILED_CONFIG.md
+
+# Commit the changes with a descriptive message
+git commit -m "Add detailed Step 6 configuration guide
+
+- Created comprehensive configuration walkthrough
+- Explains how to find server IP address  
+- Shows real examples instead of placeholders
+- Includes troubleshooting for config issues
+- Updated main guide to reference detailed version"
+
+# Push changes to GitHub
+git push origin main
+
+# Add missing .env.example template file
+git add raspberry-pi/.env.example
+
+# Commit the changes with a descriptive message
+git commit -m "Add missing .env.example template file
+
+- Created comprehensive configuration template
+- Added detailed comments explaining each setting  
+- Shows placeholder values that users need to replace
+- Makes Step 6 copy command work properly"
+
+# Push changes to GitHub
+git push origin main
+
+# Navigate to raspberry-pi directory
+cd C:\Users\Admin\Documents\pi-wireless-monitor\raspberry-pi
+
+# Create the .env.example file
+@"
+# Pi Wireless Monitor Configuration Template
+# Copy this file to .env and edit with your actual values
+# Command: cp .env.example .env
+
+# ====================================================================
+# SERVER CONNECTION SETTINGS
+# ====================================================================
+# Replace YOUR_SERVER_IP with the actual IP address of your backend server
+# To find this: run 'ipconfig' on Windows or 'ip addr' on Linux
+SERVER_URL=http://YOUR_SERVER_IP:3001
+API_TIMEOUT=30
+
+# ====================================================================
+# MONITOR IDENTIFICATION
+# ====================================================================
+# Make these unique for each Raspberry Pi you set up
+MONITOR_ID=pi-001
+MONITOR_NAME=My Pi Monitor
+MONITOR_LOCATION=Living Room
+MONITOR_INTERFACE=wlan0
+
+# ====================================================================
+# SCANNING SETTINGS
+# ====================================================================
+# How often to scan for networks (in seconds)
+SCAN_INTERVAL=60
+DEEP_SCAN_INTERVAL=300
+
+# Device detection (requires arp-scan)
+COLLECT_CONNECTED_DEVICES=true
+
+# Bandwidth testing (uses internet data)
+BANDWIDTH_TEST_ENABLED=false
+
+# ====================================================================
+# ALERT THRESHOLDS
+# ====================================================================
+# Signal strength threshold for alerts (in dBm)
+# -50 = excellent, -60 = good, -70 = fair, -80 = poor
+MIN_SIGNAL_STRENGTH=-80
+
+# Packet loss threshold for alerts (percentage)
+MAX_PACKET_LOSS=5
+
+# ====================================================================
+# LOGGING AND STORAGE
+# ====================================================================
+# Log level: DEBUG, INFO, WARNING, ERROR
+LOG_LEVEL=INFO
+
+# Store data locally as backup
+LOCAL_STORAGE_ENABLED=true
+
+# ====================================================================
+# ADVANCED SETTINGS (usually don't need to change)
+# ====================================================================
+# API retry settings
+API_RETRY_ATTEMPTS=3
+API_RETRY_DELAY=5
+
+# Data collection intervals
+METRICS_INTERVAL=30
+HEARTBEAT_INTERVAL=300
+"@ | Out-File -FilePath ".env.example" -Encoding utf8 

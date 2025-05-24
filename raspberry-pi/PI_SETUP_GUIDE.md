@@ -148,6 +148,10 @@ sudo chown -R $USER:$USER /var/lib/pi-monitor
 
 ## Step 6: Configure the Monitor
 
+⚠️ **For detailed step-by-step configuration instructions, see [STEP6_DETAILED_CONFIG.md](STEP6_DETAILED_CONFIG.md)**
+
+### Quick Setup (Advanced Users)
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -158,12 +162,18 @@ nano .env
 
 ### Required Configuration (.env file):
 
+**Key settings you MUST change:**
+- `SERVER_URL` - Replace with your actual server IP address
+- `MONITOR_ID` - Make unique for each Pi (e.g., pi-kitchen, pi-bedroom)
+- `MONITOR_NAME` - Friendly name for this Pi
+- `MONITOR_LOCATION` - Where this Pi is physically located
+
 ```env
-# Server connection
-SERVER_URL=http://your-server-ip:3001
+# Server connection (CHANGE THIS IP!)
+SERVER_URL=http://192.168.1.100:3001
 API_TIMEOUT=30
 
-# Monitor identification
+# Monitor identification (MAKE THESE UNIQUE!)
 MONITOR_ID=pi-001
 MONITOR_NAME=Living Room Monitor
 MONITOR_LOCATION=Living Room
@@ -183,6 +193,8 @@ MAX_PACKET_LOSS=5
 LOG_LEVEL=INFO
 LOCAL_STORAGE_ENABLED=true
 ```
+
+**Important:** If you're confused about any of these settings, check the [detailed configuration guide](STEP6_DETAILED_CONFIG.md) which explains each setting in detail.
 
 ## Step 7: Start the Service
 
