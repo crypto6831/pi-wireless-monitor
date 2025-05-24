@@ -1,0 +1,19 @@
+[Unit]
+Description=Pi Wireless Monitor Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/pi-wireless-monitor/raspberry-pi
+Environment="PATH=/home/pi/pi-wireless-monitor/raspberry-pi/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/pi/pi-wireless-monitor/raspberry-pi/venv/bin/python /home/pi/pi-wireless-monitor/raspberry-pi/src/main.py
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target 

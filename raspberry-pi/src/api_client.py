@@ -1,0 +1,308 @@
+"""
+API Client for Pi Wireless Monitor
+Handles communication with the central server
+"""
+import os
+import sys
+import json
+import time
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import config
+from src.utils.logger import get_logger
+
+logger = get_logger('api_client')
+
+
+class APIClient:
+    """API client for communicating with the monitoring server"""
+    
+    def __init__(self):
+        self.session = self._create_session()
+        self.api_key = config.API_KEY
+        self.headers = {
+            'Content-Type': 'application/json',
+            'X-API-Key': self.api_key,
+            'X-Monitor-ID': config.MONITOR_ID
+        }
+        self.is_registered = False
+        logger.info(f"API Client initialized for server: {config.SERVER_URL}")
+    
+    def _create_session(self) -> requests.Session:
+        """Create a requests session with retry logic"""
+        session = requests.Session()
+        
+        # Configure retry strategy
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]
+        )
+        
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        return session
+    
+    def register_monitor(self) -> bool:
+        """Register this monitor with the server"""
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'name': config.MONITOR_NAME,
+                'location': config.MONITOR_LOCATION,
+                'interface': config.MONITOR_INTERFACE,
+                'capabilities': {
+                    'network_scan': True,
+                    'device_detection': config.COLLECT_CONNECTED_DEVICES,
+                    'bandwidth_test': config.BANDWIDTH_TEST_ENABLED,
+                    'monitor_mode': config.ENABLE_MONITOR_MODE
+                },
+                'system_info': self._get_system_info()
+            }
+            
+            response = self._post('register', data)
+            
+            if response and response.get('success'):
+                self.is_registered = True
+                logger.info("Monitor registered successfully")
+                return True
+            else:
+                logger.error(f"Registration failed: {response}")
+                return False
+                
+        except Exception as e:
+            logger.exception(f"Error registering monitor: {e}")
+            return False
+    
+    def send_heartbeat(self) -> bool:
+        """Send heartbeat to server"""
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat(),
+                'status': 'active',
+                'uptime': self._get_uptime()
+            }
+            
+            response = self._post('heartbeat', data)
+            return response is not None
+            
+        except Exception as e:
+            logger.error(f"Error sending heartbeat: {e}")
+            return False
+    
+    def send_network_data(self, networks: List[Dict]) -> bool:
+        """Send network scan data to server"""
+        if not networks:
+            logger.debug("No networks to send")
+            return True
+        
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat(),
+                'networks': networks
+            }
+            
+            response = self._post('networks', data)
+            
+            if response:
+                logger.info(f"Sent data for {len(networks)} networks")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error sending network data: {e}")
+            return False
+    
+    def send_device_data(self, devices: List[Dict]) -> bool:
+        """Send connected device data to server"""
+        if not devices:
+            logger.debug("No devices to send")
+            return True
+        
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat(),
+                'devices': devices
+            }
+            
+            response = self._post('devices', data)
+            
+            if response:
+                logger.info(f"Sent data for {len(devices)} devices")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error sending device data: {e}")
+            return False
+    
+    def send_metrics(self, metrics: Dict) -> bool:
+        """Send performance metrics to server"""
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat(),
+                'metrics': metrics
+            }
+            
+            response = self._post('metrics', data)
+            
+            if response:
+                logger.debug("Metrics sent successfully")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error sending metrics: {e}")
+            return False
+    
+    def send_alert(self, alert: Dict) -> bool:
+        """Send alert to server"""
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat(),
+                'alert': alert
+            }
+            
+            response = self._post('alerts', data)
+            
+            if response:
+                logger.warning(f"Alert sent: {alert['message']}")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error sending alert: {e}")
+            return False
+    
+    def _post(self, endpoint: str, data: Dict) -> Optional[Dict]:
+        """Make POST request to API endpoint"""
+        url = config.API_ENDPOINTS.get(endpoint)
+        if not url:
+            logger.error(f"Unknown endpoint: {endpoint}")
+            return None
+        
+        try:
+            response = self.session.post(
+                url,
+                json=data,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 401:
+                logger.error("Authentication failed - check API key")
+                return None
+            elif response.status_code == 404:
+                logger.error(f"Endpoint not found: {url}")
+                return None
+            else:
+                logger.error(f"API request failed: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timed out: {url}")
+            return None
+        except requests.exceptions.ConnectionError:
+            logger.error(f"Connection error: {url}")
+            return None
+        except Exception as e:
+            logger.exception(f"Unexpected error in API request: {e}")
+            return None
+    
+    def _get(self, endpoint: str, params: Dict = None) -> Optional[Dict]:
+        """Make GET request to API endpoint"""
+        url = config.API_ENDPOINTS.get(endpoint)
+        if not url:
+            logger.error(f"Unknown endpoint: {endpoint}")
+            return None
+        
+        try:
+            response = self.session.get(
+                url,
+                params=params,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"API request failed: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            logger.exception(f"Error in API GET request: {e}")
+            return None
+    
+    def _get_system_info(self) -> Dict:
+        """Get system information"""
+        try:
+            import platform
+            import psutil
+            
+            return {
+                'platform': platform.system(),
+                'platform_release': platform.release(),
+                'platform_version': platform.version(),
+                'architecture': platform.machine(),
+                'hostname': platform.node(),
+                'processor': platform.processor(),
+                'ram_total': psutil.virtual_memory().total,
+                'python_version': platform.python_version()
+            }
+        except Exception as e:
+            logger.error(f"Error getting system info: {e}")
+            return {}
+    
+    def _get_uptime(self) -> int:
+        """Get system uptime in seconds"""
+        try:
+            import psutil
+            boot_time = psutil.boot_time()
+            return int(time.time() - boot_time)
+        except Exception:
+            return 0
+    
+    def test_connection(self) -> bool:
+        """Test connection to the server"""
+        try:
+            logger.info("Testing connection to server...")
+            
+            # Try to reach the server
+            response = self.session.get(
+                f"{config.SERVER_URL}/health",
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                logger.info("Server connection successful")
+                return True
+            else:
+                logger.warning(f"Server returned status code: {response.status_code}")
+                return False
+                
+        except requests.exceptions.ConnectionError:
+            logger.error("Cannot connect to server - is it running?")
+            return False
+        except requests.exceptions.Timeout:
+            logger.error("Server connection timed out")
+            return False
+        except Exception as e:
+            logger.error(f"Error testing connection: {e}")
+            return False 

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\Admin\\Documents\\pi-wireless-monitor\\server\\logs\\.da07a2ac480e1c3209137593dfab312c90b9df60-audit.json",
+    "files": [
+        {
+            "date": 1748077068814,
+            "name": "C:\\Users\\Admin\\Documents\\pi-wireless-monitor\\server\\logs\\error-2025-05-24.log",
+            "hash": "d97b828e3d0b750bb40abe845c374b5fcd3a312c74d000f2cd7cb62222281ecf"
+        }
+    ],
+    "hashType": "sha256"
+}
