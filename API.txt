@@ -1,0 +1,17 @@
+# Pi Wireless Monitor API Key
+# Use this API key in your Raspberry Pi .env configuration
+
+API_KEY=PM2025-8f3a9d4e7b2c1a6f5e8d7c4b9a3e6f2d8c5b1a4e7f9c2d6a3b8e5f7c4d9a2b6e1f8c3d7a4b9e
+
+# Instructions:
+# 1. Copy this API key to your Pi's .env file
+# 2. Use the exact key above (including the PM2025- prefix)
+# 3. This must match the API_KEY set in docker-compose.yml
+# 4. Each Pi monitor must use the same API key to connect
+
+# Example Pi .env configuration:
+# SERVER_URL=http://192.168.0.72:3001
+# API_KEY=PM2025-8f3a9d4e7b2c1a6f5e8d7c4b9a3e6f2d8c5b1a4e7f9c2d6a3b8e5f7c4d9a2b6e1f8c3d7a4b9e
+# MONITOR_ID=pi-001
+# MONITOR_NAME=Living Room Pi
+# MONITOR_LOCATION=Living Room 
