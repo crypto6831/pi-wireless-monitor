@@ -1,0 +1,191 @@
+# Common Service Failure Causes & Solutions
+# Pi Wireless Monitor Troubleshooting Guide
+
+## Overview
+This document provides step-by-step solutions for common pi-monitor service failures on Raspberry Pi.
+
+## 🔍 Common Service Failure Causes & Solutions
+
+### 1. Check Detailed Service Status
+Run this on your Pi to see the exact error:
+```bash
+sudo systemctl status pi-monitor -l
+```
+
+### 2. Missing .env Configuration File
+The most common issue - the service needs a .env file:
+
+```bash
+# Navigate to the Pi directory
+cd /home/pi/pi-wireless-monitor/raspberry-pi
+
+# Check if .env exists
+ls -la .env
+
+# If missing, create it from the template
+cp .env.example .env
+```
+
+If .env.example doesn't exist, create .env manually:
+```bash
+nano .env
+```
+
+Add this content (replace with your actual values):
+```env
+# Server connection (CHANGE THIS IP!)
+SERVER_URL=http://192.168.1.100:3001
+API_KEY=your-api-key-here
+API_TIMEOUT=30
+
+# Monitor identification (MAKE THESE UNIQUE!)
+MONITOR_ID=pi-living-room
+MONITOR_NAME=Living Room Monitor  
+MONITOR_LOCATION=Living Room
+MONITOR_INTERFACE=wlan0
+
+# Scanning settings
+SCAN_INTERVAL=60
+DEEP_SCAN_INTERVAL=300
+COLLECT_CONNECTED_DEVICES=true
+BANDWIDTH_TEST_ENABLED=false
+
+# Logging
+LOG_LEVEL=INFO
+LOCAL_STORAGE_ENABLED=true
+```
+
+### 3. Check Python Virtual Environment
+```bash
+# Check if virtual environment exists
+ls -la /home/pi/pi-wireless-monitor/raspberry-pi/venv
+
+# If missing, create it
+cd /home/pi/pi-wireless-monitor/raspberry-pi
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 4. Test Manual Run
+Before running as service, test manually:
+```bash
+cd /home/pi/pi-wireless-monitor/raspberry-pi
+source venv/bin/activate
+python src/main.py
+```
+
+### 5. Check Required Directories
+```bash
+# Create log directories if missing
+sudo mkdir -p /var/log/pi-monitor
+sudo mkdir -p /var/lib/pi-monitor/data
+sudo chown -R pi:pi /var/log/pi-monitor
+sudo chown -R pi:pi /var/lib/pi-monitor
+```
+
+### 6. Fix Permission Issues
+```bash
+# Make sure pi user owns the files
+sudo chown -R pi:pi /home/pi/pi-wireless-monitor
+```
+
+### 7. Install Missing Dependencies
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-venv python3-dev wireless-tools net-tools
+```
+
+## 🚀 Step-by-Step Fix Procedure
+
+Run these commands in order on your Pi:
+
+```bash
+# 1. Stop the failing service
+sudo systemctl stop pi-monitor
+
+# 2. Navigate to project directory  
+cd /home/pi/pi-wireless-monitor/raspberry-pi
+
+# 3. Create .env file (if missing)
+nano .env
+# (Paste the configuration from above)
+
+# 4. Set up Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 5. Create required directories
+sudo mkdir -p /var/log/pi-monitor /var/lib/pi-monitor/data
+sudo chown -R pi:pi /var/log/pi-monitor /var/lib/pi-monitor
+
+# 6. Test manual run
+python src/main.py
+# Press Ctrl+C to stop after confirming it works
+
+# 7. Restart service
+sudo systemctl start pi-monitor
+sudo systemctl status pi-monitor
+```
+
+## 📋 Most Critical Settings to Check
+
+In your .env file, make sure these are correct:
+- SERVER_URL - Must point to your actual server IP (not localhost)
+- MONITOR_ID - Must be unique for each Pi
+- MONITOR_INTERFACE - Usually wlan0 but check with iwconfig
+
+## 🔧 After Making Changes
+
+```bash
+# Always reload and restart after changes
+sudo systemctl daemon-reload
+sudo systemctl restart pi-monitor
+sudo systemctl status pi-monitor
+```
+
+## 🚨 Common Error Messages and Solutions
+
+### Error: "ModuleNotFoundError: No module named 'dotenv'"
+Solution: Install python-dotenv
+```bash
+source venv/bin/activate
+pip install python-dotenv
+```
+
+### Error: "Permission denied" accessing log files
+Solution: Fix directory permissions
+```bash
+sudo chown -R pi:pi /var/log/pi-monitor
+sudo chown -R pi:pi /var/lib/pi-monitor
+```
+
+### Error: "Connection refused" to server
+Solution: Check server URL and network connectivity
+```bash
+# Test server connection
+curl http://your-server-ip:3001/health
+
+# Check if server is running
+# On server machine: netstat -tulpn | grep 3001
+```
+
+### Error: "iwlist command not found"
+Solution: Install wireless tools
+```bash
+sudo apt-get install wireless-tools
+```
+
+## 📞 Additional Help
+
+If these steps don't resolve the issue:
+1. Check the full service logs: sudo journalctl -u pi-monitor -f
+2. Test manual run: python src/main.py in the virtual environment
+3. Verify server is accessible from the Pi
+4. Check all settings in .env file are correct
+5. Ensure Pi has internet connectivity
+
+## Last Updated
+Created: May 26, 2025 
