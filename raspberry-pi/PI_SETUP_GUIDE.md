@@ -407,3 +407,59 @@ After successful setup:
 2. **Set up multiple Pis** - Repeat this process for additional monitoring points
 3. **Configure alerts** - Set up proper alerting thresholds
 4. **Schedule maintenance** - Set up automatic updates and monitoring 
+
+# Check if both servers are running
+# Terminal 1: Backend server
+cd server && npm run dev
+
+# Terminal 2: Frontend dashboard  
+cd dashboard && npm start 
+
+# Daily startup routine:
+
+# 1. Start backend server
+cd C:\Users\Admin\Documents\pi-wireless-monitor\server
+npm run dev
+
+# 2. Start dashboard (new terminal)
+cd C:\Users\Admin\Documents\pi-wireless-monitor\dashboard
+npm start
+
+# 3. Raspberry Pis connect automatically
+# 4. View dashboard at http://localhost:3000 
+
+# Download MongoDB Community Server from:
+# https://www.mongodb.com/try/download/community
+
+# Or use Chocolatey:
+choco install mongodb
+
+# Start MongoDB service:
+net start MongoDB 
+
+# Install Docker Desktop, then:
+cd C:\Users\Admin\Documents\pi-wireless-monitor
+
+# Create docker-compose.yml:
+@"
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=pi-wireless-monitor
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+"@ | Out-File -FilePath "docker-compose.yml" -Encoding utf8
+
+# Start databases:
+docker-compose up -d
+
+# Now start your server:
+cd server
+npm run dev 

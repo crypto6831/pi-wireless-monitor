@@ -1,0 +1,125 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: pi-monitor-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=pi-wireless-monitor
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - pi-monitor-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: pi-monitor-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - pi-monitor-network
+
+  # Backend Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: pi-monitor-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/pi-wireless-monitor?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis123
+      - API_KEY=PM2025-8f3a9d4e7b2c1a6f5e8d7c4b9a3e6f2d8c5b1a4e7f9c2d6a3b8e5f7c4d9a2b6e1f8c3d7a4b9e
+      - JWT_SECRET=your-jwt-secret-here
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - server_logs:/app/logs
+    networks:
+      - pi-monitor-network
+
+  # React Dashboard
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: pi-monitor-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_SOCKET_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - server
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules
+    networks:
+      - pi-monitor-network
+
+  # MongoDB Admin UI (Optional)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: pi-monitor-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=admin123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:admin123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      - mongodb
+    networks:
+      - pi-monitor-network
+
+  # Redis Admin UI (Optional)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: pi-monitor-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:redis123
+    depends_on:
+      - redis
+    networks:
+      - pi-monitor-network
+
+# Named volumes for data persistence
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  server_logs:
+    driver: local
+
+# Custom network
+networks:
+  pi-monitor-network:
+    driver: bridge

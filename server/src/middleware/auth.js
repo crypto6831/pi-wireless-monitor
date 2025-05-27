@@ -15,14 +15,26 @@ const authenticateMonitor = async (req, res, next) => {
       });
     }
 
-    // Find monitor with API key
-    const monitor = await Monitor.findOne({ 
+    // First try to find monitor with its specific API key
+    let monitor = await Monitor.findOne({ 
       monitorId,
       apiKey,
     }).select('+apiKey');
 
+    // If not found and there's a global API key, check if this is a valid monitor with global key
+    if (!monitor && process.env.API_KEY && apiKey === process.env.API_KEY) {
+      monitor = await Monitor.findOne({ monitorId }).select('+apiKey');
+      
+      if (monitor) {
+        logger.info(`Monitor ${monitorId} authenticated with global API key`);
+        // Update monitor with the global API key for future use
+        monitor.apiKey = process.env.API_KEY;
+        await monitor.save();
+      }
+    }
+
     if (!monitor) {
-      logger.warn(`Authentication failed for monitor: ${monitorId}`);
+      logger.warn(`Authentication failed for monitor: ${monitorId} with API key: ${apiKey.substring(0, 10)}...`);
       return res.status(401).json({
         success: false,
         error: 'Invalid authentication credentials',

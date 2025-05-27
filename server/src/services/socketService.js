@@ -173,6 +173,12 @@ class SocketService {
 
   async subscribeToRedisEvents() {
     try {
+      // Check if Redis is available
+      if (!redis.isConnected()) {
+        logger.warn('Redis not connected, skipping event subscriptions');
+        return;
+      }
+
       // Subscribe to monitor events
       await redis.subscribe('monitor:heartbeat', (data) => {
         this.io.to('dashboards').emit('monitor:heartbeat', data);
@@ -198,17 +204,18 @@ class SocketService {
 
       logger.info('Subscribed to Redis events');
     } catch (error) {
-      logger.error('Error subscribing to Redis events:', error);
+      logger.warn('Redis subscription failed, continuing without Redis events:', error.message);
     }
   }
 
   // Helper methods
   async getActiveMonitors() {
     try {
-      // Get from Redis cache
-      const cached = await redis.getJson('monitors:active');
-      if (cached) return cached;
-
+      // Get from Redis cache if available
+      if (redis.isConnected()) {
+        const cached = await redis.getJson('monitors:active');
+        if (cached) return cached;
+      }
       // TODO: Get from database
       return [];
     } catch (error) {
@@ -219,10 +226,11 @@ class SocketService {
 
   async getRecentAlerts() {
     try {
-      // Get from Redis cache
-      const cached = await redis.getJson('alerts:recent');
-      if (cached) return cached;
-
+      // Get from Redis cache if available
+      if (redis.isConnected()) {
+        const cached = await redis.getJson('alerts:recent');
+        if (cached) return cached;
+      }
       // TODO: Get from database
       return [];
     } catch (error) {
