@@ -1,0 +1,471 @@
+# ============================================================================
+# Pi Wireless Monitor - Raspberry Pi Installation Instructions
+# ============================================================================
+# Complete step-by-step guide for installing Pi Wireless Monitor on Raspberry Pi
+# using the automated installation script
+# ============================================================================
+
+## PREREQUISITES
+============================================================================
+
+Before running the installation script, ensure you have:
+
+1. HARDWARE REQUIREMENTS:
+   - Raspberry Pi (3B+ or newer recommended)
+   - MicroSD card (32GB+ recommended)
+   - Power supply (official Raspberry Pi power adapter)
+   - WiFi capability (built-in or USB adapter)
+
+2. SOFTWARE REQUIREMENTS:
+   - Raspberry Pi OS installed and running
+   - User account named 'admin' (NOT 'pi')
+   - WiFi connected and working
+   - Internet connection active
+
+3. NETWORK REQUIREMENTS:
+   - Access to your server (Windows machine with Docker)
+   - Know your server's IP address (e.g., 192.168.0.72)
+
+## STEP 1: PREPARE RASPBERRY PI
+============================================================================
+
+### Create 'admin' User Account (if not already done):
+sudo adduser admin
+sudo usermod -aG sudo admin
+sudo su - admin
+
+### Connect to WiFi (if not already done):
+sudo raspi-config
+# Navigate to: Network Options > WiFi
+# Enter your WiFi credentials
+
+### Update System:
+sudo apt update
+sudo apt upgrade -y
+
+## STEP 2: ACCESS RASPBERRY PI
+============================================================================
+
+### Option A: Direct Access (keyboard/monitor connected):
+Open terminal on Raspberry Pi desktop
+
+### Option B: SSH Access (remote):
+# From Windows machine:
+ssh admin@[YOUR_PI_IP_ADDRESS]
+
+# Example:
+ssh admin@192.168.1.150
+
+# Find Pi IP address if unknown:
+# On Pi: hostname -I
+# From router: Check connected devices
+
+## STEP 3: RUN AUTOMATED INSTALLATION
+============================================================================
+
+### Method 1: One-Command Installation (RECOMMENDED)
+============================================================================
+
+Copy and paste this single command:
+
+curl -sSL https://raw.githubusercontent.com/crypto6831/pi-wireless-monitor/main/raspberry-pi/scripts/auto-install.sh | bash
+
+### Method 2: Download and Run Separately
+============================================================================
+
+# Download the script
+wget https://raw.githubusercontent.com/crypto6831/pi-wireless-monitor/main/raspberry-pi/scripts/auto-install.sh
+
+# Make executable
+chmod +x auto-install.sh
+
+# Run the script
+./auto-install.sh
+
+## STEP 4: INTERACTIVE CONFIGURATION
+============================================================================
+
+The script will prompt you for configuration details:
+
+### SERVER IP CONFIGURATION:
+============================================================================
+Prompt: "Enter your server IP address:"
+Example Input: 192.168.0.72
+
+HOW TO FIND YOUR SERVER IP:
+- Windows: Open Command Prompt, run 'ipconfig'
+- Look for "IPv4 Address" under your network adapter
+- Usually starts with 192.168.x.x or 10.x.x.x
+
+### MONITOR CONFIGURATION:
+============================================================================
+Prompt: "Enter Monitor ID (e.g., pi-kitchen, pi-bedroom):"
+Example Input: pi-living-room
+
+Prompt: "Enter Monitor Name (e.g., Kitchen Pi):"
+Example Input: Living Room Pi
+
+Prompt: "Enter Monitor Location (e.g., Kitchen):"
+Example Input: Living Room
+
+NAMING CONVENTIONS:
+- Monitor ID: Use lowercase, hyphens (pi-kitchen, pi-bedroom, pi-office)
+- Monitor Name: Friendly name (Kitchen Pi, Bedroom Monitor)
+- Location: Physical location (Kitchen, Living Room, Office)
+
+## STEP 5: AUTOMATED INSTALLATION PROCESS
+============================================================================
+
+The script will automatically perform 15 steps:
+
+[1/15] System Check and Prerequisites
+- Verifies Raspberry Pi hardware
+- Checks internet connectivity
+- Validates disk space
+
+[2/15] Updating System Packages
+- Updates package lists
+- Upgrades system packages
+
+[3/15] Installing System Dependencies
+- Installs Python, wireless tools, git
+- Installs required system packages
+
+[4/15] Cloning Pi Wireless Monitor Repository
+- Downloads project from GitHub
+- Creates /home/admin/pi-wireless-monitor
+
+[5/15] Creating Python Virtual Environment
+- Sets up isolated Python environment
+- Upgrades pip
+
+[6/15] Installing Python Dependencies
+- Installs required Python packages
+- Configures monitoring libraries
+
+[7/15] Creating Required Directories
+- Creates /var/log/pi-monitor
+- Creates /var/lib/pi-monitor/data
+- Sets proper permissions
+
+[8/15] Creating Configuration File
+- Generates .env file with your settings
+- Includes API key and server details
+
+[9/15] Installing SystemD Service
+- Creates pi-monitor.service
+- Enables automatic startup
+
+[10/15] Testing Manual Run
+- Tests Python application
+- Verifies basic functionality
+
+[11/15] Starting Pi Monitor Service
+- Starts systemd service
+- Verifies service is running
+
+[12/15] Testing Server Connectivity
+- Tests connection to your server
+- Verifies API endpoints
+
+[13/15] Configuring WiFi Interface
+- Auto-detects WiFi interface
+- Updates configuration if needed
+
+[14/15] Setting Up Log Rotation
+- Configures log management
+- Prevents disk space issues
+
+[15/15] Final Verification and Status Report
+- Comprehensive system check
+- Displays installation summary
+
+## STEP 6: VERIFY INSTALLATION SUCCESS
+============================================================================
+
+### CHECK SERVICE STATUS:
+sudo systemctl status pi-monitor
+
+Expected output:
+● pi-monitor.service - Pi Wireless Monitor Service
+   Loaded: loaded (/etc/systemd/system/pi-monitor.service; enabled)
+   Active: active (running) since...
+
+### VIEW LIVE LOGS:
+sudo journalctl -u pi-monitor -f
+
+Expected output:
+INFO - Pi Wireless Monitor Starting
+INFO - Monitor registered with server
+INFO - Initialization complete
+INFO - Starting network scan...
+
+### TEST SERVER CONNECTION:
+curl http://[YOUR_SERVER_IP]:3001/health
+
+Expected output:
+{"status":"healthy","timestamp":"...","uptime":...}
+
+### CHECK DASHBOARD:
+Open web browser and go to:
+http://[YOUR_SERVER_IP]:3000
+
+You should see your Pi appear in the monitoring dashboard.
+
+## STEP 7: POST-INSTALLATION COMMANDS
+============================================================================
+
+### SERVICE MANAGEMENT:
+# Check service status
+sudo systemctl status pi-monitor
+
+# Restart service
+sudo systemctl restart pi-monitor
+
+# Stop service
+sudo systemctl stop pi-monitor
+
+# Start service
+sudo systemctl start pi-monitor
+
+# View live logs
+sudo journalctl -u pi-monitor -f
+
+# View recent logs
+sudo journalctl -u pi-monitor -n 50
+
+### CONFIGURATION:
+# Edit configuration
+nano /home/admin/pi-wireless-monitor/raspberry-pi/.env
+
+# After editing, restart service
+sudo systemctl restart pi-monitor
+
+### FILE LOCATIONS:
+# Installation directory
+/home/admin/pi-wireless-monitor/
+
+# Configuration file
+/home/admin/pi-wireless-monitor/raspberry-pi/.env
+
+# Log files
+/var/log/pi-monitor/
+
+# Service file
+/etc/systemd/system/pi-monitor.service
+
+## TROUBLESHOOTING
+============================================================================
+
+### INSTALLATION FAILS:
+1. Check error messages in colored output
+2. Ensure running as user 'admin' (not root, not pi)
+3. Verify internet connection: ping google.com
+4. Check disk space: df -h
+5. Re-run the installation script
+
+### SERVICE FAILS TO START:
+1. Check service logs:
+   sudo journalctl -u pi-monitor --no-pager -n 20
+
+2. Test manual run:
+   cd /home/admin/pi-wireless-monitor/raspberry-pi
+   source venv/bin/activate
+   python src/main.py
+
+3. Verify server is running on Windows machine
+4. Check network connectivity:
+   curl http://[SERVER_IP]:3001/health
+
+### COMMON ISSUES:
+
+WRONG USER ERROR:
+- Script must run as 'admin', not 'pi' or 'root'
+- Solution: su - admin
+
+SERVER NOT REACHABLE:
+- Ensure Docker containers are running on server
+- Check Windows firewall settings
+- Verify IP address is correct
+
+PERMISSION ERRORS:
+- Script handles permissions automatically
+- If issues persist, run: sudo chown -R admin:admin /home/admin/pi-wireless-monitor
+
+WIFI INTERFACE NOT DETECTED:
+- Check WiFi is working: iwconfig
+- Verify internet connection: ping google.com
+
+### RE-RUNNING INSTALLATION:
+The script can be safely re-run multiple times:
+- Existing installations are automatically backed up
+- Configuration prompts will ask again
+- All steps are idempotent (safe to repeat)
+
+## EXAMPLE INSTALLATION SESSION
+============================================================================
+
+admin@raspberrypi:~ $ curl -sSL https://raw.githubusercontent.com/crypto6831/pi-wireless-monitor/main/raspberry-pi/scripts/auto-install.sh | bash
+
+============================================================================
+Pi Wireless Monitor - Automated Installation
+============================================================================
+
+============================================================================
+SERVER CONFIGURATION REQUIRED
+============================================================================
+You need to provide your server's IP address where Docker is running.
+This is typically your Windows machine's IP address.
+
+To find your server IP:
+  Windows: Run 'ipconfig' and look for IPv4 Address
+  Linux:   Run 'ip addr' or 'hostname -I'
+
+Example: 192.168.1.100 or 192.168.0.72
+============================================================================
+
+Enter your server IP address: 192.168.0.72
+Server IP set to: 192.168.0.72
+
+============================================================================
+MONITOR CONFIGURATION
+============================================================================
+
+Enter Monitor ID (e.g., pi-kitchen, pi-bedroom): pi-living-room
+Enter Monitor Name (e.g., Kitchen Pi): Living Room Pi
+Enter Monitor Location (e.g., Kitchen): Living Room
+
+Configuration:
+  Monitor ID: pi-living-room
+  Monitor Name: Living Room Pi
+  Location: Living Room
+
+Starting installation...
+
+[1/15] System Check and Prerequisites
+✅ System check completed
+
+[2/15] Updating System Packages
+✅ System updated
+
+[3/15] Installing System Dependencies
+✅ Dependencies installed
+
+[4/15] Cloning Pi Wireless Monitor Repository
+✅ Repository cloned to /home/admin/pi-wireless-monitor
+
+[5/15] Creating Python Virtual Environment
+✅ Virtual environment created
+
+[6/15] Installing Python Dependencies
+✅ Python packages installed
+
+[7/15] Creating Required Directories
+✅ Directories created with proper permissions
+
+[8/15] Creating Configuration File
+✅ Configuration file created
+
+[9/15] Installing SystemD Service
+✅ SystemD service installed and enabled
+
+[10/15] Testing Manual Run
+ℹ️  Testing Python application...
+✅ Manual test successful (timed out after 10s as expected)
+
+[11/15] Starting Pi Monitor Service
+✅ Service started successfully
+
+[12/15] Testing Server Connectivity
+ℹ️  Testing connection to 192.168.0.72:3001...
+✅ Server connectivity test passed
+
+[13/15] Configuring WiFi Interface
+✅ WiFi interface detected: wlan0
+
+[14/15] Setting Up Log Rotation
+✅ Log rotation configured
+
+[15/15] Final Verification and Status Report
+
+============================================================================
+INSTALLATION VERIFICATION REPORT
+============================================================================
+
+Service Status:
+✅ pi-monitor.service is running
+
+Service Health:
+● pi-monitor.service - Pi Wireless Monitor Service
+   Loaded: loaded (/etc/systemd/system/pi-monitor.service; enabled)
+   Active: active (running) since Mon 2025-05-26 15:30:42 GMT; 3s ago
+
+Recent Logs:
+INFO - Pi Wireless Monitor Starting
+INFO - Monitor ID: pi-living-room
+INFO - Location: Living Room
+INFO - Server: http://192.168.0.72:3001
+INFO - Initialization complete
+
+File System Check:
+✅ .env configuration file exists
+✅ Python virtual environment exists
+✅ Log directory exists
+
+Network Interface:
+wlan0     IEEE 802.11  ESSID:"MyHomeWiFi"
+
+Server Connectivity:
+✅ Can reach server at 192.168.0.72:3001
+
+============================================================================
+INSTALLATION SUMMARY
+============================================================================
+Installation Directory: /home/admin/pi-wireless-monitor
+Configuration File: /home/admin/pi-wireless-monitor/raspberry-pi/.env
+Service Name: pi-monitor.service
+Log Directory: /var/log/pi-monitor
+Server URL: http://192.168.0.72:3001
+Monitor ID: pi-living-room
+Monitor Name: Living Room Pi
+Monitor Location: Living Room
+
+✅ Installation completed!
+
+============================================================================
+🎉 INSTALLATION COMPLETE!
+============================================================================
+
+Next Steps:
+1. Check service status: sudo systemctl status pi-monitor
+2. View live logs: sudo journalctl -u pi-monitor -f
+3. Open dashboard: http://192.168.0.72:3000
+4. Check troubleshooting guide if needed: /home/admin/pi-wireless-monitor/Common Service Failure Causes & Solutions.txt
+
+Useful Commands:
+  sudo systemctl restart pi-monitor  # Restart service
+  sudo systemctl stop pi-monitor     # Stop service
+  sudo systemctl start pi-monitor    # Start service
+  nano /home/admin/pi-wireless-monitor/raspberry-pi/.env  # Edit configuration
+
+## SUPPORT AND DOCUMENTATION
+============================================================================
+
+Additional Documentation:
+- Main README: /home/admin/pi-wireless-monitor/README.md
+- Detailed Setup Guide: /home/admin/pi-wireless-monitor/raspberry-pi/PI_SETUP_GUIDE.md
+- Troubleshooting: /home/admin/pi-wireless-monitor/Common Service Failure Causes & Solutions.txt
+- API Reference: /home/admin/pi-wireless-monitor/API.txt
+
+GitHub Repository:
+https://github.com/crypto6831/pi-wireless-monitor
+
+For Issues:
+1. Check service logs: sudo journalctl -u pi-monitor -f
+2. Review troubleshooting documentation
+3. Verify server connectivity
+4. Re-run installation script if needed
+
+============================================================================
+END OF INSTALLATION INSTRUCTIONS
+============================================================================ 
