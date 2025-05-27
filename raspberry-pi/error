@@ -1,3 +1,5 @@
-May 27 21:09:53 raspberrypi sudo[6300]: pam_unix(sudo:session): session closed for user root
-May 27 21:09:53 raspberrypi python[6292]: 2025-05-27 21:09:53 - scanner - INFO - Found 16 connected devices
-May 27 21:09:53 raspberrypi python[6292]: 2025-05-27 21:09:53 - api_client - ERROR - Endpoint not found: http://192.168.0.73:3001/api/devices
+May 27 21:19:11 raspberrypi python[6450]: 2025-05-27 21:19:11 - scanner - INFO - Found 6 networks
+May 27 21:19:11 raspberrypi python[6450]: 2025-05-27 21:19:11 - api_client - ERROR - Authentication failed - check API key
+May 27 21:19:22 raspberrypi python[6450]: 2025-05-27 21:19:22 - api_client - ERROR - Authentication failed - check API key
+May 27 21:19:22 raspberrypi python[6450]: 2025-05-27 21:19:22 - api_client - ERROR - Authentication failed - check API key
+May 27 21:19:22 raspberrypi python[6450]: 2025-05-27 21:19:22 - api_client - ERROR - Authentication failed - check API key
