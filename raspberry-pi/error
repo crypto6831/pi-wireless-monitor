@@ -1,27 +1,54 @@
-2025-05-27 20:10:03 - main - INFO - ==================================================
-2025-05-27 20:10:03 - main - INFO - Pi Wireless Monitor Starting
-2025-05-27 20:10:03 - main - INFO - Monitor ID: pi-living
-2025-05-27 20:10:03 - main - INFO - Location: Living room
-2025-05-27 20:10:03 - main - INFO - Server: http://192.168.0.73:3001
-2025-05-27 20:10:03 - main - INFO - ==================================================
-2025-05-27 20:10:03 - main - INFO - Initializing Pi Wireless Monitor...
-2025-05-27 20:10:03 - scanner - INFO - WiFi Scanner initialized on interface: wlan0
-2025-05-27 20:10:03 - metrics - INFO - Metrics Collector initialized
-2025-05-27 20:10:03 - main - ERROR - Initialization failed: Retry.__init__() got an unexpected keyword argument 'method_whitelist'
-Traceback (most recent call last):
-  File "/home/admin/pi-wireless-monitor/raspberry-pi/src/main.py", line 55, in initialize
-    self.api_client = APIClient()
-                      ^^^^^^^^^^^
-  File "/home/admin/pi-wireless-monitor/raspberry-pi/src/api_client.py", line 27, in __init__
-    self.session = self._create_session()
-                   ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/admin/pi-wireless-monitor/raspberry-pi/src/api_client.py", line 42, in _create_session
-    retry_strategy = Retry(
-                     ^^^^^^
-TypeError: Retry.__init__() got an unexpected keyword argument 'method_whitelist'
-2025-05-27 20:10:03 - main - ERROR - Failed to initialize, exiting
-2025-05-27 20:10:03 - main - INFO - Stopping monitoring service...
-2025-05-27 20:10:03 - main - INFO - Pi Wireless Monitor stopped
-[11/15] Starting Pi Monitor Service
-❌ Service failed to start
-admin@raspberrypi:~/pi-wireless-monitor $ 
+May 27 21:36:35 raspberrypi sudo[6864]: pam_unix(sudo:session): session closed for user root
+May 27 21:36:35 raspberrypi python[6856]: 2025-05-27 21:36:35 - scanner - INFO - Found 14 connected devices
+May 27 21:36:35 raspberrypi python[6856]: 2025-05-27 21:36:35 - api_client - ERROR - API request failed: 400 - {"success":false,"errors":[{"type":"field","msg":"Invalid value","path":"devices[0].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[1].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[2].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[3].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[4].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[5].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[6].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[7].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[8].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[9].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[10].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[11].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[12].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[13].macAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[0].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[1].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[2].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[3].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[4].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[5].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[6].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[7].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[8].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[9].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[10].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[11].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[12].ipAddress","location":"body"},{"type":"field","msg":"Invalid value","path":"devices[13].ipAddress","location":"body"}]}
+May 27 21:36:51 raspberrypi python[6856]: 2025-05-27 21:36:51 - api_client - ERROR - Unexpected error in API request: HTTPConnectionPool(host='192.168.0.73', port=3001): Max retries exceeded with url: /api/metrics (Caused by ResponseError('too many 500 error responses'))
+May 27 21:36:51 raspberrypi python[6856]: urllib3.exceptions.ResponseError: too many 500 error responses
+May 27 21:36:51 raspberrypi python[6856]: The above exception was the direct cause of the following exception:
+May 27 21:36:51 raspberrypi python[6856]: Traceback (most recent call last):
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/requests/adapters.py", line 667, in send
+May 27 21:36:51 raspberrypi python[6856]:     resp = conn.urlopen(
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 942, in urlopen
+May 27 21:36:51 raspberrypi python[6856]:     return self.urlopen(
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 942, in urlopen
+May 27 21:36:51 raspberrypi python[6856]:     return self.urlopen(
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 942, in urlopen
+May 27 21:36:51 raspberrypi python[6856]:     return self.urlopen(
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 932, in urlopen
+May 27 21:36:51 raspberrypi python[6856]:     retries = retries.increment(method, url, response=response, _pool=self)
+May 27 21:36:51 raspberrypi python[6856]:               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/urllib3/util/retry.py", line 519, in increment
+May 27 21:36:51 raspberrypi python[6856]:     raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+May 27 21:36:51 raspberrypi python[6856]:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]: urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='192.168.0.73', port=3001): Max retries exceeded with url: /api/metrics (Caused by ResponseError('too many 500 error responses'))
+May 27 21:36:51 raspberrypi python[6856]: During handling of the above exception, another exception occurred:
+May 27 21:36:51 raspberrypi python[6856]: Traceback (most recent call last):
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/src/api_client.py", line 208, in _post
+May 27 21:36:51 raspberrypi python[6856]:     response = self.session.post(
+May 27 21:36:51 raspberrypi python[6856]:                ^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/requests/sessions.py", line 637, in post
+May 27 21:36:51 raspberrypi python[6856]:     return self.request("POST", url, data=data, json=json, **kwargs)
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+May 27 21:36:51 raspberrypi python[6856]:     resp = self.send(prep, **send_kwargs)
+May 27 21:36:51 raspberrypi python[6856]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+May 27 21:36:51 raspberrypi python[6856]:     r = adapter.send(request, **kwargs)
+May 27 21:36:51 raspberrypi python[6856]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+May 27 21:36:51 raspberrypi python[6856]:   File "/home/admin/pi-wireless-monitor/raspberry-pi/venv/lib/python3.11/site-packages/requests/adapters.py", line 691, in send
+May 27 21:36:51 raspberrypi python[6856]:     raise RetryError(e, request=request)
+May 27 21:36:51 raspberrypi python[6856]: requests.exceptions.RetryError: HTTPConnectionPool(host='192.168.0.73', port=3001): Max retries exceeded with url: /api/metrics (Caused by ResponseError('too many 500 error responses'))
+May 27 21:36:51 raspberrypi python[6856]: 2025-05-27 21:36:51 - main - INFO - Monitoring service started
+May 27 21:37:26 raspberrypi sudo[6874]:    admin : PWD=/home/admin/pi-wireless-monitor/raspberry-pi ; USER=root ; COMMAND=/usr/sbin/ip link set wlan0 up
+May 27 21:37:26 raspberrypi sudo[6874]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+May 27 21:37:26 raspberrypi sudo[6874]: pam_unix(sudo:session): session closed for user root
+May 27 21:37:26 raspberrypi sudo[6876]:    admin : PWD=/home/admin/pi-wireless-monitor/raspberry-pi ; USER=root ; COMMAND=/usr/sbin/iwlist wlan0 scan
+May 27 21:37:27 raspberrypi sudo[6876]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+May 27 21:37:31 raspberrypi sudo[6876]: pam_unix(sudo:session): session closed for user root
+May 27 21:37:31 raspberrypi python[6856]: 2025-05-27 21:37:31 - scanner - INFO - Found 5 networks
+May 27 21:37:31 raspberrypi python[6856]: 2025-05-27 21:37:31 - api_client - INFO - Sent data for 5 networks
+
+
