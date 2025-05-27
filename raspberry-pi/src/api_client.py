@@ -38,13 +38,22 @@ class APIClient:
         """Create a requests session with retry logic"""
         session = requests.Session()
         
-        # Configure retry strategy
-        retry_strategy = Retry(
-            total=3,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]
-        )
+        # Configure retry strategy with compatibility for different urllib3 versions
+        retry_kwargs = {
+            'total': 3,
+            'backoff_factor': 1,
+            'status_forcelist': [429, 500, 502, 503, 504]
+        }
+        
+        # Handle urllib3 version compatibility
+        # urllib3 < 2.0 uses 'method_whitelist', >= 2.0 uses 'allowed_methods'
+        methods = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]
+        try:
+            # Try new parameter name first (urllib3 >= 2.0)
+            retry_strategy = Retry(allowed_methods=methods, **retry_kwargs)
+        except TypeError:
+            # Fall back to old parameter name (urllib3 < 2.0)
+            retry_strategy = Retry(method_whitelist=methods, **retry_kwargs)
         
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("http://", adapter)
