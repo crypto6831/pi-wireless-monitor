@@ -133,57 +133,71 @@ metricSchema.index(
 );
 
 // Methods
-metricSchema.methods.checkAlerts = function(thresholds) {
+metricSchema.methods.checkAlerts = function(thresholds = {}) {
   const alerts = [];
 
+  // Default thresholds
+  const defaults = {
+    packetLoss: { warning: 5, critical: 10 },
+    latency: { warning: 100, critical: 500 },
+    temperature: { warning: 70, critical: 80 }
+  };
+
+  // Merge with defaults
+  const safeThresholds = {
+    packetLoss: { ...defaults.packetLoss, ...thresholds.packetLoss },
+    latency: { ...defaults.latency, ...thresholds.latency },
+    temperature: { ...defaults.temperature, ...thresholds.temperature }
+  };
+
   // Check packet loss
-  if (this.network.ping && this.network.ping.packetLoss > thresholds.packetLoss.critical) {
+  if (this.network?.ping?.packetLoss > safeThresholds.packetLoss.critical) {
     alerts.push({
       type: 'packet_loss',
       severity: 'critical',
       value: this.network.ping.packetLoss,
-      threshold: thresholds.packetLoss.critical,
+      threshold: safeThresholds.packetLoss.critical,
     });
-  } else if (this.network.ping && this.network.ping.packetLoss > thresholds.packetLoss.warning) {
+  } else if (this.network?.ping?.packetLoss > safeThresholds.packetLoss.warning) {
     alerts.push({
       type: 'packet_loss',
       severity: 'warning',
       value: this.network.ping.packetLoss,
-      threshold: thresholds.packetLoss.warning,
+      threshold: safeThresholds.packetLoss.warning,
     });
   }
 
   // Check latency
-  if (this.network.ping && this.network.ping.avg > thresholds.latency.critical) {
+  if (this.network?.ping?.avg > safeThresholds.latency.critical) {
     alerts.push({
       type: 'latency',
       severity: 'critical',
       value: this.network.ping.avg,
-      threshold: thresholds.latency.critical,
+      threshold: safeThresholds.latency.critical,
     });
-  } else if (this.network.ping && this.network.ping.avg > thresholds.latency.warning) {
+  } else if (this.network?.ping?.avg > safeThresholds.latency.warning) {
     alerts.push({
       type: 'latency',
       severity: 'warning',
       value: this.network.ping.avg,
-      threshold: thresholds.latency.warning,
+      threshold: safeThresholds.latency.warning,
     });
   }
 
   // Check temperature
-  if (this.system.temperature > thresholds.temperature.critical) {
+  if (this.system?.temperature > safeThresholds.temperature.critical) {
     alerts.push({
       type: 'temperature',
       severity: 'critical',
       value: this.system.temperature,
-      threshold: thresholds.temperature.critical,
+      threshold: safeThresholds.temperature.critical,
     });
-  } else if (this.system.temperature > thresholds.temperature.warning) {
+  } else if (this.system?.temperature > safeThresholds.temperature.warning) {
     alerts.push({
       type: 'temperature',
       severity: 'warning',
       value: this.system.temperature,
-      threshold: thresholds.temperature.warning,
+      threshold: safeThresholds.temperature.warning,
     });
   }
 

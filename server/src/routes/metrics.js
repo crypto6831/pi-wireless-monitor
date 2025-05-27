@@ -40,7 +40,14 @@ router.post('/', authenticateMonitor, [
     await metric.save();
 
     // Check for alerts based on thresholds
-    const alerts = metric.checkAlerts(req.monitor.settings.thresholds);
+    const defaultThresholds = {
+      packetLoss: { warning: 5, critical: 10 },
+      latency: { warning: 100, critical: 500 },
+      temperature: { warning: 70, critical: 80 }
+    };
+    
+    const thresholds = req.monitor.settings?.thresholds || defaultThresholds;
+    const alerts = metric.checkAlerts(thresholds);
     
     if (alerts.length > 0) {
       // Create alerts

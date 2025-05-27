@@ -310,10 +310,20 @@ class WiFiScanner:
             # Parse device lines (IP MAC Manufacturer)
             parts = line.split('\t')
             if len(parts) >= 2:
+                ip_addr = parts[0].strip()
+                mac_addr = parts[1].strip()
+                
+                # Skip empty or invalid entries
+                if not ip_addr or not mac_addr or ip_addr == '0.0.0.0' or mac_addr == '00:00:00:00:00:00':
+                    continue
+                
                 device = {
-                    'ip_address': parts[0].strip(),
-                    'mac_address': parts[1].strip(),
+                    'ipAddress': ip_addr,  # camelCase to match server
+                    'macAddress': mac_addr,  # camelCase to match server
                     'manufacturer': parts[2].strip() if len(parts) > 2 else 'Unknown',
+                    'vendor': parts[2].strip() if len(parts) > 2 else 'Unknown',  # alias for manufacturer
+                    'hostname': 'Unknown',
+                    'deviceType': 'Unknown',
                     'timestamp': datetime.utcnow().isoformat()
                 }
                 devices.append(device)

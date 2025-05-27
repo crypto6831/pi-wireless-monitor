@@ -44,13 +44,16 @@ router.post('/', authenticateMonitor, [
         processedNetworks.push(network);
 
         // Check for weak signal alerts
-        if (networkData.signal_strength < req.monitor.settings.thresholds.signalStrength.min) {
+        const defaultSignalThreshold = -80;
+        const signalThreshold = req.monitor.settings?.thresholds?.signalStrength?.min || defaultSignalThreshold;
+        
+        if (networkData.signal_strength < signalThreshold) {
           // Publish alert event
           await redis.publish('alert:weak_signal', {
             monitorId: req.monitorId,
             network: networkData.ssid,
             signalStrength: networkData.signal_strength,
-            threshold: req.monitor.settings.thresholds.signalStrength.min,
+            threshold: signalThreshold,
           });
         }
       } catch (error) {
