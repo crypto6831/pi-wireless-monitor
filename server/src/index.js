@@ -13,6 +13,7 @@ const socketService = require('./services/socketService');
 // Import routes
 const monitorsRouter = require('./routes/monitors');
 const networksRouter = require('./routes/networks');
+const devicesRouter = require('./routes/devices');
 const metricsRouter = require('./routes/metrics');
 const alertsRouter = require('./routes/alerts');
 
@@ -20,8 +21,7 @@ const alertsRouter = require('./routes/alerts');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
-socketService.initialize(server);
+// Initialize Socket.IO (temporarily disabled for debugging)// socketService.initialize(server);
 
 // Middleware
 app.use(helmet());
@@ -60,6 +60,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/monitors', monitorsRouter);
 app.use('/api/networks', networksRouter);
+app.use('/api/devices', devicesRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/alerts', alertsRouter);
 
@@ -103,7 +104,14 @@ async function startServer() {
   try {
     // Connect to databases
     await connectDB();
-    await connectRedis();
+    
+    // Try to connect to Redis, but don't fail if it's not available
+    try {
+      await connectRedis();
+      logger.info('Redis connected successfully');
+    } catch (error) {
+      logger.warn('Redis connection failed, continuing without Redis:', error.message);
+    }
 
     // Start listening
     server.listen(config.port, () => {
