@@ -23,8 +23,20 @@ const validate = (req, res, next) => {
 // Submit device scan data
 router.post('/', authenticateMonitor, [
   body('devices').isArray().notEmpty(),
-  body('devices.*.macAddress').notEmpty(),
-  body('devices.*.ipAddress').notEmpty(),
+  body('devices.*.macAddress').optional({ checkFalsy: false }).isString()
+    .custom((value) => {
+      if (!value || value === '') return true; // Allow empty
+      // Basic MAC address validation
+      const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+      return macRegex.test(value);
+    }).withMessage('Invalid MAC address format'),
+  body('devices.*.ipAddress').optional({ checkFalsy: false }).isString()
+    .custom((value) => {
+      if (!value || value === '') return true; // Allow empty
+      // Basic IP address validation
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      return ipRegex.test(value);
+    }).withMessage('Invalid IP address format'),
 ], validate, async (req, res) => {
   try {
     const { devices, timestamp } = req.body;
@@ -36,6 +48,15 @@ router.post('/', authenticateMonitor, [
     // Process each device
     for (const deviceData of devices) {
       try {
+        // Skip devices with invalid data
+        if (!deviceData.macAddress || 
+            deviceData.macAddress === '00:00:00:00:00:00' ||
+            !deviceData.ipAddress || 
+            deviceData.ipAddress === '0.0.0.0') {
+          logger.debug(`Skipping invalid device: ${JSON.stringify(deviceData)}`);
+          continue;
+        }
+
         const device = await Device.findOrCreateFromScan({
           ...deviceData,
           monitor_id: req.monitorId,

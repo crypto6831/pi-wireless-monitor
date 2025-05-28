@@ -37,7 +37,7 @@ module.exports = {
   api: {
     keyHeader: 'X-API-Key',
     rateLimitWindow: 15 * 60 * 1000, // 15 minutes
-    rateLimitMax: 100, // requests per window
+    rateLimitMax: 500, // requests per window (increased from 100)
     bcryptRounds: 10,
   },
   

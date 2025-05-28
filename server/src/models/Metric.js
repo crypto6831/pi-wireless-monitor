@@ -223,7 +223,7 @@ metricSchema.statics.findByMonitor = function(monitorId, options = {}) {
   return query.sort('-timestamp');
 };
 
-metricSchema.statics.aggregate = async function(monitorId, period = 'hour') {
+metricSchema.statics.aggregateMetrics = async function(monitorId, period = 'hour') {
   const now = new Date();
   let startDate, groupBy;
 

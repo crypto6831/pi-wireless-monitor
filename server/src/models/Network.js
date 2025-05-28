@@ -119,27 +119,28 @@ networkSchema.index({ ssid: 1, signalStrength: -1 });
 
 // Methods
 networkSchema.methods.updateFromScan = function(scanData) {
-  // Update basic fields
-  this.signalStrength = scanData.signalStrength;
-  this.quality = scanData.quality;
-  this.qualityMax = scanData.qualityMax;
-  this.qualityPercentage = scanData.qualityPercentage;
+  // Update basic fields - use the correct field names from scanData
+  this.signalStrength = scanData.signal_strength || scanData.signalStrength;
+  this.quality = scanData.quality || 0;
+  this.qualityMax = scanData.quality_max || scanData.qualityMax || 100;
+  this.qualityPercentage = scanData.quality_percentage || scanData.qualityPercentage || 0;
   this.lastSeen = new Date();
   this.seenCount += 1;
 
   // Check for channel change
-  if (this.channel !== scanData.channel) {
+  const newChannel = scanData.channel;
+  if (this.channel !== newChannel) {
     this.stats.channelChanges += 1;
-    this.channel = scanData.channel;
+    this.channel = newChannel;
     this.frequency = scanData.frequency;
   }
 
   // Add to history (keep last 100 entries)
   this.history.push({
     timestamp: new Date(),
-    signalStrength: scanData.signalStrength,
-    quality: scanData.quality,
-    channel: scanData.channel,
+    signalStrength: this.signalStrength,
+    quality: this.quality,
+    channel: this.channel,
   });
 
   if (this.history.length > 100) {
@@ -153,19 +154,43 @@ networkSchema.methods.updateFromScan = function(scanData) {
 };
 
 networkSchema.methods.updateStats = function() {
-  if (this.history.length === 0) return;
+  if (!this.history || this.history.length === 0) {
+    // Set defaults if no history
+    this.stats.avgSignalStrength = this.signalStrength || 0;
+    this.stats.minSignalStrength = this.signalStrength || 0;
+    this.stats.maxSignalStrength = this.signalStrength || 0;
+    this.stats.avgQuality = this.quality || 0;
+    return;
+  }
 
-  const signals = this.history.map(h => h.signalStrength);
-  const qualities = this.history.map(h => h.quality);
+  const signals = this.history
+    .map(h => h.signalStrength)
+    .filter(s => s !== null && s !== undefined && !isNaN(s));
+  
+  const qualities = this.history
+    .map(h => h.quality)
+    .filter(q => q !== null && q !== undefined && !isNaN(q));
 
-  this.stats.avgSignalStrength = Math.round(
-    signals.reduce((a, b) => a + b, 0) / signals.length
-  );
-  this.stats.minSignalStrength = Math.min(...signals);
-  this.stats.maxSignalStrength = Math.max(...signals);
-  this.stats.avgQuality = Math.round(
-    qualities.reduce((a, b) => a + b, 0) / qualities.length
-  );
+  if (signals.length > 0) {
+    this.stats.avgSignalStrength = Math.round(
+      signals.reduce((a, b) => a + b, 0) / signals.length
+    );
+    this.stats.minSignalStrength = Math.min(...signals);
+    this.stats.maxSignalStrength = Math.max(...signals);
+  } else {
+    // Fallback to current values
+    this.stats.avgSignalStrength = this.signalStrength || 0;
+    this.stats.minSignalStrength = this.signalStrength || 0;
+    this.stats.maxSignalStrength = this.signalStrength || 0;
+  }
+
+  if (qualities.length > 0) {
+    this.stats.avgQuality = Math.round(
+      qualities.reduce((a, b) => a + b, 0) / qualities.length
+    );
+  } else {
+    this.stats.avgQuality = this.quality || 0;
+  }
 };
 
 // Statics

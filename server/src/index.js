@@ -21,7 +21,8 @@ const alertsRouter = require('./routes/alerts');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO (temporarily disabled for debugging)// socketService.initialize(server);
+// Initialize Socket.IO
+socketService.initialize(server);
 
 // Middleware
 app.use(helmet());

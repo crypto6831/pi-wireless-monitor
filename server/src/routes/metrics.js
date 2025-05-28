@@ -22,19 +22,44 @@ const validate = (req, res, next) => {
 
 // Submit metrics data
 router.post('/', authenticateMonitor, [
-  body('metrics').isObject().notEmpty(),
-  body('metrics.system').optional().isObject(),
-  body('metrics.network').optional().isObject(),
+  body('metrics').optional().isObject(),
+  body('system').optional().isObject(),
+  body('network').optional().isObject(),
+  body('timestamp').optional().isISO8601(),
 ], validate, async (req, res) => {
   try {
-    const { metrics, timestamp } = req.body;
+    const { metrics, system, network, timestamp } = req.body;
+
+    // Debug logging
+    logger.debug(`Metrics received from ${req.monitorId}:`, {
+      hasMetrics: !!metrics,
+      hasSystem: !!system,
+      hasNetwork: !!network,
+      bodyKeys: Object.keys(req.body),
+    });
+
+    // Handle both old format (metrics object) and new format (direct system/network)
+    let metricsData = {};
+    if (metrics) {
+      // Old format: { metrics: { system: {...}, network: {...} } }
+      metricsData = {
+        system: metrics.system || {},
+        network: metrics.network || {},
+      };
+    } else {
+      // New format: { system: {...}, network: {...} }
+      metricsData = {
+        system: system || {},
+        network: network || {},
+      };
+    }
 
     // Create metric document
     const metric = new Metric({
       monitorId: req.monitorId,
       timestamp: timestamp || new Date(),
-      system: metrics.system || {},
-      network: metrics.network || {},
+      system: metricsData.system,
+      network: metricsData.network,
     });
 
     await metric.save();
@@ -276,7 +301,7 @@ router.post('/aggregate', async (req, res) => {
       });
     }
 
-    const aggregated = await Metric.aggregate(monitorId, period);
+    const aggregated = await Metric.aggregateMetrics(monitorId, period);
 
     logger.info(`Aggregated ${aggregated.length} metric periods for monitor ${monitorId}`);
 

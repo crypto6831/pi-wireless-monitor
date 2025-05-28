@@ -4,12 +4,13 @@ import api from '../../services/api';
 // Async thunks
 export const fetchAlerts = createAsyncThunk(
   'alerts/fetchAlerts',
-  async ({ monitorId, status = 'active' }) => {
-    const params = new URLSearchParams();
-    if (monitorId) params.append('monitorId', monitorId);
-    if (status) params.append('status', status);
+  async (params = {}) => {
+    const { monitorId, status = 'active' } = params;
+    const queryParams = new URLSearchParams();
+    if (monitorId) queryParams.append('monitorId', monitorId);
+    if (status) queryParams.append('status', status);
     
-    const response = await api.get(`/alerts?${params}`);
+    const response = await api.get(`/alerts?${queryParams}`);
     return response.data;
   }
 );
@@ -96,6 +97,17 @@ const alertsSlice = createSlice({
         }
       });
     },
+    deleteAlert: (state, action) => {
+      const alertId = action.payload;
+      
+      // Remove from list
+      state.list = state.list.filter(a => a._id !== alertId);
+      
+      // Remove from active alerts
+      Object.keys(state.active).forEach(severity => {
+        state.active[severity] = state.active[severity].filter(a => a._id !== alertId);
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -133,5 +145,5 @@ const alertsSlice = createSlice({
   },
 });
 
-export const { addAlert, updateAlert } = alertsSlice.actions;
+export const { addAlert, updateAlert, deleteAlert } = alertsSlice.actions;
 export default alertsSlice.reducer; 

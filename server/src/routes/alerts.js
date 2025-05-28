@@ -47,7 +47,7 @@ router.post('/', authenticateMonitor, [
     });
 
     // Send notifications if enabled
-    if (req.monitor.settings.alertsEnabled) {
+    if (req.monitor?.settings?.alertsEnabled) {
       // Queue notification job
       await redis.publish('notification:queue', {
         type: 'alert',

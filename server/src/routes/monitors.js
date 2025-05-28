@@ -301,6 +301,16 @@ router.get('/:monitorId/stats', async (req, res) => {
       });
     }
 
+    // Import models for counting
+    const Network = require('../models/Network');
+    const Device = require('../models/Device');
+
+    // Calculate network and device counts
+    const [networkCount, deviceCount] = await Promise.all([
+      Network.countDocuments({ monitorId: req.params.monitorId }),
+      Device.countDocuments({ monitorId: req.params.monitorId })
+    ]);
+
     // Calculate stats
     const stats = {
       monitorId: monitor.monitorId,
@@ -312,6 +322,8 @@ router.get('/:monitorId/stats', async (req, res) => {
       lastHeartbeat: monitor.lastHeartbeat,
       lastScan: monitor.lastScan,
       capabilities: monitor.capabilities,
+      networksDetected: networkCount,
+      devicesConnected: deviceCount,
     };
 
     // Cache stats

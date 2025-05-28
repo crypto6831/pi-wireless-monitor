@@ -4,7 +4,7 @@ import api from '../../services/api';
 // Async thunks
 export const fetchNetworks = createAsyncThunk(
   'networks/fetchNetworks',
-  async ({ monitorId, active = true }) => {
+  async ({ monitorId, active } = {}) => {
     const params = new URLSearchParams();
     if (monitorId) params.append('monitorId', monitorId);
     if (active) params.append('active', 'true');

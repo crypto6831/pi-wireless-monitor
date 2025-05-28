@@ -23,8 +23,8 @@ const validate = (req, res, next) => {
 // Submit network scan data
 router.post('/', authenticateMonitor, [
   body('networks').isArray().notEmpty(),
-  body('networks.*.ssid').notEmpty(),
-  body('networks.*.bssid').notEmpty(),
+  body('networks.*.ssid').optional({ checkFalsy: false }).isString(),
+  body('networks.*.bssid').notEmpty().isString(),
   body('networks.*.signal_strength').isNumeric(),
 ], validate, async (req, res) => {
   try {
@@ -37,6 +37,17 @@ router.post('/', authenticateMonitor, [
     // Process each network
     for (const networkData of networks) {
       try {
+        // Skip networks with invalid data
+        if (!networkData.bssid || networkData.bssid === '00:00:00:00:00:00') {
+          logger.debug(`Skipping invalid network: ${JSON.stringify(networkData)}`);
+          continue;
+        }
+
+        // Handle empty or hidden SSIDs
+        if (!networkData.ssid || networkData.ssid.trim() === '') {
+          networkData.ssid = '<hidden>';
+        }
+
         const network = await Network.findOrCreateFromScan({
           ...networkData,
           monitor_id: req.monitorId,
