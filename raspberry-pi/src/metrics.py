@@ -244,28 +244,28 @@ class MetricsCollector:
     def get_system_metrics(self) -> Dict:
         """Get system performance metrics"""
         metrics = {
-            'cpu_percent': 0.0,
-            'memory_percent': 0.0,
-            'memory_available': 0,
-            'disk_percent': 0.0,
-            'disk_free': 0,
+            'cpuPercent': 0.0,
+            'memoryPercent': 0.0,
+            'memoryAvailable': 0,
+            'diskPercent': 0.0,
+            'diskFree': 0,
             'temperature': 0.0,
             'uptime': 0
         }
         
         try:
             # CPU usage
-            metrics['cpu_percent'] = psutil.cpu_percent(interval=1)
+            metrics['cpuPercent'] = psutil.cpu_percent(interval=1)
             
             # Memory usage
             memory = psutil.virtual_memory()
-            metrics['memory_percent'] = memory.percent
-            metrics['memory_available'] = memory.available
+            metrics['memoryPercent'] = memory.percent
+            metrics['memoryAvailable'] = memory.available
             
             # Disk usage
             disk = psutil.disk_usage('/')
-            metrics['disk_percent'] = disk.percent
-            metrics['disk_free'] = disk.free
+            metrics['diskPercent'] = disk.percent
+            metrics['diskFree'] = disk.free
             
             # System uptime
             boot_time = psutil.boot_time()
@@ -331,23 +331,23 @@ class MetricsCollector:
             system = metrics['system']
             
             # High CPU usage
-            if system['cpu_percent'] > 90:
+            if system['cpuPercent'] > 90:
                 alerts.append({
                     'type': 'cpu_usage',
                     'severity': 'medium',
-                    'message': f"High CPU usage: {system['cpu_percent']}%",
+                    'message': f"High CPU usage: {system['cpuPercent']}%",
                     'threshold': 90,
-                    'value': system['cpu_percent']
+                    'value': system['cpuPercent']
                 })
             
             # High memory usage
-            if system['memory_percent'] > 90:
+            if system['memoryPercent'] > 90:
                 alerts.append({
                     'type': 'memory_usage',
                     'severity': 'medium',
-                    'message': f"High memory usage: {system['memory_percent']}%",
+                    'message': f"High memory usage: {system['memoryPercent']}%",
                     'threshold': 90,
-                    'value': system['memory_percent']
+                    'value': system['memoryPercent']
                 })
             
             # High temperature
