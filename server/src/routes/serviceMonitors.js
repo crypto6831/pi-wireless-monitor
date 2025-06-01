@@ -194,12 +194,14 @@ router.put('/:id/check', async (req, res) => {
     await serviceMonitor.updateLastCheck(checkResult);
     
     // Emit real-time update via Socket.IO
-    const io = require('../services/socketService').getIO();
-    io.to(`monitor:${serviceMonitor.monitorId}`).emit('service-check-update', {
-      serviceMonitorId: serviceMonitor._id,
-      checkResult,
-      cusumState: serviceMonitor.cusumState,
-    });
+    const socketService = require('../services/socketService');
+    if (socketService.io) {
+      socketService.io.to(`monitor:${serviceMonitor.monitorId}`).emit('service-check-update', {
+        serviceMonitorId: serviceMonitor._id,
+        checkResult,
+        cusumState: serviceMonitor.cusumState,
+      });
+    }
     
     res.json({ message: 'Check result recorded', serviceMonitor });
   } catch (error) {

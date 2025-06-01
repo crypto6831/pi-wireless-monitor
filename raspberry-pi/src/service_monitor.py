@@ -88,6 +88,7 @@ class ServiceMonitor:
     async def _ping_check(self, host: str, count: int = 4, timeout: int = 5) -> Dict:
         """Perform ping check and calculate metrics"""
         try:
+            logger.debug(f"Starting ping check for {host}")
             # Platform-specific ping command
             if platform.system().lower() == 'windows':
                 cmd = ['ping', '-n', str(count), '-w', str(timeout * 1000), host]
@@ -330,10 +331,15 @@ class ServiceMonitor:
         while True:
             try:
                 # Fetch latest configurations
+                logger.debug("Fetching service configurations...")
                 await self.fetch_service_configs()
                 
                 # Check services
-                await self.check_services()
+                if self.services:
+                    logger.debug(f"Checking {len(self.services)} services...")
+                    await self.check_services()
+                else:
+                    logger.debug("No services configured yet")
                 
                 # Wait before next iteration
                 await asyncio.sleep(10)  # Check every 10 seconds

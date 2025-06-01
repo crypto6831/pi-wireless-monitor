@@ -20,15 +20,86 @@ import {
   AccordionDetails,
   Grid,
   InputAdornment,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useSnackbar } from 'notistack';
 import axios from 'axios';
+
+// Predefined CUSUM profiles for different service types
+const CUSUM_PROFILES = {
+  'local-network': {
+    name: 'Local Network',
+    description: 'For routers, switches, local servers',
+    targetMean: 5,
+    allowableDeviation: 3,
+    decisionInterval: 5,
+    thresholds: {
+      latency: { warning: 10, critical: 20 },
+      packetLoss: { warning: 1, critical: 5 },
+      jitter: { warning: 5, critical: 10 },
+    },
+  },
+  'lan-service': {
+    name: 'LAN Service',
+    description: 'For local network services',
+    targetMean: 10,
+    allowableDeviation: 5,
+    decisionInterval: 5,
+    thresholds: {
+      latency: { warning: 20, critical: 50 },
+      packetLoss: { warning: 2, critical: 5 },
+      jitter: { warning: 10, critical: 20 },
+    },
+  },
+  'regional-internet': {
+    name: 'Regional Internet',
+    description: 'For services in same country/region',
+    targetMean: 30,
+    allowableDeviation: 15,
+    decisionInterval: 8,
+    thresholds: {
+      latency: { warning: 50, critical: 100 },
+      packetLoss: { warning: 3, critical: 8 },
+      jitter: { warning: 15, critical: 30 },
+    },
+  },
+  'international': {
+    name: 'International',
+    description: 'For global websites and services',
+    targetMean: 150,
+    allowableDeviation: 50,
+    decisionInterval: 10,
+    thresholds: {
+      latency: { warning: 200, critical: 300 },
+      packetLoss: { warning: 5, critical: 10 },
+      jitter: { warning: 30, critical: 60 },
+    },
+  },
+  'satellite': {
+    name: 'Satellite/High Latency',
+    description: 'For satellite or very distant connections',
+    targetMean: 600,
+    allowableDeviation: 100,
+    decisionInterval: 15,
+    thresholds: {
+      latency: { warning: 800, critical: 1000 },
+      packetLoss: { warning: 8, critical: 15 },
+      jitter: { warning: 50, critical: 100 },
+    },
+  },
+  'custom': {
+    name: 'Custom',
+    description: 'Manually configure all parameters',
+  },
+};
 
 const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [selectedProfile, setSelectedProfile] = useState('custom');
   
   const [formData, setFormData] = useState({
     serviceName: '',
@@ -96,6 +167,30 @@ const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave
     }
   }, [serviceMonitor]);
 
+  const suggestProfile = (target) => {
+    // Check if it's a local IP
+    if (/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(target)) {
+      return 'local-network';
+    }
+    // Check if it's localhost
+    if (target === 'localhost' || target === '127.0.0.1') {
+      return 'local-network';
+    }
+    // Check for common DNS servers (usually regional)
+    if (['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1'].includes(target)) {
+      return 'regional-internet';
+    }
+    // For domain names, suggest international as default
+    if (target.includes('.com') || target.includes('.org') || target.includes('.net')) {
+      return 'international';
+    }
+    // Default to regional for other domains
+    if (target.includes('.')) {
+      return 'regional-internet';
+    }
+    return null;
+  };
+
   const handleChange = (field, value) => {
     if (field.includes('.')) {
       const [parent, child, subChild] = field.split('.');
@@ -121,6 +216,14 @@ const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave
       }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
+      
+      // Auto-suggest profile when target changes
+      if (field === 'target' && value && selectedProfile === 'custom') {
+        const suggestedProfile = suggestProfile(value);
+        if (suggestedProfile) {
+          handleProfileChange(suggestedProfile);
+        }
+      }
     }
   };
 
@@ -136,9 +239,12 @@ const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave
     } else {
       // Validate IP or domain
       const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-      const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+      // Updated domain regex to properly handle subdomains like www.google.com
+      const domainRegex = /^([a-zA-Z0-9][a-zA-Z0-9-]*\.)*[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/;
+      // Also allow simple hostnames without dots (for local network)
+      const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
       
-      if (!ipRegex.test(formData.target) && !domainRegex.test(formData.target)) {
+      if (!ipRegex.test(formData.target) && !domainRegex.test(formData.target) && !hostnameRegex.test(formData.target)) {
         newErrors.target = 'Invalid IP address or domain name';
       }
     }
@@ -192,6 +298,26 @@ const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProfileChange = (profile) => {
+    setSelectedProfile(profile);
+    
+    if (profile !== 'custom' && CUSUM_PROFILES[profile]) {
+      const profileData = CUSUM_PROFILES[profile];
+      setFormData(prev => ({
+        ...prev,
+        cusumConfig: {
+          targetMean: profileData.targetMean,
+          allowableDeviation: profileData.allowableDeviation,
+          decisionInterval: profileData.decisionInterval,
+          resetThreshold: 0,
+        },
+        thresholds: profileData.thresholds,
+      }));
+      
+      enqueueSnackbar(`Applied ${profileData.name} profile settings`, { variant: 'info' });
     }
   };
 
@@ -425,6 +551,36 @@ const ServiceMonitorDialog = ({ open, onClose, monitorId, serviceMonitor, onSave
               <Typography>CUSUM Configuration</Typography>
             </AccordionSummary>
             <AccordionDetails>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Quick Profile Selection
+                </Typography>
+                <Grid container spacing={1} sx={{ mb: 2 }}>
+                  {Object.entries(CUSUM_PROFILES).map(([key, profile]) => (
+                    <Grid item key={key}>
+                      <Chip
+                        label={profile.name}
+                        onClick={() => handleProfileChange(key)}
+                        color={selectedProfile === key ? 'primary' : 'default'}
+                        variant={selectedProfile === key ? 'filled' : 'outlined'}
+                        icon={key !== 'custom' ? <AutoFixHighIcon /> : null}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+                {selectedProfile !== 'custom' && CUSUM_PROFILES[selectedProfile] && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      <strong>{CUSUM_PROFILES[selectedProfile].name}:</strong> {CUSUM_PROFILES[selectedProfile].description}
+                    </Typography>
+                    <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                      Target: {CUSUM_PROFILES[selectedProfile].targetMean}ms, 
+                      Deviation: ±{CUSUM_PROFILES[selectedProfile].allowableDeviation}ms, 
+                      Decision Interval: {CUSUM_PROFILES[selectedProfile].decisionInterval}
+                    </Typography>
+                  </Alert>
+                )}
+              </Box>
               <Alert severity="info" sx={{ mb: 2 }}>
                 CUSUM (Cumulative Sum) control chart is used to detect small shifts in the process mean over time.
               </Alert>

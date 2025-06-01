@@ -17,8 +17,11 @@ const serviceMonitorSchema = new mongoose.Schema({
       validator: function(v) {
         // Validate IP address or domain
         const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
-        return ipRegex.test(v) || domainRegex.test(v);
+        // Updated domain regex to properly handle subdomains like www.google.com
+        const domainRegex = /^([a-zA-Z0-9][a-zA-Z0-9-]*\.)*[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/;
+        // Also allow simple hostnames without dots (for local network)
+        const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+        return ipRegex.test(v) || domainRegex.test(v) || hostnameRegex.test(v);
       },
       message: 'Invalid IP address or domain name'
     }
