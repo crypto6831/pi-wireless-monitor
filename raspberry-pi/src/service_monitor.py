@@ -31,6 +31,8 @@ class ServiceMonitor:
             if response.status_code == 200:
                 self.services = response.json()
                 logger.info(f"Fetched {len(self.services)} service configurations")
+                for svc in self.services:
+                    logger.info(f"  - {svc.get('serviceName')} ({svc.get('target')}) - {svc.get('type')} - Enabled: {svc.get('enabled')}")
                 return self.services
             else:
                 logger.error(f"Failed to fetch service configs: {response.status_code}")
@@ -57,7 +59,9 @@ class ServiceMonitor:
             self.last_check_times[service_id] = time.time()
             
             # Run the appropriate check based on service type
+            logger.info(f"Checking service: {service.get('serviceName')} ({service.get('target')})")
             check_result = await self._check_service(service)
+            logger.info(f"Check result for {service.get('serviceName')}: {check_result.get('status')} - Latency: {check_result.get('latency')}ms")
             
             # Send result to server
             await self._send_check_result(service_id, check_result)
@@ -326,20 +330,22 @@ class ServiceMonitor:
     
     async def run(self):
         """Main loop for service monitoring"""
-        logger.info("Starting service monitor")
+        logger.info(f"Starting service monitor for monitor ID: {self.monitor_id}")
+        logger.info(f"Server URL: {self.server_url}")
         
         while True:
             try:
                 # Fetch latest configurations
-                logger.debug("Fetching service configurations...")
+                logger.info("Fetching service configurations...")
                 await self.fetch_service_configs()
                 
                 # Check services
                 if self.services:
-                    logger.debug(f"Checking {len(self.services)} services...")
+                    logger.info(f"Starting checks for {len(self.services)} services...")
                     await self.check_services()
+                    logger.info("Completed service checks")
                 else:
-                    logger.debug("No services configured yet")
+                    logger.info("No services configured yet")
                 
                 # Wait before next iteration
                 await asyncio.sleep(10)  # Check every 10 seconds
