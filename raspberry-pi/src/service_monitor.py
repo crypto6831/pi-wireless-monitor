@@ -10,8 +10,14 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import re
 import platform
+import sys
+import os
 
-logger = logging.getLogger(__name__)
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.logger import get_logger
+
+logger = get_logger('service_monitor')
 
 class ServiceMonitor:
     def __init__(self, monitor_id: str, server_url: str):
