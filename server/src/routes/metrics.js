@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Metric = require('../models/Metric');
 const Alert = require('../models/Alert');
+const ServiceMonitor = require('../models/ServiceMonitor');
 const { authenticateMonitor } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const redis = require('../db/redis');
@@ -315,6 +316,63 @@ router.post('/aggregate', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to aggregate metrics',
+    });
+  }
+});
+
+// Get service monitor metrics history
+router.get('/service/:serviceMonitorId/history', async (req, res) => {
+  try {
+    const { serviceMonitorId } = req.params;
+    const { period = '1h' } = req.query;
+    
+    const serviceMonitor = await ServiceMonitor.findById(serviceMonitorId);
+    if (!serviceMonitor) {
+      return res.status(404).json({
+        success: false,
+        error: 'Service monitor not found'
+      });
+    }
+    
+    // For now, return empty data structure
+    // In production, this would query a time-series database
+    const now = new Date();
+    let startDate;
+    
+    switch (period) {
+      case '1h':
+        startDate = new Date(now - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startDate = new Date(now - 6 * 60 * 60 * 1000);
+        break;
+      case '24h':
+        startDate = new Date(now - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now - 60 * 60 * 1000);
+    }
+    
+    // TODO: Implement actual metrics storage and retrieval
+    // For now, return the current state
+    const history = [];
+    if (serviceMonitor.lastCheck) {
+      history.push({
+        timestamp: serviceMonitor.lastCheck.timestamp,
+        ...serviceMonitor.lastCheck,
+        cusumState: serviceMonitor.cusumState
+      });
+    }
+    
+    res.json(history);
+  } catch (error) {
+    logger.error('Error fetching service monitor history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch service monitor history'
     });
   }
 });

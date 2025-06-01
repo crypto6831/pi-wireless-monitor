@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Typography, 
@@ -15,7 +15,11 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton
 } from '@mui/material';
 import {
   Computer as ComputerIcon,
@@ -27,15 +31,20 @@ import {
   Thermostat as ThermostatIcon,
   NetworkCheck as NetworkIcon,
   LocationOn as LocationIcon,
-  AccessTime as TimeIcon
+  AccessTime as TimeIcon,
+  Settings as SettingsIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { fetchMonitors, fetchMonitorStats } from '../store/slices/monitorsSlice';
 import { fetchLatestMetrics } from '../store/slices/metricsSlice';
+import ServiceMonitorsList from '../components/monitors/ServiceMonitorsList';
 
 function Monitors() {
   const dispatch = useDispatch();
   const { list: monitors, loading, stats } = useSelector((state) => state.monitors);
   const metrics = useSelector((state) => state.metrics.latest);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [selectedMonitor, setSelectedMonitor] = useState(null);
 
   useEffect(() => {
     dispatch(fetchMonitors());
@@ -256,8 +265,16 @@ function Monitors() {
                   <Button size="small" color="primary">
                     View Details
                   </Button>
-                  <Button size="small" color="primary">
-                    Configure
+                  <Button 
+                    size="small" 
+                    color="primary"
+                    startIcon={<SettingsIcon />}
+                    onClick={() => {
+                      setSelectedMonitor(monitor);
+                      setConfigDialogOpen(true);
+                    }}
+                  >
+                    Service Monitors
                   </Button>
                 </CardActions>
               </Card>
@@ -273,6 +290,38 @@ function Monitors() {
           </Typography>
         </Paper>
       )}
+
+      {/* Service Monitors Configuration Dialog */}
+      <Dialog
+        open={configDialogOpen}
+        onClose={() => {
+          setConfigDialogOpen(false);
+          setSelectedMonitor(null);
+        }}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">
+              Service Monitors - {selectedMonitor?.name}
+            </Typography>
+            <IconButton
+              onClick={() => {
+                setConfigDialogOpen(false);
+                setSelectedMonitor(null);
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedMonitor && (
+            <ServiceMonitorsList monitorId={selectedMonitor.monitorId} />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

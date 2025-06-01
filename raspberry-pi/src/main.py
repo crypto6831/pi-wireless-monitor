@@ -7,6 +7,8 @@ import sys
 import time
 import signal
 import schedule
+import asyncio
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -17,6 +19,7 @@ from src.utils.logger import get_logger
 from src.scanner import WiFiScanner
 from src.metrics import MetricsCollector
 from src.api_client import APIClient
+from src.service_monitor import ServiceMonitor
 
 logger = get_logger('main')
 
@@ -29,7 +32,10 @@ class PiWirelessMonitor:
         self.scanner = None
         self.metrics_collector = None
         self.api_client = None
+        self.service_monitor = None
         self.last_deep_scan = None
+        self.service_monitor_task = None
+        self.loop = None
         
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -53,6 +59,12 @@ class PiWirelessMonitor:
             
             # Initialize API client
             self.api_client = APIClient()
+            
+            # Initialize service monitor
+            self.service_monitor = ServiceMonitor(
+                monitor_id=config.MONITOR_ID,
+                server_url=config.SERVER_URL
+            )
             
             # Test server connection
             if not self.api_client.test_connection():
@@ -189,6 +201,22 @@ class PiWirelessMonitor:
         logger.info(f"Schedule configured - Network scan: {config.SCAN_INTERVAL}s, "
                    f"Deep scan: {config.DEEP_SCAN_INTERVAL}s")
     
+    def run_service_monitor_async(self):
+        """Run service monitor in a separate thread with its own event loop"""
+        async def run_monitor():
+            await self.service_monitor.run()
+        
+        # Create new event loop for this thread
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        
+        try:
+            self.loop.run_until_complete(run_monitor())
+        except Exception as e:
+            logger.error(f"Service monitor error: {e}")
+        finally:
+            self.loop.close()
+    
     def start(self):
         """Start the monitoring service"""
         if not self.initialize():
@@ -197,6 +225,14 @@ class PiWirelessMonitor:
         
         self.running = True
         self.setup_schedule()
+        
+        # Start service monitor in a separate thread
+        self.service_monitor_task = threading.Thread(
+            target=self.run_service_monitor_async,
+            daemon=True
+        )
+        self.service_monitor_task.start()
+        logger.info("Service monitor started in background")
         
         # Run initial scans
         logger.info("Running initial scans...")
@@ -217,6 +253,14 @@ class PiWirelessMonitor:
         """Stop the monitoring service"""
         logger.info("Stopping monitoring service...")
         self.running = False
+        
+        # Stop the async event loop if it's running
+        if self.loop and self.loop.is_running():
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        
+        # Wait for service monitor thread to finish
+        if self.service_monitor_task and self.service_monitor_task.is_alive():
+            self.service_monitor_task.join(timeout=5)
 
 
 def main():
