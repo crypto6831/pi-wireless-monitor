@@ -65,6 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: pi-monitor-dashboard
     restart: unless-stopped
+    stop_grace_period: 30s
     ports:
       - "3000:3000"
     environment:

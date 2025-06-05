@@ -12,13 +12,12 @@ import {
   DialogContent,
   DialogActions,
   Typography,
-  TreeView,
-  TreeItem,
   Chip,
   IconButton,
   Tooltip,
   CircularProgress,
 } from '@mui/material';
+import { TreeView, TreeItem } from '@mui/lab';
 import {
   ExpandMore,
   ChevronRight,
