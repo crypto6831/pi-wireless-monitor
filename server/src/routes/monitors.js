@@ -347,4 +347,92 @@ router.get('/:monitorId/stats', async (req, res) => {
   }
 });
 
+// Update monitor position
+router.put('/:id/position', [
+  body('x').isNumeric().withMessage('X coordinate must be a number'),
+  body('y').isNumeric().withMessage('Y coordinate must be a number'),
+  body('locationId').optional().isMongoId().withMessage('Invalid location ID'),
+  body('floorId').optional().notEmpty().withMessage('Floor ID cannot be empty'),
+], validate, async (req, res) => {
+  try {
+    const { x, y, locationId, floorId } = req.body;
+    
+    const monitor = await Monitor.findById(req.params.id);
+    if (!monitor) {
+      return res.status(404).json({
+        success: false,
+        error: 'Monitor not found',
+      });
+    }
+
+    // Update position using the model method
+    await monitor.updatePosition(x, y, locationId, floorId);
+    
+    logger.info(`Monitor position updated: ${monitor.monitorId} to (${x}, ${y})`);
+
+    res.json({
+      success: true,
+      message: 'Monitor position updated successfully',
+      monitor: {
+        id: monitor._id,
+        monitorId: monitor.monitorId,
+        position: monitor.position,
+        locationId: monitor.locationId,
+        floorId: monitor.floorId,
+      },
+    });
+  } catch (error) {
+    logger.error('Monitor position update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update monitor position',
+    });
+  }
+});
+
+// Create coverage area for monitor
+router.post('/:id/coverage', [
+  body('locationId').isMongoId().withMessage('Invalid location ID'),
+  body('floorId').notEmpty().withMessage('Floor ID is required'),
+  body('coverageType').isIn(['circle', 'polygon', 'rectangle']).withMessage('Invalid coverage type'),
+  body('center').optional().isObject().withMessage('Center must be an object'),
+  body('radius').optional().isNumeric().withMessage('Radius must be a number'),
+  body('points').optional().isArray().withMessage('Points must be an array'),
+  body('bounds').optional().isObject().withMessage('Bounds must be an object'),
+], validate, async (req, res) => {
+  try {
+    const CoverageArea = require('../models/CoverageArea');
+    
+    const monitor = await Monitor.findById(req.params.id);
+    if (!monitor) {
+      return res.status(404).json({
+        success: false,
+        error: 'Monitor not found',
+      });
+    }
+
+    const coverageData = {
+      monitorId: monitor._id,
+      ...req.body,
+    };
+
+    const coverage = new CoverageArea(coverageData);
+    await coverage.save();
+    
+    logger.info(`Coverage area created for monitor: ${monitor.monitorId}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Coverage area created successfully',
+      coverage,
+    });
+  } catch (error) {
+    logger.error('Coverage area creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create coverage area',
+    });
+  }
+});
+
 module.exports = router; 

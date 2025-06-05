@@ -15,6 +15,24 @@ const monitorSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Location tracking fields
+  locationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location',
+  },
+  floorId: {
+    type: String,
+  },
+  position: {
+    x: {
+      type: Number,
+      default: 0,
+    },
+    y: {
+      type: Number,
+      default: 0,
+    },
+  },
   interface: {
     type: String,
     default: 'wlan0',
@@ -125,6 +143,7 @@ const monitorSchema = new mongoose.Schema({
 // Indexes
 monitorSchema.index({ status: 1, lastHeartbeat: -1 });
 monitorSchema.index({ location: 1 });
+monitorSchema.index({ locationId: 1, floorId: 1 });
 
 // Virtual for online status
 monitorSchema.virtual('isOnline').get(function() {
@@ -144,6 +163,13 @@ monitorSchema.methods.updateHeartbeat = function(uptime) {
 
 monitorSchema.methods.updateLastScan = function() {
   this.lastScan = new Date();
+  return this.save();
+};
+
+monitorSchema.methods.updatePosition = function(x, y, locationId, floorId) {
+  this.position = { x, y };
+  if (locationId) this.locationId = locationId;
+  if (floorId) this.floorId = floorId;
   return this.save();
 };
 
@@ -168,6 +194,12 @@ monitorSchema.statics.findInactive = function() {
       { lastHeartbeat: { $lt: fiveMinutesAgo } },
     ],
   });
+};
+
+monitorSchema.statics.findByLocation = function(locationId, floorId) {
+  const query = { locationId };
+  if (floorId) query.floorId = floorId;
+  return this.find(query).populate('locationId', 'address buildingName');
 };
 
 // Ensure virtuals are included in JSON

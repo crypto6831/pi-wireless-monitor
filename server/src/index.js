@@ -17,6 +17,8 @@ const devicesRouter = require('./routes/devices');
 const metricsRouter = require('./routes/metrics');
 const alertsRouter = require('./routes/alerts');
 const serviceMonitorsRouter = require('./routes/serviceMonitors');
+const locationsRouter = require('./routes/locations');
+const floorPlansRouter = require('./routes/floorPlans');
 
 // Create Express app
 const app = express();
@@ -66,6 +68,7 @@ app.use('/api/devices', devicesRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/service-monitors', serviceMonitorsRouter);
+app.use('/api/locations', [locationsRouter, floorPlansRouter]);
 
 // Socket.IO status endpoint
 app.get('/api/socket/status', (req, res) => {
