@@ -22,6 +22,7 @@ import {
   Warning as AlertIcon,
   Settings as SettingsIcon,
   ChevronLeft as ChevronLeftIcon,
+  LocationOn as FloorPlanIcon,
 } from '@mui/icons-material';
 import { setSidebarOpen } from '../../store/slices/uiSlice';
 
@@ -33,6 +34,7 @@ const menuItems = [
   { text: 'Networks', icon: <NetworkIcon />, path: '/networks' },
   { text: 'Metrics', icon: <AnalyticsIcon />, path: '/metrics' },
   { text: 'Alerts', icon: <AlertIcon />, path: '/alerts' },
+  { text: 'Floor Plans', icon: <FloorPlanIcon />, path: '/floor-plans' },
 ];
 
 function Sidebar() {
