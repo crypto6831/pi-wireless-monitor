@@ -138,7 +138,7 @@ class PiWirelessMonitor:
     def collect_metrics(self):
         """Collect performance metrics and send results"""
         try:
-            logger.debug("Collecting metrics...")
+            logger.info("Collecting metrics...")
             
             # Collect all metrics
             metrics = self.metrics_collector.collect_all_metrics()

@@ -4,6 +4,8 @@ import networksReducer from './slices/networksSlice';
 import metricsReducer from './slices/metricsSlice';
 import alertsReducer from './slices/alertsSlice';
 import uiReducer from './slices/uiSlice';
+import locationsReducer from './slices/locationsSlice';
+import floorPlanReducer from './slices/floorPlanSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +14,7 @@ export const store = configureStore({
     metrics: metricsReducer,
     alerts: alertsReducer,
     ui: uiReducer,
+    locations: locationsReducer,
+    floorPlan: floorPlanReducer,
   },
 }); 
