@@ -48,7 +48,19 @@ router.post('/register', [
       monitor.location = location;
       monitor.interface = iface || monitor.interface;
       monitor.capabilities = capabilities || monitor.capabilities;
-      monitor.systemInfo = system_info || monitor.systemInfo;
+      // Map system_info fields to match schema
+      if (system_info) {
+        monitor.systemInfo = {
+          platform: system_info.platform,
+          platformRelease: system_info.platform_release,
+          platformVersion: system_info.platform_version,
+          architecture: system_info.architecture,
+          hostname: system_info.hostname,
+          processor: system_info.processor,
+          ramTotal: system_info.ram_total,
+          pythonVersion: system_info.python_version
+        };
+      }
       monitor.status = 'active';
       monitor.lastHeartbeat = new Date();
       
@@ -71,6 +83,21 @@ router.post('/register', [
     // Generate API key for new monitor
     const apiKey = crypto.randomBytes(32).toString('hex');
 
+    // Map system_info fields to match schema
+    let mappedSystemInfo = {};
+    if (system_info) {
+      mappedSystemInfo = {
+        platform: system_info.platform,
+        platformRelease: system_info.platform_release,
+        platformVersion: system_info.platform_version,
+        architecture: system_info.architecture,
+        hostname: system_info.hostname,
+        processor: system_info.processor,
+        ramTotal: system_info.ram_total,
+        pythonVersion: system_info.python_version
+      };
+    }
+
     // Create new monitor
     monitor = new Monitor({
       monitorId: monitor_id,
@@ -78,7 +105,7 @@ router.post('/register', [
       location,
       interface: iface || 'wlan0',
       capabilities: capabilities || {},
-      systemInfo: system_info || {},
+      systemInfo: mappedSystemInfo,
       apiKey,
       status: 'active',
     });
