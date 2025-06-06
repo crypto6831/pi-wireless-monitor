@@ -55,7 +55,7 @@ import {
 const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const dispatch = useDispatch();
   const { hierarchy, locations, selectedLocation, selectedFloor, loading, error } = useSelector(
-    (state) => state.locations
+    (state) => state.locations || {}
   );
 
   const [selectedAddress, setSelectedAddress] = useState('');
@@ -114,7 +114,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     setSelectedBuilding(building);
     setSelectedFloorId('');
     
-    const location = locations.find(
+    const location = (locations || []).find(
       loc => loc.address === selectedAddress && loc.buildingName === building
     );
     
@@ -131,7 +131,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     setSelectedFloorId(floorId);
     
     if (selectedLocation) {
-      const floor = selectedLocation.floors.find(f => f._id === floorId);
+      const floor = (selectedLocation.floors || []).find(f => f._id === floorId);
       if (floor) {
         dispatch(setSelectedFloor(floor));
         if (onLocationSelect) {
@@ -329,20 +329,20 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   };
 
   const getFilteredHierarchy = () => {
-    if (!searchTerm) return hierarchy;
+    if (!searchTerm) return hierarchy || {};
     
     const filtered = {};
-    Object.keys(hierarchy).forEach(address => {
-      const buildings = hierarchy[address];
+    Object.keys(hierarchy || {}).forEach(address => {
+      const buildings = (hierarchy || {})[address] || {};
       const filteredBuildings = {};
       
-      Object.keys(buildings).forEach(building => {
-        const floors = buildings[building];
+      Object.keys(buildings || {}).forEach(building => {
+        const floors = (buildings || {})[building] || [];
         
         if (
           address.toLowerCase().includes(searchTerm.toLowerCase()) ||
           building.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          floors.some(floor => 
+          (floors || []).some(floor => 
             floor.floorNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
             floor.floorName?.toLowerCase().includes(searchTerm.toLowerCase())
           )
@@ -497,7 +497,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             onChange={(e) => handleAddressChange(e.target.value)}
             label="Address"
           >
-            {Object.keys(hierarchy).map(address => (
+            {Object.keys(hierarchy || {}).map(address => (
               <MenuItem key={address} value={address}>
                 {address}
               </MenuItem>
@@ -530,7 +530,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
               onChange={(e) => handleFloorChange(e.target.value)}
               label="Floor"
             >
-              {selectedLocation.floors.map(floor => (
+              {(selectedLocation?.floors || []).map(floor => (
                 <MenuItem key={floor._id} value={floor._id}>
                   {floor.floorName || `Floor ${floor.floorNumber}`}
                 </MenuItem>
