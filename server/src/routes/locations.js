@@ -4,7 +4,7 @@ const { body, param, validationResult } = require('express-validator');
 const Location = require('../models/Location');
 const Monitor = require('../models/Monitor');
 const CoverageArea = require('../models/CoverageArea');
-const auth = require('../middleware/auth');
+const { authenticateMonitor } = require('../middleware/auth');
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
@@ -16,7 +16,7 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // GET /api/locations/hierarchy - Get location hierarchy
-router.get('/hierarchy', auth, async (req, res) => {
+router.get('/hierarchy', authenticateMonitor, async (req, res) => {
   try {
     const hierarchy = await Location.getHierarchy();
     res.json(hierarchy);
@@ -27,7 +27,7 @@ router.get('/hierarchy', auth, async (req, res) => {
 });
 
 // GET /api/locations - Get all locations
-router.get('/', auth, async (req, res) => {
+router.get('/', authenticateMonitor, async (req, res) => {
   try {
     const locations = await Location.find().sort({ address: 1, buildingName: 1 });
     res.json(locations);
@@ -38,7 +38,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // GET /api/locations/:id - Get specific location
-router.get('/:id', auth, [
+router.get('/:id', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -54,7 +54,7 @@ router.get('/:id', auth, [
 });
 
 // POST /api/locations - Create new location
-router.post('/', auth, [
+router.post('/', authenticateMonitor, [
   body('address').trim().notEmpty().withMessage('Address is required'),
   body('buildingName').trim().notEmpty().withMessage('Building name is required'),
   body('floors').optional().isArray().withMessage('Floors must be an array'),
@@ -86,7 +86,7 @@ router.post('/', auth, [
 });
 
 // PUT /api/locations/:id - Update location
-router.put('/:id', auth, [
+router.put('/:id', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID'),
   body('address').optional().trim().notEmpty().withMessage('Address cannot be empty'),
   body('buildingName').optional().trim().notEmpty().withMessage('Building name cannot be empty'),
@@ -115,7 +115,7 @@ router.put('/:id', auth, [
 });
 
 // DELETE /api/locations/:id - Delete location
-router.delete('/:id', auth, [
+router.delete('/:id', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -147,7 +147,7 @@ router.delete('/:id', auth, [
 });
 
 // GET /api/locations/:id/monitors - Get monitors on a specific floor
-router.get('/:id/monitors', auth, [
+router.get('/:id/monitors', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -170,7 +170,7 @@ router.get('/:id/monitors', auth, [
 });
 
 // GET /api/locations/:id/coverage - Get coverage areas for a floor
-router.get('/:id/coverage', auth, [
+router.get('/:id/coverage', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -189,7 +189,7 @@ router.get('/:id/coverage', auth, [
 });
 
 // POST /api/locations/:id/floors - Add or update a floor
-router.post('/:id/floors', auth, [
+router.post('/:id/floors', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID'),
   body('floorNumber').notEmpty().withMessage('Floor number is required'),
   body('floorName').optional().trim()
@@ -212,7 +212,7 @@ router.post('/:id/floors', auth, [
 });
 
 // DELETE /api/locations/:id/floors/:floorId - Remove a floor
-router.delete('/:id/floors/:floorId', auth, [
+router.delete('/:id/floors/:floorId', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID'),
   param('floorId').isMongoId().withMessage('Invalid floor ID')
 ], handleValidationErrors, async (req, res) => {
