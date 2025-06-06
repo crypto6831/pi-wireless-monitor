@@ -473,7 +473,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             startIcon={<Add />}
             variant="outlined"
             size="small"
-            onClick={() => setCreateDialogOpen(true)}
+            onClick={() => {
+              console.log('Add Location button clicked');
+              setCreateDialogOpen(true);
+            }}
           >
             Add Location
           </Button>
@@ -604,7 +607,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
       </Menu>
 
       {/* Create Location Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={createDialogOpen} onClose={() => {
+        console.log('Create dialog closing');
+        setCreateDialogOpen(false);
+      }} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Location</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
@@ -627,7 +633,11 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
         <DialogActions>
           <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
           <Button 
-            onClick={handleCreateLocation}
+            onClick={() => {
+              console.log('Create button clicked, newLocation:', newLocation);
+              console.log('Button disabled?', !newLocation.address || !newLocation.buildingName);
+              handleCreateLocation();
+            }}
             variant="contained"
             disabled={!newLocation.address || !newLocation.buildingName}
           >
