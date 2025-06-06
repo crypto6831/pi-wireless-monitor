@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiService from '../../services/api';
+import { apiService } from '../../services/api';
 
 // Async thunks
 export const fetchLocationHierarchy = createAsyncThunk(
