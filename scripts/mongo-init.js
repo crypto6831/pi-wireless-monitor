@@ -59,20 +59,23 @@ db.createCollection('metrics', {
     validator: {
         $jsonSchema: {
             bsonType: 'object',
-            required: ['monitorId', 'type', 'timestamp'],
+            required: ['monitorId', 'timestamp'],
             properties: {
                 monitorId: {
                     bsonType: 'string',
                     description: 'ID of the monitor'
                 },
-                type: {
-                    bsonType: 'string',
-                    enum: ['ping', 'bandwidth', 'system', 'wifi'],
-                    description: 'Type of metric'
-                },
                 timestamp: {
                     bsonType: 'date',
                     description: 'When the metric was recorded'
+                },
+                system: {
+                    bsonType: 'object',
+                    description: 'System metrics (CPU, memory, etc.)'
+                },
+                network: {
+                    bsonType: 'object',
+                    description: 'Network metrics (ping, bandwidth, etc.)'
                 }
             }
         }
@@ -123,9 +126,8 @@ db.networks.createIndex({ 'timestamp': 1 });
 db.networks.createIndex({ 'signalStrength': 1 });
 
 // Metrics indexes
-db.metrics.createIndex({ 'monitorId': 1, 'type': 1, 'timestamp': -1 });
+db.metrics.createIndex({ 'monitorId': 1, 'timestamp': -1 });
 db.metrics.createIndex({ 'timestamp': 1 }, { expireAfterSeconds: 2592000 }); // 30 days TTL
-db.metrics.createIndex({ 'type': 1 });
 
 // Alerts indexes
 db.alerts.createIndex({ 'monitorId': 1 });
