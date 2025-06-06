@@ -7,7 +7,7 @@ export const fetchLocationHierarchy = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getLocationHierarchy();
-      return response.data.hierarchy;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to fetch location hierarchy');
     }
@@ -19,7 +19,7 @@ export const fetchLocations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getLocations();
-      return response.data.locations;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to fetch locations');
     }
@@ -31,7 +31,7 @@ export const createLocation = createAsyncThunk(
   async (locationData, { rejectWithValue }) => {
     try {
       const response = await apiService.createLocation(locationData);
-      return response.data.location;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to create location');
     }
