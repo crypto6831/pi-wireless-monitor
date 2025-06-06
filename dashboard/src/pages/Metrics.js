@@ -55,7 +55,7 @@ function Metrics() {
   const monitors = useSelector((state) => state.monitors.list);
   const { history, selectedPeriod, loading } = useSelector((state) => state.metrics);
   const [selectedMonitor, setSelectedMonitor] = useState('');
-  const [selectedMetrics, setSelectedMetrics] = useState(['cpu', 'memory']);
+  const [selectedMetrics, setSelectedMetrics] = useState(['latency', 'packetLoss']);
 
   useEffect(() => {
     dispatch(fetchMonitors());
@@ -148,8 +148,7 @@ function Metrics() {
           display: true,
           text: 'Value'
         },
-        beginAtZero: true,
-        max: 100
+        beginAtZero: true
       }
     }
   };
@@ -306,6 +305,23 @@ function Metrics() {
               </Box>
               <Typography variant="h4">
                 {history[selectedMonitor]?.chartData?.datasets?.latency?.slice(-1)[0]?.toFixed(0) || 0}ms
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <SpeedIcon color="primary" />
+                <Typography variant="h6">Packet Loss</Typography>
+              </Box>
+              <Typography variant="h4">
+                {history[selectedMonitor]?.chartData?.datasets?.packetLoss?.slice(-1)[0]?.toFixed(1) || 0}%
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Current
