@@ -30,10 +30,14 @@ export const createLocation = createAsyncThunk(
   'locations/createLocation',
   async (locationData, { rejectWithValue }) => {
     try {
+      console.log('Creating location with data:', locationData);
       const response = await apiService.createLocation(locationData);
+      console.log('Location creation response:', response);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to create location');
+      console.error('Location creation error:', error);
+      console.error('Error response:', error.response);
+      return rejectWithValue(error.response?.data?.error || error.message || 'Failed to create location');
     }
   }
 );
