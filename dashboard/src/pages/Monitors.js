@@ -189,7 +189,7 @@ function Monitors() {
                     <ListItem>
                       <ListItemText 
                         primary="Uptime"
-                        secondary={monitor.systemInfo?.uptime ? formatUptime(monitor.systemInfo.uptime) : 'Unknown'}
+                        secondary={monitor.uptime ? formatUptime(monitor.uptime) : 'Unknown'}
                       />
                     </ListItem>
                   </List>
