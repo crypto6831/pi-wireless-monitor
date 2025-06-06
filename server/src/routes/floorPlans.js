@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { param, body, validationResult } = require('express-validator');
 const Location = require('../models/Location');
-const auth = require('../middleware/auth');
+const { authenticateMonitor } = require('../middleware/auth');
 const { upload, handleMulterError } = require('../middleware/upload');
 const fileStorage = require('../services/fileStorage');
 const path = require('path');
@@ -18,7 +18,7 @@ const handleValidationErrors = (req, res, next) => {
 
 // POST /api/locations/:id/floorplan - Upload floor plan
 router.post('/:id/floorplan', 
-  auth,
+  authenticateMonitor,
   upload.single('floorPlan'),
   handleMulterError,
   [
@@ -86,7 +86,7 @@ router.post('/:id/floorplan',
 );
 
 // GET /api/locations/:id/floorplan - Get floor plan
-router.get('/:id/floorplan', auth, [
+router.get('/:id/floorplan', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -121,7 +121,7 @@ router.get('/:id/floorplan', auth, [
 });
 
 // GET /api/locations/:id/floorplan/image - Get floor plan image file
-router.get('/:id/floorplan/image', auth, [
+router.get('/:id/floorplan/image', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -159,7 +159,7 @@ router.get('/:id/floorplan/image', auth, [
 
 // PUT /api/locations/:id/floorplan - Update floor plan
 router.put('/:id/floorplan',
-  auth,
+  authenticateMonitor,
   upload.single('floorPlan'),
   handleMulterError,
   [
@@ -228,7 +228,7 @@ router.put('/:id/floorplan',
 );
 
 // DELETE /api/locations/:id/floorplan - Delete floor plan
-router.delete('/:id/floorplan', auth, [
+router.delete('/:id/floorplan', authenticateMonitor, [
   param('id').isMongoId().withMessage('Invalid location ID'),
   body('floorId').notEmpty().withMessage('Floor ID is required')
 ], handleValidationErrors, async (req, res) => {
