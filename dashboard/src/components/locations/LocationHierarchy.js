@@ -58,6 +58,12 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     (state) => state.locations || {}
   );
 
+  // Debug: Log the hierarchy data when it changes
+  useEffect(() => {
+    console.log('LocationHierarchy: hierarchy changed:', hierarchy);
+    console.log('LocationHierarchy: locations changed:', locations);
+  }, [hierarchy, locations]);
+
   const [selectedAddress, setSelectedAddress] = useState('');
   const [selectedBuilding, setSelectedBuilding] = useState('');
   const [selectedFloorId, setSelectedFloorId] = useState('');

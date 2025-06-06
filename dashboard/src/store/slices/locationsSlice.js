@@ -148,6 +148,7 @@ const locationsSlice = createSlice({
       .addCase(fetchLocationHierarchy.fulfilled, (state, action) => {
         state.loading = false;
         state.hierarchy = action.payload;
+        console.log('Redux: Updated hierarchy state:', state.hierarchy);
       })
       .addCase(fetchLocationHierarchy.rejected, (state, action) => {
         state.loading = false;
@@ -162,6 +163,7 @@ const locationsSlice = createSlice({
       .addCase(fetchLocations.fulfilled, (state, action) => {
         state.loading = false;
         state.locations = action.payload;
+        console.log('Redux: Updated locations state:', state.locations);
       })
       .addCase(fetchLocations.rejected, (state, action) => {
         state.loading = false;
