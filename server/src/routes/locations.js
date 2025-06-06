@@ -53,8 +53,8 @@ router.get('/:id', [
   }
 });
 
-// POST /api/locations - Create new location
-router.post('/', authenticateMonitor, [
+// POST /api/locations - Create new location (public for dashboard access)
+router.post('/', [
   body('address').trim().notEmpty().withMessage('Address is required'),
   body('buildingName').trim().notEmpty().withMessage('Building name is required'),
   body('floors').optional().isArray().withMessage('Floors must be an array'),
@@ -188,8 +188,8 @@ router.get('/:id/coverage', [
   }
 });
 
-// POST /api/locations/:id/floors - Add or update a floor
-router.post('/:id/floors', authenticateMonitor, [
+// POST /api/locations/:id/floors - Add or update a floor (public for dashboard access)
+router.post('/:id/floors', [
   param('id').isMongoId().withMessage('Invalid location ID'),
   body('floorNumber').notEmpty().withMessage('Floor number is required'),
   body('floorName').optional().trim()
