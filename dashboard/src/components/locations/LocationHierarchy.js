@@ -480,6 +480,26 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             Add Location
           </Button>
         )}
+        {selectedLocation && (
+          <Button
+            startIcon={<Layers />}
+            variant="outlined"
+            size="small"
+            onClick={() => setAddFloorDialogOpen(true)}
+          >
+            Add Floor
+          </Button>
+        )}
+        {selectedLocation && (
+          <Button
+            startIcon={<Upload />}
+            variant="outlined"
+            size="small"
+            onClick={() => setUploadFloorPlanDialogOpen(true)}
+          >
+            Upload Floor Plan
+          </Button>
+        )}
       </Box>
 
       {/* Search */}
