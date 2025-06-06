@@ -143,11 +143,15 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
 
   const handleCreateLocation = async () => {
     try {
-      await dispatch(createLocation(newLocation)).unwrap();
+      console.log('Creating location:', newLocation);
+      const result = await dispatch(createLocation(newLocation)).unwrap();
+      console.log('Location created successfully:', result);
       setCreateDialogOpen(false);
       setNewLocation({ address: '', buildingName: '', metadata: {} });
-      dispatch(fetchLocationHierarchy());
-      dispatch(fetchLocations());
+      console.log('Refreshing location data...');
+      await dispatch(fetchLocationHierarchy()).unwrap();
+      await dispatch(fetchLocations()).unwrap();
+      console.log('Location data refreshed');
     } catch (err) {
       console.error('Failed to create location:', err);
     }
