@@ -74,17 +74,24 @@ export const addFloorToLocation = createAsyncThunk(
   }
 );
 
+export const removeFloorFromLocation = createAsyncThunk(
+  'locations/removeFloor',
+  async ({ locationId, floorId }, { rejectWithValue }) => {
+    try {
+      await apiService.removeFloorFromLocation(locationId, floorId);
+      return { locationId, floorId };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to remove floor');
+    }
+  }
+);
+
 export const uploadFloorPlan = createAsyncThunk(
   'locations/uploadFloorPlan',
-  async ({ locationId, floorId, file, metadata }, { rejectWithValue }) => {
+  async ({ locationId, formData }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append('floorplan', file);
-      formData.append('floorId', floorId);
-      formData.append('metadata', JSON.stringify(metadata));
-      
       const response = await apiService.uploadFloorPlan(locationId, formData);
-      return { locationId, floorId, floorPlan: response.data.floorPlan };
+      return { locationId, floorPlan: response.data.floorPlan };
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to upload floor plan');
     }
@@ -191,6 +198,18 @@ const locationsSlice = createSlice({
         }
       })
       
+      // Remove floor
+      .addCase(removeFloorFromLocation.fulfilled, (state, action) => {
+        const { locationId, floorId } = action.payload;
+        const location = state.locations.find(loc => loc._id === locationId);
+        if (location) {
+          location.floors = location.floors.filter(floor => floor._id !== floorId);
+        }
+        if (state.selectedFloor?._id === floorId) {
+          state.selectedFloor = null;
+        }
+      })
+      
       // Upload floor plan
       .addCase(uploadFloorPlan.pending, (state) => {
         state.loading = true;
@@ -200,13 +219,10 @@ const locationsSlice = createSlice({
       .addCase(uploadFloorPlan.fulfilled, (state, action) => {
         state.loading = false;
         state.uploadProgress = 100;
-        const { locationId, floorId, floorPlan } = action.payload;
+        const { locationId, floorPlan } = action.payload;
         const location = state.locations.find(loc => loc._id === locationId);
         if (location) {
-          const floor = location.floors.find(f => f._id === floorId);
-          if (floor) {
-            floor.floorPlan = floorPlan;
-          }
+          location.floorPlan = floorPlan;
         }
       })
       .addCase(uploadFloorPlan.rejected, (state, action) => {
