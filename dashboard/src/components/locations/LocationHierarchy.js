@@ -54,27 +54,9 @@ import {
 
 const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const dispatch = useDispatch();
-  
-  // Debug: Get raw state to see what's actually in the store
-  const rawState = useSelector((state) => state);
-  const locationsState = useSelector((state) => state.locations);
-  
   const { hierarchy, locations, selectedLocation, selectedFloor, loading, error } = useSelector(
     (state) => state.locations || {}
   );
-  
-  // Debug: Log raw state changes
-  useEffect(() => {
-    console.log('Raw Redux state:', rawState);
-    console.log('Locations slice state:', locationsState);
-  }, [rawState, locationsState]);
-
-  // Debug: Log the hierarchy data when it changes
-  useEffect(() => {
-    console.log('LocationHierarchy: hierarchy changed:', hierarchy);
-    console.log('LocationHierarchy: locations changed:', locations);
-    console.log('LocationHierarchy: full Redux state:', { hierarchy, locations, selectedLocation, selectedFloor, loading, error });
-  }, [hierarchy, locations, selectedLocation, selectedFloor, loading, error]);
 
   const [selectedAddress, setSelectedAddress] = useState('');
   const [selectedBuilding, setSelectedBuilding] = useState('');
@@ -110,30 +92,9 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   });
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        console.log('Loading location hierarchy and locations...');
-        console.log('Current state before loading:', { hierarchy, locations });
-        
-        const hierarchyAction = dispatch(fetchLocationHierarchy());
-        const locationsAction = dispatch(fetchLocations());
-        
-        console.log('Hierarchy action:', hierarchyAction);
-        console.log('Locations action:', locationsAction);
-        
-        const [hierarchyResult, locationsResult] = await Promise.all([
-          hierarchyAction.unwrap(),
-          locationsAction.unwrap()
-        ]);
-        
-        console.log('Hierarchy result from unwrap:', hierarchyResult);
-        console.log('Locations result from unwrap:', locationsResult);
-        console.log('State after loading should update:', { hierarchy, locations });
-      } catch (error) {
-        console.error('Failed to load location data:', error);
-      }
-    };
-    loadData();
+    console.log('Loading location data...');
+    dispatch(fetchLocationHierarchy());
+    dispatch(fetchLocations());
   }, [dispatch]);
 
   useEffect(() => {
@@ -184,14 +145,12 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const handleCreateLocation = async () => {
     try {
       console.log('Creating location:', newLocation);
-      const result = await dispatch(createLocation(newLocation)).unwrap();
-      console.log('Location created successfully:', result);
+      await dispatch(createLocation(newLocation)).unwrap();
       setCreateDialogOpen(false);
       setNewLocation({ address: '', buildingName: '', metadata: {} });
-      console.log('Refreshing location data...');
-      await dispatch(fetchLocationHierarchy()).unwrap();
-      await dispatch(fetchLocations()).unwrap();
-      console.log('Location data refreshed');
+      // Refresh data
+      dispatch(fetchLocationHierarchy());
+      dispatch(fetchLocations());
     } catch (err) {
       console.error('Failed to create location:', err);
     }

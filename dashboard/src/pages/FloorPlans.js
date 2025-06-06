@@ -162,6 +162,14 @@ const MonitorInfoPanel = ({ monitor, open, onClose }) => {
 
 const FloorPlans = () => {
   const dispatch = useDispatch();
+  
+  // Debug: Check if Redux state is accessible
+  const locationsState = useSelector(state => state.locations);
+  const floorPlanState = useSelector(state => state.floorPlan);
+  
+  console.log('FloorPlans - locations state:', locationsState);
+  console.log('FloorPlans - floorPlan state:', floorPlanState);
+  
   const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
   const { monitors, coverageAreas, selectedMonitors, loading, error } = useSelector(
     state => state.floorPlan || {}
