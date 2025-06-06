@@ -64,7 +64,7 @@ sudo systemctl status pi-monitor # Check service status
 ## Architecture & Key Concepts
 
 ### API Endpoints
-The server exposes REST APIs at `http://localhost:5003/api/`:
+The server exposes REST APIs at `http://localhost:3001/api/`:
 - `/monitors` - Raspberry Pi monitor management, positioning, coverage areas
 - `/networks` - WiFi network data
 - `/metrics` - Performance metrics
@@ -119,7 +119,7 @@ All endpoints require JWT authentication (except monitor registration).
 ### Server (.env)
 ```
 NODE_ENV=development
-PORT=5003
+PORT=3001
 MONGODB_URI=mongodb://localhost:27017/pi-monitor
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your-secret-key
@@ -127,13 +127,13 @@ JWT_SECRET=your-secret-key
 
 ### Dashboard (.env)
 ```
-REACT_APP_API_URL=http://localhost:5003/api
-REACT_APP_SOCKET_URL=http://localhost:5003
+REACT_APP_API_URL=http://localhost:3001/api
+REACT_APP_SOCKET_URL=http://localhost:3001
 ```
 
 ### Raspberry Pi (.env)
 ```
-SERVER_URL=http://your-server:5003
+SERVER_URL=http://your-server:3001
 MONITOR_NAME=Monitor-1
 MONITOR_AUTH_TOKEN=your-auth-token
 SCAN_INTERVAL=60
@@ -187,8 +187,8 @@ SCAN_INTERVAL=60
 
 ### Production URLs
 - **Dashboard**: `http://47.128.13.65:3000`
-- **API Base**: `http://47.128.13.65:5003/api`
-- **Socket.IO**: `http://47.128.13.65:5003`
+- **API Base**: `http://47.128.13.65:3001/api`
+- **Socket.IO**: `http://47.128.13.65:3001`
 
 
 ### Critical Reminders
