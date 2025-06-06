@@ -38,9 +38,10 @@ api.interceptors.response.use(
       // Handle common errors
       switch (error.response.status) {
         case 401:
-          // Unauthorized - redirect to login
+          // Unauthorized - clear token but don't redirect
+          // (This app doesn't have authentication implemented yet)
           localStorage.removeItem('authToken');
-          window.location.href = '/login';
+          console.warn('401 Unauthorized - auth token cleared');
           break;
         case 403:
           console.error('Forbidden:', error.response.data);

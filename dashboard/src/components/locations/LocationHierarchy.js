@@ -129,16 +129,26 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   };
 
   const handleFloorChange = (floorId) => {
-    setSelectedFloorId(floorId);
-    
-    if (selectedLocation) {
-      const floor = (selectedLocation.floors || []).find(f => f._id === floorId);
-      if (floor) {
-        dispatch(setSelectedFloor(floor));
-        if (onLocationSelect) {
-          onLocationSelect(selectedLocation, floor);
+    try {
+      console.log('LocationHierarchy - Floor change:', { floorId, selectedLocation });
+      setSelectedFloorId(floorId);
+      
+      if (selectedLocation && selectedLocation.floors) {
+        const floor = selectedLocation.floors.find(f => f._id === floorId);
+        console.log('Found floor:', floor);
+        if (floor) {
+          dispatch(setSelectedFloor(floor));
+          if (onLocationSelect) {
+            onLocationSelect(selectedLocation, floor);
+          }
+        } else {
+          console.warn('Floor not found in selectedLocation.floors:', floorId);
         }
+      } else {
+        console.warn('No selectedLocation or floors array');
       }
+    } catch (err) {
+      console.error('Error in handleFloorChange:', err);
     }
   };
 
@@ -319,15 +329,20 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   };
 
   const handleTreeItemClick = (nodeId, nodeType, data) => {
-    if (nodeType === 'address') {
-      handleAddressChange(data.address);
-    } else if (nodeType === 'building') {
-      handleAddressChange(data.address);
-      handleBuildingChange(data.building);
-    } else if (nodeType === 'floor') {
-      handleAddressChange(data.address);
-      handleBuildingChange(data.building);
-      handleFloorChange(data.floorId);
+    try {
+      console.log('TreeItem click:', { nodeId, nodeType, data });
+      if (nodeType === 'address') {
+        handleAddressChange(data.address);
+      } else if (nodeType === 'building') {
+        handleAddressChange(data.address);
+        handleBuildingChange(data.building);
+      } else if (nodeType === 'floor') {
+        handleAddressChange(data.address);
+        handleBuildingChange(data.building);
+        handleFloorChange(data.floorId);
+      }
+    } catch (err) {
+      console.error('Error in handleTreeItemClick:', err);
     }
   };
 
@@ -588,41 +603,43 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             : undefined
         }
       >
-        {contextMenu?.type === 'building' && [
-          <MenuItem key="edit" onClick={() => handleContextMenuAction('edit-location', contextMenu.data)}>
-            <ListItemIcon>
-              <Edit fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Edit Location</ListItemText>
-          </MenuItem>,
-          <MenuItem key="add-floor" onClick={() => handleContextMenuAction('add-floor', contextMenu.data)}>
-            <ListItemIcon>
-              <Add fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Add Floor</ListItemText>
-          </MenuItem>,
-          <MenuItem key="upload" onClick={() => handleContextMenuAction('upload-floorplan', contextMenu.data)}>
-            <ListItemIcon>
-              <Upload fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Upload Floor Plan</ListItemText>
-          </MenuItem>,
-          <Divider key="divider" />,
-          <MenuItem key="delete" onClick={() => handleContextMenuAction('delete-location', contextMenu.data)}>
-            <ListItemIcon>
-              <Delete fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Delete Location</ListItemText>
-          </MenuItem>
-        ]}
-        {contextMenu?.type === 'floor' && [
-          <MenuItem key="delete-floor" onClick={() => handleContextMenuAction('delete-floor', contextMenu.data)}>
+        {contextMenu?.type === 'building' && (
+          <>
+            <MenuItem onClick={() => handleContextMenuAction('edit-location', contextMenu.data)}>
+              <ListItemIcon>
+                <Edit fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Edit Location</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => handleContextMenuAction('add-floor', contextMenu.data)}>
+              <ListItemIcon>
+                <Add fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Add Floor</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => handleContextMenuAction('upload-floorplan', contextMenu.data)}>
+              <ListItemIcon>
+                <Upload fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Upload Floor Plan</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={() => handleContextMenuAction('delete-location', contextMenu.data)}>
+              <ListItemIcon>
+                <Delete fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Delete Location</ListItemText>
+            </MenuItem>
+          </>
+        )}
+        {contextMenu?.type === 'floor' && (
+          <MenuItem onClick={() => handleContextMenuAction('delete-floor', contextMenu.data)}>
             <ListItemIcon>
               <Delete fontSize="small" />
             </ListItemIcon>
             <ListItemText>Delete Floor</ListItemText>
           </MenuItem>
-        ]}
+        )}
       </Menu>
 
       {/* Create Location Dialog */}

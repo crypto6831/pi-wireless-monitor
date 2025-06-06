@@ -25,6 +25,8 @@ import {
   Settings,
   Info,
   Close,
+  Layers,
+  Upload,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -181,9 +183,13 @@ const FloorPlans = () => {
 
   // Load monitors and coverage when location/floor changes
   useEffect(() => {
-    if (selectedLocation && selectedFloor) {
-      dispatch(fetchLocationMonitors(selectedLocation._id));
-      dispatch(fetchLocationCoverage(selectedLocation._id));
+    if (selectedLocation?._id && selectedFloor?._id) {
+      try {
+        dispatch(fetchLocationMonitors(selectedLocation._id));
+        dispatch(fetchLocationCoverage(selectedLocation._id));
+      } catch (err) {
+        console.error('Error loading location data:', err);
+      }
     }
   }, [dispatch, selectedLocation, selectedFloor]);
 
@@ -206,8 +212,18 @@ const FloorPlans = () => {
   }, [error]);
 
   const handleLocationSelect = (location, floor) => {
-    dispatch(setSelectedLocation(location));
-    dispatch(setSelectedFloor(floor));
+    try {
+      console.log('FloorPlans - Location select:', { location, floor });
+      dispatch(setSelectedLocation(location));
+      dispatch(setSelectedFloor(floor));
+    } catch (err) {
+      console.error('Error in handleLocationSelect:', err);
+      setSnackbar({
+        open: true,
+        message: 'Error selecting location',
+        severity: 'error'
+      });
+    }
   };
 
   const handleMonitorSelect = (monitor) => {
@@ -246,45 +262,52 @@ const FloorPlans = () => {
 
         {/* Main Content - Floor Plan Viewer */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', m: 1 }}>
-          {!selectedLocation || !selectedFloor ? (
-            <Paper sx={{ 
-              flexGrow: 1, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: 2,
-            }}>
-              <Info sx={{ fontSize: 64, color: 'text.secondary' }} />
-              <Typography variant="h6" color="text.secondary">
-                Select a location and floor to view the floor plan
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Use the location hierarchy on the left to navigate to a specific floor
-              </Typography>
-            </Paper>
-          ) : (
-            <FloorPlanViewer
-              selectedLocation={selectedLocation}
-              selectedFloor={selectedFloor}
-              onMonitorClick={handleMonitorSelect}
-              onCanvasClick={handleCanvasClick}
-            >
-              {/* Monitor Overlay */}
-              <MonitorOverlay
-                monitors={filteredMonitors}
-                onMonitorSelect={handleMonitorSelect}
-              />
-
-              {/* Coverage Overlay */}
-              <CoverageOverlay
-                coverageAreas={coverageAreas}
-                monitors={filteredMonitors}
-                canvasRef={{ current: null }} // Will be passed from FloorPlanViewer
-                showControls={true}
-              />
-            </FloorPlanViewer>
-          )}
+          <Paper sx={{ 
+            flexGrow: 1, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 2,
+            p: 3,
+          }}>
+            {!selectedLocation ? (
+              <>
+                <Info sx={{ fontSize: 64, color: 'text.secondary' }} />
+                <Typography variant="h6" color="text.secondary">
+                  Select a location to get started
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Use the location hierarchy on the left to select an address and building
+                </Typography>
+              </>
+            ) : !selectedFloor ? (
+              <>
+                <Layers sx={{ fontSize: 64, color: 'text.secondary' }} />
+                <Typography variant="h6" color="text.secondary">
+                  Add a floor to {selectedLocation.buildingName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Click "Add Floor" in the left panel to create a floor for this building
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Upload sx={{ fontSize: 64, color: 'text.secondary' }} />
+                <Typography variant="h6" color="text.secondary">
+                  Floor plan for {selectedLocation.buildingName} - Floor {selectedFloor.floorNumber}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Click "Upload Floor Plan" in the left panel to upload an image for this floor
+                </Typography>
+                {selectedFloor.floorPlan && (
+                  <Typography variant="body2" color="success.main">
+                    ✓ Floor plan uploaded successfully
+                  </Typography>
+                )}
+              </>
+            )}
+          </Paper>
         </Box>
       </Box>
 
