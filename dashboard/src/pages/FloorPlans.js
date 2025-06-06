@@ -162,9 +162,9 @@ const MonitorInfoPanel = ({ monitor, open, onClose }) => {
 
 const FloorPlans = () => {
   const dispatch = useDispatch();
-  const { selectedLocation, selectedFloor } = useSelector(state => state.locations);
+  const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
   const { monitors, coverageAreas, selectedMonitors, loading, error } = useSelector(
-    state => state.floorPlan
+    state => state.floorPlan || {}
   );
 
   const [selectedMonitor, setSelectedMonitor] = useState(null);
@@ -216,7 +216,7 @@ const FloorPlans = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const filteredMonitors = monitors.filter(monitor => {
+  const filteredMonitors = (monitors || []).filter(monitor => {
     if (!selectedFloor) return true;
     return monitor.floorId === selectedFloor._id;
   });
@@ -315,10 +315,10 @@ const FloorPlans = () => {
             Monitors: {filteredMonitors.length}
           </Typography>
           <Typography variant="caption">
-            Selected: {selectedMonitors.length}
+            Selected: {(selectedMonitors || []).length}
           </Typography>
           <Typography variant="caption">
-            Coverage Areas: {coverageAreas.length}
+            Coverage Areas: {(coverageAreas || []).length}
           </Typography>
         </Box>
       </Paper>
