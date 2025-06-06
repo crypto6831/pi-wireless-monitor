@@ -16,7 +16,7 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // GET /api/locations/hierarchy - Get location hierarchy
-router.get('/hierarchy', authenticateMonitor, async (req, res) => {
+router.get('/hierarchy', async (req, res) => {
   try {
     const hierarchy = await Location.getHierarchy();
     res.json(hierarchy);
@@ -27,7 +27,7 @@ router.get('/hierarchy', authenticateMonitor, async (req, res) => {
 });
 
 // GET /api/locations - Get all locations
-router.get('/', authenticateMonitor, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const locations = await Location.find().sort({ address: 1, buildingName: 1 });
     res.json(locations);
@@ -38,7 +38,7 @@ router.get('/', authenticateMonitor, async (req, res) => {
 });
 
 // GET /api/locations/:id - Get specific location
-router.get('/:id', authenticateMonitor, [
+router.get('/:id', [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -147,7 +147,7 @@ router.delete('/:id', authenticateMonitor, [
 });
 
 // GET /api/locations/:id/monitors - Get monitors on a specific floor
-router.get('/:id/monitors', authenticateMonitor, [
+router.get('/:id/monitors', [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -170,7 +170,7 @@ router.get('/:id/monitors', authenticateMonitor, [
 });
 
 // GET /api/locations/:id/coverage - Get coverage areas for a floor
-router.get('/:id/coverage', authenticateMonitor, [
+router.get('/:id/coverage', [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
