@@ -546,13 +546,20 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                       handleTreeItemClick('building', 'building', { address, building });
                     }}
                   >
-                    {filteredHierarchy[address][building].map(floor => {
+                    {filteredHierarchy[address][building].map((floor, floorIndex) => {
                       console.log('Floor object in tree:', floor);
-                      const isFloorSelected = selectedFloor?._id === (floor.floorId || floor._id);
+                      // Find the actual floor ID from selectedLocation.floors by matching floorNumber
+                      const actualFloor = selectedLocation?.floors?.find(f => 
+                        f.floorNumber === floor.floorNumber && 
+                        selectedLocation._id === floor.locationId
+                      );
+                      const floorId = actualFloor?._id || `${floor.locationId}-${floor.floorNumber}`;
+                      console.log('Floor ID computed:', { floor, actualFloor, floorId });
+                      const isFloorSelected = selectedFloor?._id === floorId;
                       return (
                         <TreeItem
-                          key={`floor-${floor.floorId || floor._id}`}
-                          itemId={`floor-${floor.floorId || floor._id}`}
+                          key={`floor-${floorId}`}
+                          itemId={`floor-${floorId}`}
                           label={
                             <Box sx={{ 
                               display: 'flex', 
@@ -596,7 +603,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                                   handleContextMenu(e, 'floor', { 
                                     address, 
                                     building, 
-                                    floorId: floor.floorId || floor._id
+                                    floorId: floorId
                                   });
                                 }}
                                 sx={{ 
@@ -613,7 +620,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                             handleTreeItemClick('floor', 'floor', { 
                               address, 
                               building, 
-                              floorId: floor.floorId || floor._id
+                              floorId: floorId
                             });
                           }}
                         />
