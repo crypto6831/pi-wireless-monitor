@@ -10,7 +10,7 @@ import json
 import time
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-import netifaces
+# import netifaces  # Removed dependency - using ip command instead
 import psutil
 
 # Add parent directory to path
@@ -32,11 +32,16 @@ class WiFiScanner:
     def _validate_interface(self):
         """Validate that the network interface exists and is wireless"""
         try:
-            interfaces = netifaces.interfaces()
-            if self.interface not in interfaces:
-                raise ValueError(f"Interface {self.interface} not found. Available: {interfaces}")
+            # Check if interface exists using ip command
+            result = subprocess.run(
+                ['ip', 'link', 'show', self.interface],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                raise ValueError(f"Interface {self.interface} not found")
             
-            # Check if it's a wireless interface
+            # Check if it's a wireless interface using iwconfig
             result = subprocess.run(
                 ['iwconfig', self.interface],
                 capture_output=True,
@@ -317,13 +322,19 @@ class WiFiScanner:
             return devices
         
         try:
-            # Get current network gateway
-            gateways = netifaces.gateways()
-            if 'default' not in gateways or netifaces.AF_INET not in gateways['default']:
+            # Get current network gateway using ip route
+            result = subprocess.run(['ip', 'route', 'show', 'default'], capture_output=True, text=True)
+            if result.returncode != 0:
                 logger.warning("No default gateway found")
                 return devices
             
-            gateway_ip = gateways['default'][netifaces.AF_INET][0]
+            # Parse gateway IP from output like: "default via 192.168.1.1 dev wlan0"
+            gateway_match = re.search(r'default via ([0-9.]+)', result.stdout)
+            if not gateway_match:
+                logger.warning("Could not parse gateway IP")
+                return devices
+                
+            gateway_ip = gateway_match.group(1)
             
             # Use ARP scan to find devices
             # Note: This requires sudo privileges
