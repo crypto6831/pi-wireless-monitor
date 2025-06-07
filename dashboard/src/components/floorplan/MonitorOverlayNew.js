@@ -62,7 +62,7 @@ const MonitorOverlayNew = ({
     (monitor.position.x !== 0 || monitor.position.y !== 0)
   );
 
-  // Memoized drag handlers to improve performance
+  // Stable drag handlers that don't change on every render
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -71,7 +71,7 @@ const MonitorOverlayNew = ({
     if (onDragStateChange) {
       onDragStateChange(true);
     }
-  }, [onDragStateChange]);
+  }, []); // Remove onDragStateChange from dependencies
 
   const handleDragLeave = useCallback((e) => {
     // Only set to false if we're leaving the container itself, not a child
@@ -81,7 +81,7 @@ const MonitorOverlayNew = ({
         onDragStateChange(false);
       }
     }
-  }, [onDragStateChange]);
+  }, []); // Remove onDragStateChange from dependencies
 
   const handleDrop = useCallback(async (e) => {
     e.preventDefault();
@@ -126,9 +126,9 @@ const MonitorOverlayNew = ({
     } catch (err) {
       console.error('Error dropping monitor:', err);
     }
-  }, [dispatch, onDragStateChange]);
+  }, [dispatch]); // Remove onDragStateChange from dependencies
 
-  // Handle drag and drop from monitor list
+  // Handle drag and drop from monitor list - run once after mount
   useEffect(() => {
     const container = document.querySelector('[data-floor-plan-container]');
     console.log('DEBUG: MonitorOverlayNew - Setting up drop zone:', {
@@ -152,7 +152,7 @@ const MonitorOverlayNew = ({
     } else {
       console.log('DEBUG: Container not found for drop zone setup');
     }
-  }, [handleDragOver, handleDragLeave, handleDrop]);
+  }, []); // Empty dependency array - run only once
 
   // Handle monitor repositioning
   const handleMonitorMouseDown = (e, monitor) => {
