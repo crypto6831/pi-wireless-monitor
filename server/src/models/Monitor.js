@@ -168,8 +168,12 @@ monitorSchema.methods.updateLastScan = function() {
 
 monitorSchema.methods.updatePosition = function(x, y, locationId, floorId) {
   this.position = { x, y };
-  if (locationId) this.locationId = locationId;
-  if (floorId) this.floorId = floorId;
+  if (locationId !== undefined) {
+    this.locationId = locationId;
+  }
+  if (floorId !== undefined) {
+    this.floorId = floorId;
+  }
   return this.save();
 };
 

@@ -378,8 +378,13 @@ router.get('/:monitorId/stats', async (req, res) => {
 router.put('/:id/position', [
   body('x').isNumeric().withMessage('X coordinate must be a number'),
   body('y').isNumeric().withMessage('Y coordinate must be a number'),
-  body('locationId').optional().isMongoId().withMessage('Invalid location ID'),
-  body('floorId').optional().notEmpty().withMessage('Floor ID cannot be empty'),
+  body('locationId').optional({ values: 'falsy' }).isMongoId().withMessage('Invalid location ID'),
+  body('floorId').optional({ values: 'falsy' }).custom((value) => {
+    if (value !== null && value !== undefined && value === '') {
+      throw new Error('Floor ID cannot be empty string');
+    }
+    return true;
+  }),
 ], validate, async (req, res) => {
   try {
     const { x, y, locationId, floorId } = req.body;
