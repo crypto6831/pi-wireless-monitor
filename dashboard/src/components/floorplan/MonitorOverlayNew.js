@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Box,
   Tooltip,
@@ -40,6 +40,20 @@ const MonitorOverlayNew = ({
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Use refs to store current values without triggering useEffect
+  const selectedLocationRef = useRef(selectedLocation);
+  const selectedFloorRef = useRef(selectedFloor);
+  const viewSettingsRef = useRef(viewSettings);
+  const onMonitorPositionChangeRef = useRef(onMonitorPositionChange);
+
+  // Update refs when values change
+  useEffect(() => {
+    selectedLocationRef.current = selectedLocation;
+    selectedFloorRef.current = selectedFloor;
+    viewSettingsRef.current = viewSettings;
+    onMonitorPositionChangeRef.current = onMonitorPositionChange;
+  }, [selectedLocation, selectedFloor, viewSettings, onMonitorPositionChange]);
+
   // Get monitors positioned on current floor
   const floorMonitors = monitors.filter(monitor => 
     monitor.locationId === selectedLocation?._id &&
@@ -80,33 +94,39 @@ const MonitorOverlayNew = ({
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
       console.log('DEBUG: Drop data received:', data);
-      if (data.type === 'monitor' && selectedLocation && selectedFloor) {
+      
+      const currentLocation = selectedLocationRef.current;
+      const currentFloor = selectedFloorRef.current;
+      const currentViewSettings = viewSettingsRef.current;
+      const currentOnMonitorPositionChange = onMonitorPositionChangeRef.current;
+      
+      if (data.type === 'monitor' && currentLocation && currentFloor) {
         const rect = e.currentTarget.getBoundingClientRect();
-        const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
-        const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+        const x = (e.clientX - rect.left - currentViewSettings.panX) / currentViewSettings.zoom;
+        const y = (e.clientY - rect.top - currentViewSettings.panY) / currentViewSettings.zoom;
         
         console.log('DEBUG: Calculated position:', { x: Math.round(x), y: Math.round(y) });
-        console.log('DEBUG: Selected location/floor:', selectedLocation._id, selectedFloor._id);
+        console.log('DEBUG: Selected location/floor:', currentLocation._id, currentFloor._id);
         
         // Update monitor position via API
         await apiService.updateMonitorPosition(data.monitor._id, {
           x: Math.round(x),
           y: Math.round(y),
-          locationId: selectedLocation._id,
-          floorId: selectedFloor._id,
+          locationId: currentLocation._id,
+          floorId: currentFloor._id,
         });
         
         // Refresh monitors list
         dispatch(fetchMonitors());
         
-        if (onMonitorPositionChange) {
-          onMonitorPositionChange(data.monitor, { x: Math.round(x), y: Math.round(y) });
+        if (currentOnMonitorPositionChange) {
+          currentOnMonitorPositionChange(data.monitor, { x: Math.round(x), y: Math.round(y) });
         }
       }
     } catch (err) {
       console.error('Error dropping monitor:', err);
     }
-  }, [selectedLocation, selectedFloor, viewSettings, dispatch, onMonitorPositionChange]);
+  }, [dispatch, onDragStateChange]);
 
   // Handle drag and drop from monitor list
   useEffect(() => {
