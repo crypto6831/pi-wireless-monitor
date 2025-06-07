@@ -22,7 +22,8 @@ import {
   Divider,
   Input,
 } from '@mui/material';
-import { TreeView, TreeItem } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
+import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import {
   ExpandMore,
   ChevronRight,
@@ -448,11 +449,11 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     }
     
     return (
-      <TreeView
+      <SimpleTreeView
         defaultCollapseIcon={<ExpandMore />}
         defaultExpandIcon={<ChevronRight />}
-        expanded={expandedNodes}
-        onNodeToggle={(event, nodeIds) => setExpandedNodes(nodeIds)}
+        expandedItems={expandedNodes}
+        onExpandedItemsChange={(event, nodeIds) => setExpandedNodes(nodeIds)}
         sx={{ flexGrow: 1, overflowY: 'auto' }}
       >
         {Object.keys(filteredHierarchy).map(address => {
@@ -460,7 +461,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
           return (
             <TreeItem
               key={`address-${address}`}
-              nodeId={`address-${address}`}
+              itemId={`address-${address}`}
               label={
                 <Box sx={{ 
                   display: 'flex', 
@@ -497,7 +498,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                 return (
                   <TreeItem
                     key={`${address}-${building}`}
-                    nodeId={`building-${address}-${building}`}
+                    itemId={`building-${address}-${building}`}
                     label={
                       <Box sx={{ 
                         display: 'flex', 
@@ -550,7 +551,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                       return (
                         <TreeItem
                           key={`floor-${floor.floorId}`}
-                          nodeId={`floor-${floor.floorId}`}
+                          itemId={`floor-${floor.floorId}`}
                           label={
                             <Box sx={{ 
                               display: 'flex', 
@@ -623,7 +624,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             </TreeItem>
           );
         })}
-      </TreeView>
+      </SimpleTreeView>
     );
   };
 
