@@ -297,3 +297,59 @@ The floor plan feature includes drag-and-drop functionality for positioning moni
 3. Drop on floor plan to position
 4. Remove monitors via info dialog
 5. Removed monitors appear back in "Unpositioned" list
+
+## WiFi Connection Tooltip Feature
+
+### Enhanced Monitor Tooltips
+Monitors on floor plans now display detailed WiFi connection information when hovered.
+
+#### Frontend Implementation:
+- **MonitorTooltip.js**: Rich tooltip component showing WiFi connection details
+- **Enhanced tooltip displays**:
+  - Connected SSID with WiFi icon
+  - Signal strength (RSSI) in dBm with quality indicator
+  - BSSID (Access Point MAC address) 
+  - Channel and frequency information
+  - RX/TX data rates in Mbps/Gbps
+  - Last seen timestamp in human-readable format
+- **Signal Quality Indicators**:
+  - Excellent: ≥ -50 dBm (green)
+  - Good: -50 to -60 dBm (green)  
+  - Fair: -60 to -70 dBm (orange)
+  - Poor: -70 to -80 dBm (red)
+  - Very Poor: < -80 dBm (red)
+
+#### Backend Implementation:
+- **Extended Monitor model** with `wifiConnection` schema:
+  ```javascript
+  wifiConnection: {
+    ssid: String,           // Connected network name
+    bssid: String,          // Access point MAC
+    rssi: Number,           // Signal strength in dBm
+    channel: Number,        // WiFi channel
+    frequency: Number,      // Frequency in MHz
+    rxRate: Number,         // RX data rate in Mbps
+    txRate: Number,         // TX data rate in Mbps
+    linkSpeed: Number,      // Link speed in Mbps
+    quality: Number,        // Link quality percentage
+    lastUpdated: Date       // Timestamp of last update
+  }
+  ```
+- **API endpoint**: `PUT /monitors/:id/wifi-connection`
+
+#### Raspberry Pi Integration:
+- **Enhanced WiFi data collection** using nmcli and /proc/net/wireless
+- **Real-time monitoring**: Data sent every 60 seconds
+- **Collected metrics**:
+  - SSID from `nmcli device wifi list`
+  - BSSID, channel, frequency, data rates
+  - Signal level from `/proc/net/wireless` 
+  - Link quality percentage
+- **Automatic transmission** via API client
+
+#### Testing the Feature:
+1. Navigate to Floor Plans page: `http://47.128.13.65:3000/floor-plans`
+2. Select a floor with positioned monitors
+3. Hover over any monitor icon on the floor plan
+4. View enhanced tooltip with WiFi connection details
+5. Signal quality is color-coded for quick assessment
