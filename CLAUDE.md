@@ -304,20 +304,32 @@ The floor plan feature includes drag-and-drop functionality for positioning moni
 Monitors on floor plans now display detailed WiFi connection information when hovered.
 
 #### Frontend Implementation:
-- **MonitorTooltip.js**: Rich tooltip component showing WiFi connection details
+- **MonitorTooltip.js**: Rich tooltip component showing complete WiFi connection details
 - **Enhanced tooltip displays**:
-  - Connected SSID with WiFi icon
-  - Signal strength (RSSI) in dBm with quality indicator
-  - BSSID (Access Point MAC address) 
-  - Channel and frequency information
-  - RX/TX data rates in Mbps/Gbps
-  - Last seen timestamp in human-readable format
+  - **SSID**: Connected network name with WiFi icon
+  - **BSSID**: Access Point MAC address in monospace font
+  - **Signal Strength (RSSI)**: in dBm with color-coded quality indicator
+  - **Channel**: WiFi channel with automatic 5GHz/2.4GHz band detection
+  - **Frequency**: Operating frequency in MHz
+  - **RX Rate**: Receive data rate in Mbps/Gbps
+  - **TX Rate**: Transmit data rate in Mbps/Gbps
+  - **Link Speed**: Connection speed in Mbps/Gbps
+  - **Quality**: Connection quality percentage
+  - **Last seen**: Human-readable timestamp
+
 - **Signal Quality Indicators**:
   - Excellent: ≥ -50 dBm (green)
   - Good: -50 to -60 dBm (green)  
   - Fair: -60 to -70 dBm (orange)
   - Poor: -70 to -80 dBm (red)
   - Very Poor: < -80 dBm (red)
+
+- **Visual Features**:
+  - Icons for visual clarity (WiFi, Router, Speed)
+  - Proper spacing and alignment
+  - Band detection (5GHz/2.4GHz) based on frequency
+  - Monospace font for BSSID readability
+  - Data rates properly formatted (Mbps/Gbps conversion)
 
 #### Backend Implementation:
 - **Extended Monitor model** with `wifiConnection` schema:
@@ -338,18 +350,49 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 - **API endpoint**: `PUT /monitors/:id/wifi-connection`
 
 #### Raspberry Pi Integration:
-- **Enhanced WiFi data collection** using nmcli and /proc/net/wireless
-- **Real-time monitoring**: Data sent every 60 seconds
-- **Collected metrics**:
-  - SSID from `nmcli device wifi list`
-  - BSSID, channel, frequency, data rates
-  - Signal level from `/proc/net/wireless` 
-  - Link quality percentage
-- **Automatic transmission** via API client
+- **Enhanced WiFi data collection** using nmcli and system commands
+- **Dependencies removed**: No longer requires netifaces module
+- **Real-time monitoring**: Data sent every 60 seconds (when enabled)
+- **Data collection methods**:
+  - `nmcli device wifi list` for comprehensive WiFi information
+  - `ip addr show` for interface details
+  - `/proc/net/wireless` for link quality
+  - Regex parsing to handle escaped MAC addresses correctly
+
+#### Collected WiFi Metrics:
+- **SSID**: Network name from active connection
+- **BSSID**: Access point MAC address (6C:5A:B0:7B:09:2F format)
+- **RSSI**: Signal strength converted from percentage to dBm
+- **Channel**: WiFi channel number (1-14 for 2.4GHz, 36+ for 5GHz)
+- **Frequency**: Operating frequency in MHz (2412-2484 for 2.4GHz, 5000+ for 5GHz)
+- **Data Rates**: RX/TX speeds from nmcli in Mbps
+- **Quality**: Link quality percentage from /proc/net/wireless
+
+#### Implementation Notes:
+- **Parsing Challenges**: BSSID contains escaped colons in nmcli output (6C\:5A\:B0\:7B\:09\:2F)
+- **Regex Solution**: Custom parsing to handle escaped characters correctly
+- **Data Validation**: All numeric values validated and converted appropriately
+- **Error Handling**: Graceful fallbacks for missing or invalid data
+- **Performance**: Lightweight data collection using system commands
 
 #### Testing the Feature:
 1. Navigate to Floor Plans page: `http://47.128.13.65:3000/floor-plans`
 2. Select a floor with positioned monitors
 3. Hover over any monitor icon on the floor plan
-4. View enhanced tooltip with WiFi connection details
-5. Signal quality is color-coded for quick assessment
+4. View comprehensive tooltip with all WiFi connection details:
+   - SSID: SmartHome
+   - BSSID: 6C:5A:B0:7B:09:2F
+   - Signal: -70 dBm (Fair)
+   - Channel: 48 (5GHz channel)
+   - Frequency: 5240 MHz
+   - RX Rate: 540 Mbps
+   - TX Rate: 540 Mbps
+   - Link Speed: 540 Mbps
+   - Quality: 60%
+5. Signal quality is color-coded for quick visual assessment
+
+#### Troubleshooting:
+- **Missing Data**: Ensure Pi monitor service is running and sending data
+- **Incomplete Fields**: Check nmcli output and regex parsing in scanner.py
+- **Authentication Errors**: Verify API key and monitor ID in Pi configuration
+- **Data Overwriting**: Disable WiFi data collection scheduling if needed to preserve manual data
