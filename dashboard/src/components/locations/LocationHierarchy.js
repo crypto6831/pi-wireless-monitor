@@ -241,11 +241,12 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   };
 
   const handleUploadFloorPlan = async () => {
-    if (!selectedLocation || !selectedFile) return;
+    if (!selectedLocation || !selectedFile || !selectedFloor) return;
     
     try {
       const formData = new FormData();
-      formData.append('floorplan', selectedFile);
+      formData.append('floorPlan', selectedFile); // Changed from 'floorplan' to 'floorPlan'
+      formData.append('floorId', selectedFloor._id); // Added required floorId
       
       await dispatch(uploadFloorPlan({
         locationId: selectedLocation._id,
@@ -390,7 +391,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
       >
         {Object.keys(filteredHierarchy).map(address => (
           <TreeItem
-            key={address}
+            key={`address-${address}`}
             nodeId={`address-${address}`}
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5 }}>
@@ -423,7 +424,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
               >
                 {filteredHierarchy[address][building].map(floor => (
                   <TreeItem
-                    key={floor.floorId}
+                    key={`floor-${floor.floorId}`}
                     nodeId={`floor-${floor.floorId}`}
                     label={
                       <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5, justifyContent: 'space-between' }}>

@@ -109,7 +109,9 @@ export const apiService = {
   updateLocation: (id, data) => api.put(`/locations/${id}`, data),
   deleteLocation: (id) => api.delete(`/locations/${id}`),
   getLocationMonitors: (id) => api.get(`/locations/${id}/monitors`),
-  getLocationCoverage: (id) => api.get(`/locations/${id}/coverage`),
+  getLocationCoverage: (id, floorId) => api.get(`/locations/${id}/coverage`, {
+    params: { floorId }
+  }),
   addFloorToLocation: (id, floorData) => api.post(`/locations/${id}/floors`, floorData),
   removeFloorFromLocation: (id, floorId) => api.delete(`/locations/${id}/floors/${floorId}`),
 

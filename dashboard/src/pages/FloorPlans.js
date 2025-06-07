@@ -186,7 +186,10 @@ const FloorPlans = () => {
     if (selectedLocation?._id && selectedFloor?._id) {
       try {
         dispatch(fetchLocationMonitors(selectedLocation._id));
-        dispatch(fetchLocationCoverage(selectedLocation._id));
+        dispatch(fetchLocationCoverage({ 
+          locationId: selectedLocation._id,
+          floorId: selectedFloor._id 
+        }));
       } catch (err) {
         console.error('Error loading location data:', err);
       }

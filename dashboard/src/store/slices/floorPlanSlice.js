@@ -16,9 +16,9 @@ export const fetchLocationMonitors = createAsyncThunk(
 
 export const fetchLocationCoverage = createAsyncThunk(
   'floorPlan/fetchLocationCoverage',
-  async (locationId, { rejectWithValue }) => {
+  async ({ locationId, floorId }, { rejectWithValue }) => {
     try {
-      const response = await apiService.getLocationCoverage(locationId);
+      const response = await apiService.getLocationCoverage(locationId, floorId);
       return response.data.coverageAreas;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to fetch coverage areas');
