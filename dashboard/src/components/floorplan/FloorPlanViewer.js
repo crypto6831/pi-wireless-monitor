@@ -71,7 +71,10 @@ const FloorPlanViewer = ({
   // Load floor plan image when floor changes
   useEffect(() => {
     if (selectedLocation && selectedFloor && selectedFloor.floorPlan) {
-      dispatch(fetchFloorPlanImage(selectedLocation._id));
+      dispatch(fetchFloorPlanImage({ 
+        locationId: selectedLocation._id,
+        floorId: selectedFloor._id 
+      }));
     }
   }, [dispatch, selectedLocation, selectedFloor]);
 
@@ -289,7 +292,10 @@ const FloorPlanViewer = ({
         
         // Reload the floor plan image
         setTimeout(() => {
-          dispatch(fetchFloorPlanImage(selectedLocation._id));
+          dispatch(fetchFloorPlanImage({
+            locationId: selectedLocation._id,
+            floorId: selectedFloor._id
+          }));
         }, 1000);
       } catch (err) {
         console.error('Upload failed:', err);

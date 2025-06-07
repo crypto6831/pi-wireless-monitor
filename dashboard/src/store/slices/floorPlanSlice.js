@@ -52,9 +52,9 @@ export const createCoverageArea = createAsyncThunk(
 
 export const fetchFloorPlanImage = createAsyncThunk(
   'floorPlan/fetchFloorPlanImage',
-  async (locationId, { rejectWithValue }) => {
+  async ({ locationId, floorId }, { rejectWithValue }) => {
     try {
-      const response = await apiService.getFloorPlanImage(locationId);
+      const response = await apiService.getFloorPlanImage(locationId, floorId);
       const blob = response.data;
       const imageUrl = URL.createObjectURL(blob);
       return imageUrl;

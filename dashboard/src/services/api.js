@@ -118,7 +118,8 @@ export const apiService = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getFloorPlan: (id) => api.get(`/locations/${id}/floorplan`),
-  getFloorPlanImage: (id) => api.get(`/locations/${id}/floorplan/image`, {
+  getFloorPlanImage: (id, floorId) => api.get(`/locations/${id}/floorplan/image`, {
+    params: { floorId },
     responseType: 'blob'
   }),
   updateFloorPlan: (id, formData) => api.put(`/locations/${id}/floorplan`, formData, {
