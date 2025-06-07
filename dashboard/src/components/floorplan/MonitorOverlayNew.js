@@ -70,6 +70,7 @@ const MonitorOverlayNew = ({
 
   const handleDrop = useCallback(async (e) => {
     e.preventDefault();
+    console.log('DEBUG: Drop event triggered', e);
     setIsDragOver(false);
     if (onDragStateChange) {
       onDragStateChange(false);
@@ -77,10 +78,14 @@ const MonitorOverlayNew = ({
     
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      console.log('DEBUG: Drop data received:', data);
       if (data.type === 'monitor' && selectedLocation && selectedFloor) {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
         const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+        
+        console.log('DEBUG: Calculated position:', { x: Math.round(x), y: Math.round(y) });
+        console.log('DEBUG: Selected location/floor:', selectedLocation._id, selectedFloor._id);
         
         // Update monitor position via API
         await apiService.updateMonitorPosition(data.monitor._id, {

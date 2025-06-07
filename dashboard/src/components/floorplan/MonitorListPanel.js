@@ -51,6 +51,13 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     return matchesSearch;
   });
 
+  // Debug logging
+  console.log('MonitorListPanel DEBUG:', {
+    totalMonitors: monitors.length,
+    filteredMonitors: filteredMonitors.length,
+    monitors: monitors.map(m => ({ name: m.name, monitorId: m.monitorId, locationId: m.locationId, floorId: m.floorId }))
+  });
+
   // Separate monitors into positioned and unpositioned based on current floor
   const { positionedMonitors, unpositionedMonitors } = filteredMonitors.reduce((acc, monitor) => {
     const isPositionedOnCurrentFloor = monitor.locationId === selectedLocation?._id && 
@@ -67,7 +74,16 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     return acc;
   }, { positionedMonitors: [], unpositionedMonitors: [] });
 
+  console.log('MonitorListPanel separation DEBUG:', {
+    selectedLocationId: selectedLocation?._id,
+    selectedFloorId: selectedFloor?._id,
+    positionedCount: positionedMonitors.length,
+    unpositionedCount: unpositionedMonitors.length,
+    unpositionedMonitors: unpositionedMonitors.map(m => ({ name: m.name, locationId: m.locationId, floorId: m.floorId }))
+  });
+
   const handleDragStart = useCallback((e, monitor) => {
+    console.log('DEBUG: Drag start triggered for monitor:', monitor.name, monitor);
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -78,6 +94,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
       type: 'monitor',
       monitor: monitor
     };
+    console.log('DEBUG: Setting drag data:', dragData);
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
   }, [onMonitorDragStart]);
