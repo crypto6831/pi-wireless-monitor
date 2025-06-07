@@ -375,7 +375,7 @@ router.get('/:monitorId/stats', async (req, res) => {
 });
 
 // Update monitor WiFi connection info
-router.put('/:id/wifi-connection', auth, async (req, res) => {
+router.put('/:id/wifi-connection', authenticateMonitor, async (req, res) => {
   try {
     const { ssid, bssid, rssi, channel, frequency, rxRate, txRate, linkSpeed, quality } = req.body;
     
