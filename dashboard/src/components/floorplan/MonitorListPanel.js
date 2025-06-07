@@ -77,14 +77,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
 
 
   const handleDragStart = useCallback((e, monitor) => {
-    console.log('DEBUG: Drag start attempt for monitor:', {
-      name: monitor.name,
-      locationId: monitor.locationId,
-      floorId: monitor.floorId,
-      selectedFloor: !!selectedFloor,
-      selectedFloorId: selectedFloor?._id
-    });
-    
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -134,32 +126,15 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
 
   const renderMonitorItem = (monitor, isDraggable = true) => {
     const isCurrentlyDragged = draggedMonitor && draggedMonitor._id === monitor._id;
-    const canDrag = isDraggable && selectedFloor;
+    const canDrag = isDraggable && !!selectedFloor;
     
-    console.log('DEBUG: Rendering monitor item:', {
-      name: monitor.name,
-      isDraggable,
-      selectedFloor: !!selectedFloor,
-      canDrag,
-      locationId: monitor.locationId,
-      floorId: monitor.floorId,
-      draggableAttr: canDrag
-    });
     
     return (
       <ListItem
         key={monitor._id}
         draggable={canDrag}
-        onDragStart={(e) => {
-          console.log('DEBUG: onDragStart event fired, canDrag:', canDrag);
-          if (canDrag) {
-            handleDragStart(e, monitor);
-          }
-        }}
+        onDragStart={(e) => canDrag && handleDragStart(e, monitor)}
         onDragEnd={handleDragEnd}
-        onMouseDown={(e) => {
-          console.log('DEBUG: Mouse down on monitor item, canDrag:', canDrag);
-        }}
         sx={{
           borderRadius: 1,
           mb: 1,
