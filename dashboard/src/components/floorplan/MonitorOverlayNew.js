@@ -27,7 +27,8 @@ const MonitorOverlayNew = ({
   selectedLocation, 
   selectedFloor, 
   onMonitorPositionChange,
-  onMonitorClick 
+  onMonitorClick,
+  onDragStateChange
 }) => {
   const dispatch = useDispatch();
   const { list: monitors } = useSelector(state => state.monitors);
@@ -37,6 +38,7 @@ const MonitorOverlayNew = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Get monitors positioned on current floor
   const floorMonitors = monitors.filter(monitor => 
@@ -46,54 +48,75 @@ const MonitorOverlayNew = ({
     (monitor.position.x !== 0 || monitor.position.y !== 0)
   );
 
+  // Memoized drag handlers to improve performance
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+    if (onDragStateChange) {
+      onDragStateChange(true);
+    }
+  }, [onDragStateChange]);
+
+  const handleDragLeave = useCallback((e) => {
+    // Only set to false if we're leaving the container itself, not a child
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+      if (onDragStateChange) {
+        onDragStateChange(false);
+      }
+    }
+  }, [onDragStateChange]);
+
+  const handleDrop = useCallback(async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (onDragStateChange) {
+      onDragStateChange(false);
+    }
+    
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      if (data.type === 'monitor' && selectedLocation && selectedFloor) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
+        const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+        
+        // Update monitor position via API
+        await apiService.updateMonitorPosition(data.monitor._id, {
+          x: Math.round(x),
+          y: Math.round(y),
+          locationId: selectedLocation._id,
+          floorId: selectedFloor._id,
+        });
+        
+        // Refresh monitors list
+        dispatch(fetchMonitors());
+        
+        if (onMonitorPositionChange) {
+          onMonitorPositionChange(data.monitor, { x: Math.round(x), y: Math.round(y) });
+        }
+      }
+    } catch (err) {
+      console.error('Error dropping monitor:', err);
+    }
+  }, [selectedLocation, selectedFloor, viewSettings, dispatch, onMonitorPositionChange]);
+
   // Handle drag and drop from monitor list
   useEffect(() => {
-    const handleDragOver = (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDrop = async (e) => {
-      e.preventDefault();
-      
-      try {
-        const data = JSON.parse(e.dataTransfer.getData('application/json'));
-        if (data.type === 'monitor' && selectedLocation && selectedFloor) {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
-          const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
-          
-          // Update monitor position via API
-          await apiService.updateMonitorPosition(data.monitor._id, {
-            x: Math.round(x),
-            y: Math.round(y),
-            locationId: selectedLocation._id,
-            floorId: selectedFloor._id,
-          });
-          
-          // Refresh monitors list
-          dispatch(fetchMonitors());
-          
-          if (onMonitorPositionChange) {
-            onMonitorPositionChange(data.monitor, { x: Math.round(x), y: Math.round(y) });
-          }
-        }
-      } catch (err) {
-        console.error('Error dropping monitor:', err);
-      }
-    };
-
     const container = document.querySelector('[data-floor-plan-container]');
     if (container) {
       container.addEventListener('dragover', handleDragOver);
+      container.addEventListener('dragleave', handleDragLeave);
       container.addEventListener('drop', handleDrop);
       
       return () => {
         container.removeEventListener('dragover', handleDragOver);
+        container.removeEventListener('dragleave', handleDragLeave);
         container.removeEventListener('drop', handleDrop);
       };
     }
-  }, [selectedLocation, selectedFloor, dispatch, onMonitorPositionChange]);
+  }, [handleDragOver, handleDragLeave, handleDrop]);
 
   // Handle monitor repositioning
   const handleMonitorMouseDown = (e, monitor) => {

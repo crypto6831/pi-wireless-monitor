@@ -181,6 +181,7 @@ const FloorPlans = () => {
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [isDragOverFloorPlan, setIsDragOverFloorPlan] = useState(false);
   
   // Coverage settings state
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -346,12 +347,14 @@ const FloorPlans = () => {
               onMonitorClick={handleMonitorSelect}
               onMonitorDrag={handleMonitorDrag}
               onCanvasClick={handleCanvasClick}
+              isDragOver={isDragOverFloorPlan}
             >
               <MonitorOverlayNew
                 selectedLocation={selectedLocation}
                 selectedFloor={selectedFloor}
                 onMonitorClick={handleMonitorSelect}
                 onMonitorPositionChange={handleMonitorDrag}
+                onDragStateChange={setIsDragOverFloorPlan}
               />
               {viewSettings?.showCoverage && (
                 <CoverageOverlay

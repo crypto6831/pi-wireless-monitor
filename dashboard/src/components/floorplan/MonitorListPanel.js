@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -67,7 +67,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     return acc;
   }, { positionedMonitors: [], unpositionedMonitors: [] });
 
-  const handleDragStart = (e, monitor) => {
+  const handleDragStart = useCallback((e, monitor) => {
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -80,11 +80,11 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     };
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, [onMonitorDragStart]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedMonitor(null);
-  };
+  }, []);
 
   const getStatusColor = (monitor) => {
     if (!monitor.isOnline) return 'error';

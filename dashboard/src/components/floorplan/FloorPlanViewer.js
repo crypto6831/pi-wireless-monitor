@@ -48,6 +48,7 @@ const FloorPlanViewer = ({
   onMonitorClick,
   onMonitorDrag,
   onCanvasClick,
+  isDragOver,
   children 
 }) => {
   const dispatch = useDispatch();
@@ -401,7 +402,16 @@ const FloorPlanViewer = ({
       {/* Canvas Container */}
       <Box 
         data-floor-plan-container
-        sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}
+        sx={{ 
+          position: 'relative', 
+          flexGrow: 1, 
+          overflow: 'hidden',
+          border: isDragOver ? 2 : 0,
+          borderColor: 'primary.main',
+          borderStyle: 'dashed',
+          transition: 'border 0.2s ease',
+          backgroundColor: isDragOver ? 'primary.50' : 'transparent',
+        }}
       >
         {loading && (
           <Box
