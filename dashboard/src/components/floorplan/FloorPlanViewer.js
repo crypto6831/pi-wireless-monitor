@@ -310,6 +310,7 @@ const FloorPlanViewer = ({
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    console.log('DEBUG: FloorPlanViewer - Drag over detected');
     setIsDropZoneActive(true);
   }, []);
 
@@ -322,15 +323,32 @@ const FloorPlanViewer = ({
 
   const handleDrop = useCallback(async (e) => {
     e.preventDefault();
+    console.log('DEBUG: FloorPlanViewer - Drop event triggered');
     setIsDropZoneActive(false);
     
     try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      const dataStr = e.dataTransfer.getData('application/json');
+      console.log('DEBUG: FloorPlanViewer - Raw drop data:', dataStr);
+      
+      if (!dataStr) {
+        console.error('DEBUG: FloorPlanViewer - No data in drop event');
+        return;
+      }
+      
+      const data = JSON.parse(dataStr);
+      console.log('DEBUG: FloorPlanViewer - Parsed drop data:', data);
       
       if (data.type === 'monitor' && selectedLocation && selectedFloor) {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
         const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+        
+        console.log('DEBUG: FloorPlanViewer - Calculated drop position:', {
+          x: Math.round(x),
+          y: Math.round(y),
+          locationId: selectedLocation._id,
+          floorId: selectedFloor._id
+        });
         
         // Update monitor position via API
         await apiService.updateMonitorPosition(data.monitor._id, {
@@ -340,15 +358,23 @@ const FloorPlanViewer = ({
           floorId: selectedFloor._id,
         });
         
+        console.log('DEBUG: FloorPlanViewer - Monitor position updated successfully');
+        
         // Refresh monitors list
         dispatch(fetchMonitors());
         
         if (onMonitorDrag) {
           onMonitorDrag(data.monitor, { x: Math.round(x), y: Math.round(y) });
         }
+      } else {
+        console.log('DEBUG: FloorPlanViewer - Drop conditions not met:', {
+          dataType: data.type,
+          hasLocation: !!selectedLocation,
+          hasFloor: !!selectedFloor
+        });
       }
     } catch (err) {
-      console.error('Error dropping monitor:', err);
+      console.error('DEBUG: FloorPlanViewer - Error dropping monitor:', err);
     }
   }, [selectedLocation, selectedFloor, viewSettings, dispatch, onMonitorDrag]);
 

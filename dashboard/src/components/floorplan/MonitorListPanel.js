@@ -54,14 +54,21 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
 
   // Separate monitors into positioned and unpositioned based on current floor
   const { positionedMonitors, unpositionedMonitors } = filteredMonitors.reduce((acc, monitor) => {
-    const isPositionedOnCurrentFloor = monitor.locationId === selectedLocation?._id && 
-                                      monitor.floorId === selectedFloor?._id &&
-                                      monitor.position && 
-                                      (monitor.position.x !== 0 || monitor.position.y !== 0);
+    // A monitor is unpositioned if:
+    // 1. It has no location/floor assignment at all (removed from floor plan)
+    // 2. It's assigned to a different location/floor
+    // 3. It's on the current floor but at position (0,0)
+    const hasNoLocation = !monitor.locationId || !monitor.floorId;
+    const isOnCurrentFloor = monitor.locationId === selectedLocation?._id && 
+                           monitor.floorId === selectedFloor?._id;
+    const hasValidPosition = monitor.position && 
+                           (monitor.position.x !== 0 || monitor.position.y !== 0);
     
-    if (isPositionedOnCurrentFloor) {
+    if (isOnCurrentFloor && hasValidPosition) {
+      // Monitor is positioned on the current floor
       acc.positionedMonitors.push(monitor);
     } else {
+      // Monitor is unpositioned (no location, different floor, or at origin)
       acc.unpositionedMonitors.push(monitor);
     }
     
