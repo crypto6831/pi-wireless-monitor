@@ -68,16 +68,19 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
   }, { positionedMonitors: [], unpositionedMonitors: [] });
 
   const handleDragStart = (e, monitor) => {
+    console.log('Drag start triggered for monitor:', monitor.name);
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
     }
     
     // Set drag data
-    e.dataTransfer.setData('application/json', JSON.stringify({
+    const dragData = {
       type: 'monitor',
       monitor: monitor
-    }));
+    };
+    console.log('Setting drag data:', dragData);
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
   };
 

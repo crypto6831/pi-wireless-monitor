@@ -31,7 +31,7 @@ const MonitorOverlayNew = ({
 }) => {
   const dispatch = useDispatch();
   const { list: monitors } = useSelector(state => state.monitors);
-  const { viewSettings } = useSelector(state => state.floorPlan);
+  const { viewSettings = { panX: 0, panY: 0, zoom: 1 } } = useSelector(state => state.floorPlan);
   
   const [draggedMonitor, setDraggedMonitor] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -54,13 +54,15 @@ const MonitorOverlayNew = ({
 
     const handleDrop = async (e) => {
       e.preventDefault();
+      console.log('Drop event triggered', e);
       
       try {
         const data = JSON.parse(e.dataTransfer.getData('application/json'));
+        console.log('Drop data:', data);
         if (data.type === 'monitor' && selectedLocation && selectedFloor) {
           const rect = e.currentTarget.getBoundingClientRect();
-          const x = (e.clientX - rect.left - (viewSettings?.panX || 0)) / (viewSettings?.zoom || 1);
-          const y = (e.clientY - rect.top - (viewSettings?.panY || 0)) / (viewSettings?.zoom || 1);
+          const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
+          const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
           
           // Update monitor position via API
           await apiService.updateMonitorPosition(data.monitor._id, {
@@ -92,7 +94,7 @@ const MonitorOverlayNew = ({
         container.removeEventListener('drop', handleDrop);
       };
     }
-  }, [selectedLocation, selectedFloor, viewSettings, dispatch, onMonitorPositionChange]);
+  }, [selectedLocation, selectedFloor, dispatch, onMonitorPositionChange]);
 
   // Handle monitor repositioning
   const handleMonitorMouseDown = (e, monitor) => {
