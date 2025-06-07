@@ -247,10 +247,10 @@ const FloorPlans = () => {
     setMonitorInfoOpen(true);
   };
 
-  const handleMonitorDrag = (monitorId, newPosition) => {
-    console.log('Monitor dragged:', monitorId, newPosition);
+  const handleMonitorDrag = (monitor, newPosition) => {
+    console.log('Monitor dragged:', monitor.name, 'to position:', newPosition);
     // Dispatch action to update monitor position
-    dispatch(updateMonitorPosition({ monitorId, position: newPosition }));
+    dispatch(updateMonitorPosition({ monitorId: monitor._id, position: newPosition }));
   };
 
   const handleCanvasClick = (coordinates) => {
