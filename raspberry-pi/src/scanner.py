@@ -194,59 +194,110 @@ class WiFiScanner:
         return normalized
     
     def get_interface_info(self) -> Dict:
-        """Get information about the wireless interface"""
+        """Get comprehensive WiFi connection information"""
         info = {
             'interface': self.interface,
             'mac_address': '',
             'ip_address': '',
-            'mode': '',
             'connected_ssid': '',
-            'tx_power': 0,
-            'link_quality': 0
+            'connected_bssid': '',
+            'signal_level': None,  # RSSI in dBm
+            'channel': None,
+            'frequency': None,
+            'rx_rate': None,
+            'tx_rate': None,
+            'link_quality': None
         }
         
         try:
-            # Get MAC address
-            addrs = netifaces.ifaddresses(self.interface)
-            if netifaces.AF_LINK in addrs:
-                info['mac_address'] = addrs[netifaces.AF_LINK][0]['addr']
-            
-            # Get IP address
-            if netifaces.AF_INET in addrs:
-                info['ip_address'] = addrs[netifaces.AF_INET][0]['addr']
-            
-            # Get wireless info using iwconfig
-            result = subprocess.run(
-                ['iwconfig', self.interface],
-                capture_output=True,
-                text=True
-            )
-            
+            # Get basic interface info using ip command
+            result = subprocess.run(['ip', 'addr', 'show', self.interface], capture_output=True, text=True)
             if result.returncode == 0:
-                output = result.stdout
+                # Extract MAC address
+                mac_match = re.search(r'link/ether ([a-f0-9:]+)', result.stdout)
+                if mac_match:
+                    info['mac_address'] = mac_match.group(1)
                 
-                # Extract mode
-                mode_match = re.search(r'Mode:(\w+)', output)
-                if mode_match:
-                    info['mode'] = mode_match.group(1)
-                
-                # Extract connected SSID
-                ssid_match = re.search(r'ESSID:"([^"]*)"', output)
-                if ssid_match:
-                    info['connected_ssid'] = ssid_match.group(1)
-                
-                # Extract TX power
-                tx_match = re.search(r'Tx-Power=(\d+) dBm', output)
-                if tx_match:
-                    info['tx_power'] = int(tx_match.group(1))
-                
-                # Extract link quality
-                quality_match = re.search(r'Link Quality=(\d+)/(\d+)', output)
-                if quality_match:
-                    quality = int(quality_match.group(1))
-                    max_quality = int(quality_match.group(2))
-                    info['link_quality'] = int((quality / max_quality) * 100)
+                # Extract IP address
+                ip_match = re.search(r'inet ([0-9.]+)/', result.stdout)
+                if ip_match:
+                    info['ip_address'] = ip_match.group(1)
             
+            # Get WiFi connection details using nmcli
+            result = subprocess.run(['nmcli', '-t', '-f', 'ACTIVE,SSID,BSSID,CHAN,FREQ,RATE,SIGNAL', 'device', 'wifi', 'list'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    if line.startswith('yes:'):  # Active connection
+                        # Use regex to properly parse the line with escaped colons in BSSID
+                        # Format: yes:SSID:BSSID:CHAN:FREQ:RATE:SIGNAL
+                        pattern = r'yes:([^:]*):([^:]*(?:\\:[^:]*)*):([^:]*):([^:]*):([^:]*):([^:]*)'
+                        match = re.match(pattern, line)
+                        
+                        if match:
+                            ssid, bssid, channel, freq, rate, signal = match.groups()
+                            
+                            info['connected_ssid'] = ssid if ssid != '--' else ''
+                            
+                            # Parse BSSID (remove escaping)
+                            if bssid and bssid != '--':
+                                info['connected_bssid'] = bssid.replace('\\:', ':')
+                            
+                            # Parse channel
+                            if channel and channel != '--':
+                                try:
+                                    info['channel'] = int(channel)
+                                except ValueError:
+                                    pass
+                            
+                            # Parse frequency (MHz)
+                            if freq and freq != '--':
+                                try:
+                                    freq_str = freq.replace(' MHz', '')
+                                    info['frequency'] = int(freq_str)
+                                except ValueError:
+                                    pass
+                            
+                            # Parse data rate (Mbit/s)
+                            if rate and rate != '--':
+                                try:
+                                    rate_str = rate.replace(' Mbit/s', '')
+                                    rate_val = float(rate_str)
+                                    info['rx_rate'] = rate_val
+                                    info['tx_rate'] = rate_val  # Use same rate for both
+                                except ValueError:
+                                    pass
+                            
+                            # Parse signal strength (convert to dBm)
+                            if signal and signal != '--':
+                                try:
+                                    signal_val = int(signal)
+                                    # nmcli gives signal as percentage, convert to approximate dBm
+                                    # Formula: dBm ≈ (percentage / 2) - 100
+                                    info['signal_level'] = int((signal_val / 2) - 100)
+                                except ValueError:
+                                    pass
+                        break
+            
+            # Get link quality from /proc/net/wireless
+            try:
+                with open('/proc/net/wireless', 'r') as f:
+                    lines = f.readlines()
+                    for line in lines:
+                        if self.interface in line:
+                            parts = line.split()
+                            if len(parts) >= 3:
+                                # Link quality is the second column (after interface name)
+                                link_quality_str = parts[2].rstrip('.')
+                                try:
+                                    info['link_quality'] = int(link_quality_str)
+                                except ValueError:
+                                    pass
+                            break
+            except (FileNotFoundError, PermissionError):
+                pass
+                
         except Exception as e:
             logger.error(f"Error getting interface info: {e}")
         
