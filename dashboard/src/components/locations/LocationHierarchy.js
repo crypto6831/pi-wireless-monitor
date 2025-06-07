@@ -431,6 +431,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const renderTreeView = () => {
     const filteredHierarchy = getFilteredHierarchy();
     
+    console.log('renderTreeView - hierarchy:', hierarchy);
+    console.log('renderTreeView - filteredHierarchy:', filteredHierarchy);
+    console.log('renderTreeView - searchTerm:', searchTerm);
+    
     if (Object.keys(filteredHierarchy).length === 0) {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
