@@ -97,6 +97,23 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     dispatch(fetchLocations());
   }, [dispatch]);
 
+  // Auto-expand to selected location/floor when data loads
+  useEffect(() => {
+    if (selectedLocation && selectedFloor && hierarchy) {
+      const addressNodeId = `address-${selectedLocation.address}`;
+      const buildingNodeId = `building-${selectedLocation.address}-${selectedLocation.buildingName}`;
+      
+      const newExpandedNodes = [addressNodeId, buildingNodeId];
+      setExpandedNodes(newExpandedNodes);
+    } else if (selectedLocation && hierarchy) {
+      const addressNodeId = `address-${selectedLocation.address}`;
+      const buildingNodeId = `building-${selectedLocation.address}-${selectedLocation.buildingName}`;
+      
+      const newExpandedNodes = [addressNodeId, buildingNodeId];
+      setExpandedNodes(newExpandedNodes);
+    }
+  }, [selectedLocation, selectedFloor, hierarchy]);
+
   useEffect(() => {
     if (error) {
       console.error('Location error:', error);
@@ -332,12 +349,45 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const handleTreeItemClick = (nodeId, nodeType, data) => {
     try {
       console.log('TreeItem click:', { nodeId, nodeType, data });
+      
+      // Auto-expand nodes as user navigates
+      let newExpandedNodes = [...expandedNodes];
+      
       if (nodeType === 'address') {
+        const addressNodeId = `address-${data.address}`;
+        if (!newExpandedNodes.includes(addressNodeId)) {
+          newExpandedNodes.push(addressNodeId);
+        }
+        setExpandedNodes(newExpandedNodes);
         handleAddressChange(data.address);
+        
       } else if (nodeType === 'building') {
+        const addressNodeId = `address-${data.address}`;
+        const buildingNodeId = `building-${data.address}-${data.building}`;
+        
+        if (!newExpandedNodes.includes(addressNodeId)) {
+          newExpandedNodes.push(addressNodeId);
+        }
+        if (!newExpandedNodes.includes(buildingNodeId)) {
+          newExpandedNodes.push(buildingNodeId);
+        }
+        setExpandedNodes(newExpandedNodes);
+        
         handleAddressChange(data.address);
         handleBuildingChange(data.building);
+        
       } else if (nodeType === 'floor') {
+        const addressNodeId = `address-${data.address}`;
+        const buildingNodeId = `building-${data.address}-${data.building}`;
+        
+        if (!newExpandedNodes.includes(addressNodeId)) {
+          newExpandedNodes.push(addressNodeId);
+        }
+        if (!newExpandedNodes.includes(buildingNodeId)) {
+          newExpandedNodes.push(buildingNodeId);
+        }
+        setExpandedNodes(newExpandedNodes);
+        
         handleAddressChange(data.address);
         handleBuildingChange(data.building);
         handleFloorChange(data.floorId);
@@ -381,6 +431,22 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   const renderTreeView = () => {
     const filteredHierarchy = getFilteredHierarchy();
     
+    if (Object.keys(filteredHierarchy).length === 0) {
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, color: 'text.secondary' }}>
+          <LocationOn sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
+          <Typography variant="body2" color="text.secondary">
+            {searchTerm ? 'No locations match your search' : 'No locations found'}
+          </Typography>
+          {!searchTerm && showCreateButton && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+              Click "Add Location" to create your first location
+            </Typography>
+          )}
+        </Box>
+      );
+    }
+    
     return (
       <TreeView
         defaultCollapseIcon={<ExpandMore />}
@@ -389,78 +455,174 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
         onNodeToggle={(event, nodeIds) => setExpandedNodes(nodeIds)}
         sx={{ flexGrow: 1, overflowY: 'auto' }}
       >
-        {Object.keys(filteredHierarchy).map(address => (
-          <TreeItem
-            key={`address-${address}`}
-            nodeId={`address-${address}`}
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5 }}>
-                <LocationOn sx={{ mr: 1, fontSize: 18 }} />
-                <Typography variant="body2">{address}</Typography>
-              </Box>
-            }
-            onClick={() => handleTreeItemClick('address', 'address', { address })}
-          >
-            {Object.keys(filteredHierarchy[address]).map(building => (
-              <TreeItem
-                key={`${address}-${building}`}
-                nodeId={`building-${address}-${building}`}
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5, justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Business sx={{ mr: 1, fontSize: 16 }} />
-                      <Typography variant="body2">{building}</Typography>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleContextMenu(e, 'building', { address, building })}
-                      sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}
-                    >
-                      <MoreVert fontSize="small" />
-                    </IconButton>
-                  </Box>
-                }
-                onClick={() => handleTreeItemClick('building', 'building', { address, building })}
-              >
-                {filteredHierarchy[address][building].map(floor => (
+        {Object.keys(filteredHierarchy).map(address => {
+          const isAddressSelected = selectedLocation?.address === address;
+          return (
+            <TreeItem
+              key={`address-${address}`}
+              nodeId={`address-${address}`}
+              label={
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  py: 1, 
+                  px: 1,
+                  borderRadius: 1,
+                  bgcolor: isAddressSelected ? 'primary.50' : 'transparent',
+                  '&:hover': { bgcolor: isAddressSelected ? 'primary.100' : 'action.hover' }
+                }}>
+                  <LocationOn sx={{ 
+                    mr: 1.5, 
+                    fontSize: 20, 
+                    color: isAddressSelected ? 'primary.main' : 'text.secondary'
+                  }} />
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontWeight: isAddressSelected ? 600 : 400,
+                      color: isAddressSelected ? 'primary.main' : 'text.primary'
+                    }}
+                  >
+                    {address}
+                  </Typography>
+                </Box>
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTreeItemClick('address', 'address', { address });
+              }}
+            >
+              {Object.keys(filteredHierarchy[address]).map(building => {
+                const isBuildingSelected = selectedLocation?.address === address && selectedLocation?.buildingName === building;
+                return (
                   <TreeItem
-                    key={`floor-${floor.floorId}`}
-                    nodeId={`floor-${floor.floorId}`}
+                    key={`${address}-${building}`}
+                    nodeId={`building-${address}-${building}`}
                     label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5, justifyContent: 'space-between' }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        py: 1, 
+                        px: 1,
+                        borderRadius: 1,
+                        bgcolor: isBuildingSelected ? 'primary.50' : 'transparent',
+                        '&:hover': { bgcolor: isBuildingSelected ? 'primary.100' : 'action.hover' },
+                        justifyContent: 'space-between'
+                      }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Layers sx={{ mr: 1, fontSize: 14 }} />
-                          <Typography variant="caption">
-                            {floor.floorName || `Floor ${floor.floorNumber}`}
+                          <Business sx={{ 
+                            mr: 1.5, 
+                            fontSize: 18, 
+                            color: isBuildingSelected ? 'primary.main' : 'text.secondary'
+                          }} />
+                          <Typography 
+                            variant="body2"
+                            sx={{ 
+                              fontWeight: isBuildingSelected ? 600 : 400,
+                              color: isBuildingSelected ? 'primary.main' : 'text.primary'
+                            }}
+                          >
+                            {building}
                           </Typography>
-                          {selectedLocation && selectedFloor?._id === floor.floorId && (
-                            <Chip size="small" label="Selected" color="primary" sx={{ ml: 1 }} />
-                          )}
                         </Box>
                         <IconButton
                           size="small"
-                          onClick={(e) => handleContextMenu(e, 'floor', { 
-                            address, 
-                            building, 
-                            floorId: floor.floorId 
-                          })}
-                          sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleContextMenu(e, 'building', { address, building });
+                          }}
+                          sx={{ 
+                            opacity: 0.6, 
+                            '&:hover': { opacity: 1, bgcolor: 'action.hover' }
+                          }}
                         >
                           <MoreVert fontSize="small" />
                         </IconButton>
                       </Box>
                     }
-                    onClick={() => handleTreeItemClick('floor', 'floor', { 
-                      address, 
-                      building, 
-                      floorId: floor.floorId 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTreeItemClick('building', 'building', { address, building });
+                    }}
+                  >
+                    {filteredHierarchy[address][building].map(floor => {
+                      const isFloorSelected = selectedFloor?._id === floor.floorId;
+                      return (
+                        <TreeItem
+                          key={`floor-${floor.floorId}`}
+                          nodeId={`floor-${floor.floorId}`}
+                          label={
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              py: 1, 
+                              px: 1,
+                              borderRadius: 1,
+                              bgcolor: isFloorSelected ? 'primary.50' : 'transparent',
+                              '&:hover': { bgcolor: isFloorSelected ? 'primary.100' : 'action.hover' },
+                              justifyContent: 'space-between'
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Layers sx={{ 
+                                  mr: 1.5, 
+                                  fontSize: 16, 
+                                  color: isFloorSelected ? 'primary.main' : 'text.secondary'
+                                }} />
+                                <Typography 
+                                  variant="body2"
+                                  sx={{ 
+                                    fontWeight: isFloorSelected ? 600 : 400,
+                                    color: isFloorSelected ? 'primary.main' : 'text.primary'
+                                  }}
+                                >
+                                  {floor.floorName || `Floor ${floor.floorNumber}`}
+                                </Typography>
+                                {isFloorSelected && (
+                                  <Chip 
+                                    size="small" 
+                                    label="Active" 
+                                    color="primary" 
+                                    variant="filled"
+                                    sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                                  />
+                                )}
+                              </Box>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleContextMenu(e, 'floor', { 
+                                    address, 
+                                    building, 
+                                    floorId: floor.floorId 
+                                  });
+                                }}
+                                sx={{ 
+                                  opacity: 0.6, 
+                                  '&:hover': { opacity: 1, bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <MoreVert fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTreeItemClick('floor', 'floor', { 
+                              address, 
+                              building, 
+                              floorId: floor.floorId 
+                            });
+                          }}
+                        />
+                      );
                     })}
-                  />
-                ))}
-              </TreeItem>
-            ))}
-          </TreeItem>
-        ))}
+                  </TreeItem>
+                );
+              })}
+            </TreeItem>
+          );
+        })}
       </TreeView>
     );
   };
@@ -538,60 +700,35 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
         sx={{ mb: 2 }}
       />
 
-      {/* Cascading Dropdowns */}
-      <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <FormControl size="small" fullWidth>
-          <InputLabel>Address</InputLabel>
-          <Select
-            value={selectedAddress}
-            onChange={(e) => handleAddressChange(e.target.value)}
-            label="Address"
-          >
-            {Object.keys(hierarchy || {}).map(address => (
-              <MenuItem key={address} value={address}>
-                {address}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {selectedAddress && (
-          <FormControl size="small" fullWidth>
-            <InputLabel>Building</InputLabel>
-            <Select
-              value={selectedBuilding}
-              onChange={(e) => handleBuildingChange(e.target.value)}
-              label="Building"
-            >
-              {Object.keys(hierarchy[selectedAddress] || {}).map(building => (
-                <MenuItem key={building} value={building}>
-                  {building}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        {selectedBuilding && selectedLocation && (
-          <FormControl size="small" fullWidth>
-            <InputLabel>Floor</InputLabel>
-            <Select
-              value={selectedFloorId}
-              onChange={(e) => handleFloorChange(e.target.value)}
-              label="Floor"
-            >
-              {(selectedLocation?.floors || []).map(floor => (
-                <MenuItem key={floor._id} value={floor._id}>
-                  {floor.floorName || `Floor ${floor.floorNumber}`}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-      </Box>
+      {/* Selection Summary */}
+      {(selectedLocation || selectedFloor) && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'primary.50', borderRadius: 1, border: 1, borderColor: 'primary.200' }}>
+          <Typography variant="subtitle2" color="primary" gutterBottom>
+            Current Selection
+          </Typography>
+          {selectedLocation && (
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+              <LocationOn sx={{ fontSize: 16, mr: 1 }} />
+              {selectedLocation.address}
+            </Typography>
+          )}
+          {selectedLocation && (
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+              <Business sx={{ fontSize: 16, mr: 1 }} />
+              {selectedLocation.buildingName}
+            </Typography>
+          )}
+          {selectedFloor && (
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+              <Layers sx={{ fontSize: 16, mr: 1 }} />
+              {selectedFloor.floorName || `Floor ${selectedFloor.floorNumber}`}
+            </Typography>
+          )}
+        </Box>
+      )}
 
       {/* Tree View */}
-      <Box sx={{ flexGrow: 1, border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}>
+      <Box sx={{ flexGrow: 1, border: 1, borderColor: 'divider', borderRadius: 1, p: 1, bgcolor: 'background.paper' }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
             <CircularProgress size={24} />
