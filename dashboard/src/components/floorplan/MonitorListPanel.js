@@ -70,6 +70,14 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
 
 
   const handleDragStart = useCallback((e, monitor) => {
+    console.log('DEBUG: Drag start attempt for monitor:', {
+      name: monitor.name,
+      locationId: monitor.locationId,
+      floorId: monitor.floorId,
+      selectedFloor: !!selectedFloor,
+      selectedFloorId: selectedFloor?._id
+    });
+    
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -82,7 +90,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     };
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
-  }, [onMonitorDragStart]);
+  }, [onMonitorDragStart, selectedFloor]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedMonitor(null);
@@ -119,13 +127,22 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
 
   const renderMonitorItem = (monitor, isDraggable = true) => {
     const isCurrentlyDragged = draggedMonitor && draggedMonitor._id === monitor._id;
+    const canDrag = isDraggable && selectedFloor;
     
+    console.log('DEBUG: Rendering monitor item:', {
+      name: monitor.name,
+      isDraggable,
+      selectedFloor: !!selectedFloor,
+      canDrag,
+      locationId: monitor.locationId,
+      floorId: monitor.floorId
+    });
     
     return (
       <ListItem
         key={monitor._id}
-        draggable={isDraggable && selectedFloor}
-        onDragStart={(e) => isDraggable && handleDragStart(e, monitor)}
+        draggable={canDrag}
+        onDragStart={(e) => canDrag && handleDragStart(e, monitor)}
         onDragEnd={handleDragEnd}
         sx={{
           borderRadius: 1,
@@ -134,15 +151,15 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
           borderColor: isCurrentlyDragged ? 'primary.main' : 'divider',
           bgcolor: isCurrentlyDragged ? 'primary.50' : 'background.paper',
           opacity: isCurrentlyDragged ? 0.8 : 1,
-          cursor: isDraggable && selectedFloor ? 'grab' : 'default',
+          cursor: canDrag ? 'grab' : 'default',
           transform: isCurrentlyDragged ? 'scale(1.02)' : 'scale(1)',
           transition: 'all 0.2s ease',
           '&:hover': {
-            bgcolor: isDraggable && selectedFloor ? 'action.hover' : 'background.paper',
-            transform: isDraggable && selectedFloor ? 'scale(1.01)' : 'scale(1)',
+            bgcolor: canDrag ? 'action.hover' : 'background.paper',
+            transform: canDrag ? 'scale(1.01)' : 'scale(1)',
           },
           '&:active': {
-            cursor: isDraggable && selectedFloor ? 'grabbing' : 'default',
+            cursor: canDrag ? 'grabbing' : 'default',
           },
         }}
       >
@@ -197,7 +214,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
           }
         />
         
-        {isDraggable && selectedFloor && (
+        {canDrag && (
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
             <DragIndicator sx={{ color: 'text.secondary' }} />
           </Box>
