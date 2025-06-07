@@ -39,11 +39,10 @@ import CoverageOverlay, { CoverageControls } from '../components/floorplan/Cover
 
 // Import actions
 import {
-  fetchLocationMonitors,
   fetchLocationCoverage,
   clearSelectedMonitors,
 } from '../store/slices/floorPlanSlice';
-import { updateMonitorPosition } from '../store/slices/monitorsSlice';
+import { updateMonitorPosition, fetchMonitors } from '../store/slices/monitorsSlice';
 import { setSelectedLocation, setSelectedFloor } from '../store/slices/locationsSlice';
 
 const MonitorInfoPanel = ({ monitor, open, onClose }) => {
@@ -176,13 +175,13 @@ const FloorPlans = () => {
   
   const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
   const { 
-    monitors = [], 
     coverageAreas = [], 
     selectedMonitors = [], 
     viewSettings = { showCoverage: true }, 
     loading = false, 
     error = null 
   } = useSelector(state => state.floorPlan || {});
+  const { list: monitors = [] } = useSelector(state => state.monitors || {});
 
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
@@ -196,9 +195,11 @@ const FloorPlans = () => {
 
   // Load monitors and coverage when location/floor changes
   useEffect(() => {
+    // Always load all monitors (MonitorListPanel will filter them)
+    dispatch(fetchMonitors());
+    
     if (selectedLocation?._id && selectedFloor?._id) {
       try {
-        dispatch(fetchLocationMonitors(selectedLocation._id));
         dispatch(fetchLocationCoverage({ 
           locationId: selectedLocation._id,
           floorId: selectedFloor._id 
