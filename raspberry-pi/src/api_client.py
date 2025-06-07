@@ -315,3 +315,98 @@ class APIClient:
         except Exception as e:
             logger.error(f"Error testing connection: {e}")
             return False 
+    def _put(self, endpoint: str, data: Dict) -> Optional[Dict]:
+        """Make PUT request to API endpoint"""
+        # For direct endpoint paths like 'monitors/id/wifi-connection'
+        if endpoint.startswith('monitors/'):
+            url = f"{config.SERVER_URL}/api/{endpoint}"
+        else:
+            url = config.API_ENDPOINTS.get(endpoint)
+            if not url:
+                logger.error(f"Unknown endpoint: {endpoint}")
+                return None
+        
+        try:
+            response = self.session.put(
+                url,
+                json=data,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code in [200, 201]:
+                return response.json()
+            elif response.status_code == 401:
+                logger.error("Authentication failed - check API key")
+                return None
+            elif response.status_code == 404:
+                logger.error(f"Endpoint not found: {url}")
+                return None
+            else:
+                logger.error(f"API error: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.error("API request timeout")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {e}")
+            return None
+
+    def send_wifi_connection_data(self, wifi_info: Dict) -> bool:
+        """Send WiFi connection information to server"""
+        try:
+            # Only send if we have valid connection data
+            if not wifi_info.get('connected_ssid'):
+                logger.debug("No WiFi connection data to send")
+                return True
+            
+            # Prepare WiFi connection data
+            wifi_data = {
+                'ssid': wifi_info.get('connected_ssid'),
+                'bssid': wifi_info.get('connected_bssid'),
+                'rssi': wifi_info.get('signal_level'),
+                'channel': wifi_info.get('channel'),
+                'frequency': wifi_info.get('frequency'),
+                'rxRate': wifi_info.get('rx_rate'),
+                'txRate': wifi_info.get('tx_rate'),
+                'linkSpeed': wifi_info.get('rx_rate'),  # Use RX rate as link speed
+                'quality': wifi_info.get('link_quality')
+            }
+            
+            # Remove None values
+            wifi_data = {k: v for k, v in wifi_data.items() if v is not None}
+            
+            logger.debug(f"Sending WiFi connection data: {wifi_data}")
+            
+            # Get monitor ID from database
+            monitor_id = self._get_monitor_id()
+            if not monitor_id:
+                logger.error("Could not get monitor ID for WiFi update")
+                return False
+            
+            response = self._put(f'monitors/{monitor_id}/wifi-connection', wifi_data)
+            
+            if response:
+                logger.debug("WiFi connection data sent successfully")
+                return True
+            else:
+                logger.warning("Failed to send WiFi connection data")
+                return False
+            
+        except Exception as e:
+            logger.error(f"Error sending WiFi connection data: {e}")
+            return False
+    
+    def _get_monitor_id(self) -> str:
+        """Get the MongoDB ObjectId for this monitor"""
+        try:
+            response = self._get('monitors')
+            if response and 'monitors' in response:
+                for monitor in response['monitors']:
+                    if monitor.get('monitorId') == config.MONITOR_ID:
+                        return monitor.get('_id')
+            return None
+        except Exception as e:
+            logger.error(f"Error getting monitor ID: {e}")
+            return None

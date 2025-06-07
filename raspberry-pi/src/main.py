@@ -138,7 +138,7 @@ class PiWirelessMonitor:
     def collect_metrics(self):
         """Collect performance metrics and send results"""
         try:
-            logger.info("Collecting metrics...")
+            logger.debug("Collecting metrics...")
             
             # Collect all metrics
             metrics = self.metrics_collector.collect_all_metrics()
@@ -161,6 +161,24 @@ class PiWirelessMonitor:
         except Exception as e:
             logger.error(f"Heartbeat failed: {e}")
     
+
+    def send_wifi_connection_info(self):
+        """Send WiFi connection information to server"""
+        try:
+            # Get current WiFi interface info
+            interface_info = self.scanner.get_interface_info()
+            
+            # Send to server
+            success = self.api_client.send_wifi_connection_data(interface_info)
+            
+            if success:
+                logger.debug(f"WiFi connection info sent: SSID={interface_info.get('connected_ssid')}, "
+                           f"RSSI={interface_info.get('signal_level')} dBm")
+            else:
+                logger.warning("Failed to send WiFi connection info")
+                
+        except Exception as e:
+            logger.error(f"WiFi connection info update failed: {e}")
     def run_deep_scan(self):
         """Run a comprehensive scan (less frequent)"""
         try:
@@ -194,6 +212,8 @@ class PiWirelessMonitor:
         
         # Heartbeat
         schedule.every(30).seconds.do(self.send_heartbeat)
+        # WiFi connection info
+        schedule.every(60).seconds.do(self.send_wifi_connection_info)
         
         # Deep scan
         schedule.every(config.DEEP_SCAN_INTERVAL).seconds.do(self.run_deep_scan)
