@@ -57,6 +57,7 @@ MAX_PACKET_LOSS = int(os.getenv('MAX_PACKET_LOSS', '5'))  # percentage
 API_ENDPOINTS = {
     'register': f'{SERVER_URL}/api/monitors/register',
     'heartbeat': f'{SERVER_URL}/api/monitors/heartbeat',
+    'monitors': f'{SERVER_URL}/api/monitors',
     'networks': f'{SERVER_URL}/api/networks',
     'devices': f'{SERVER_URL}/api/devices',
     'metrics': f'{SERVER_URL}/api/metrics',
