@@ -135,6 +135,13 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
   const renderMonitorItem = (monitor, isDraggable = true) => {
     const isCurrentlyDragged = draggedMonitor && draggedMonitor._id === monitor._id;
     
+    console.log('DEBUG: Rendering monitor item:', {
+      name: monitor.name,
+      isDraggable,
+      selectedFloor: !!selectedFloor,
+      draggableAttribute: isDraggable && selectedFloor
+    });
+    
     return (
       <ListItem
         key={monitor._id}
@@ -304,7 +311,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
                 Unpositioned ({unpositionedMonitors.length})
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                Drag these monitors onto the floor plan to position them
+                Drag these monitors onto the floor plan to position them {selectedFloor ? '(Floor selected - draggable)' : '(No floor - not draggable)'}
               </Typography>
               <List dense sx={{ p: 0 }}>
                 {unpositionedMonitors.map(monitor => renderMonitorItem(monitor, true))}
