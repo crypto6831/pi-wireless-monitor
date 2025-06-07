@@ -174,9 +174,14 @@ const FloorPlans = () => {
   console.log('FloorPlans - floorPlan state:', floorPlanState);
   
   const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
-  const { monitors, coverageAreas, selectedMonitors, viewSettings, loading, error } = useSelector(
-    state => state.floorPlan || {}
-  );
+  const { 
+    monitors = [], 
+    coverageAreas = [], 
+    selectedMonitors = [], 
+    viewSettings = { showCoverage: true }, 
+    loading = false, 
+    error = null 
+  } = useSelector(state => state.floorPlan || {});
 
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
@@ -322,7 +327,7 @@ const FloorPlans = () => {
                 onMonitorSelect={handleMonitorSelect}
                 onMonitorDrag={handleMonitorDrag}
               />
-              {viewSettings.showCoverage && (
+              {viewSettings?.showCoverage && (
                 <CoverageOverlay
                   monitors={filteredMonitors}
                   coverageAreas={coverageAreas}
