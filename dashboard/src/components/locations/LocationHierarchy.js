@@ -22,7 +22,7 @@ import {
   Divider,
   Input,
 } from '@mui/material';
-import { TreeView, TreeItem } from '@mui/lab';
+import { TreeView, TreeItem } from '@mui/x-tree-view';
 import {
   ExpandMore,
   ChevronRight,
@@ -430,10 +430,6 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
 
   const renderTreeView = () => {
     const filteredHierarchy = getFilteredHierarchy();
-    
-    console.log('renderTreeView - hierarchy:', hierarchy);
-    console.log('renderTreeView - filteredHierarchy:', filteredHierarchy);
-    console.log('renderTreeView - searchTerm:', searchTerm);
     
     if (Object.keys(filteredHierarchy).length === 0) {
       return (
