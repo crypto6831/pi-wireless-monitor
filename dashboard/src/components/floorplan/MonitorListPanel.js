@@ -68,7 +68,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
   }, { positionedMonitors: [], unpositionedMonitors: [] });
 
   const handleDragStart = (e, monitor) => {
-    console.log('Drag start triggered for monitor:', monitor.name);
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -79,7 +78,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
       type: 'monitor',
       monitor: monitor
     };
-    console.log('Setting drag data:', dragData);
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -182,7 +180,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
             </Box>
           }
           secondary={
-            <Box>
+            <React.Fragment>
               <Typography variant="caption" color="text.secondary" display="block">
                 ID: {monitor.monitorId}
               </Typography>
@@ -192,7 +190,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
               <Typography variant="caption" color="text.secondary" display="block">
                 Last seen: {formatLastSeen(monitor.lastHeartbeat)}
               </Typography>
-            </Box>
+            </React.Fragment>
           }
         />
         

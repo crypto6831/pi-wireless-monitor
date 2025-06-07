@@ -166,12 +166,7 @@ const MonitorInfoPanel = ({ monitor, open, onClose }) => {
 const FloorPlans = () => {
   const dispatch = useDispatch();
   
-  // Debug: Check if Redux state is accessible
-  const locationsState = useSelector(state => state.locations);
-  const floorPlanState = useSelector(state => state.floorPlan);
-  
-  console.log('FloorPlans - locations state:', locationsState);
-  console.log('FloorPlans - floorPlan state:', floorPlanState);
+  // Redux state selectors
   
   const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
   const { 
@@ -182,9 +177,6 @@ const FloorPlans = () => {
     error = null 
   } = useSelector(state => state.floorPlan || {});
   const { list: monitors = [] } = useSelector(state => state.monitors || {});
-  
-  console.log('FloorPlans - monitors state:', useSelector(state => state.monitors));
-  console.log('FloorPlans - monitors list:', monitors);
 
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
@@ -235,7 +227,6 @@ const FloorPlans = () => {
 
   const handleLocationSelect = (location, floor) => {
     try {
-      console.log('FloorPlans - Location select:', { location, floor });
       dispatch(setSelectedLocation(location));
       dispatch(setSelectedFloor(floor));
     } catch (err) {
@@ -254,13 +245,10 @@ const FloorPlans = () => {
   };
 
   const handleMonitorDrag = (monitor, newPosition) => {
-    console.log('Monitor dragged:', monitor.name, 'to position:', newPosition);
-    // Dispatch action to update monitor position
     dispatch(updateMonitorPosition({ monitorId: monitor._id, position: newPosition }));
   };
 
   const handleCanvasClick = (coordinates) => {
-    console.log('Canvas clicked at:', coordinates);
     // Could be used for placing new monitors or coverage areas
   };
 
@@ -309,7 +297,7 @@ const FloorPlans = () => {
           <MonitorListPanel
             selectedLocation={selectedLocation}
             selectedFloor={selectedFloor}
-            onMonitorDragStart={(monitor) => console.log('Monitor drag started:', monitor)}
+            onMonitorDragStart={() => {}}
           />
         </Box>
 

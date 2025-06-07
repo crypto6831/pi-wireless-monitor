@@ -55,17 +55,13 @@ const MonitorOverlayNew = ({
 
     const handleDrop = async (e) => {
       e.preventDefault();
-      console.log('Drop event triggered', e);
       
       try {
         const data = JSON.parse(e.dataTransfer.getData('application/json'));
-        console.log('Drop data:', data);
         if (data.type === 'monitor' && selectedLocation && selectedFloor) {
           const rect = e.currentTarget.getBoundingClientRect();
           const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
           const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
-          
-          console.log('Calculated position:', { x: Math.round(x), y: Math.round(y) });
           
           // Update monitor position via API
           await apiService.updateMonitorPosition(data.monitor._id, {

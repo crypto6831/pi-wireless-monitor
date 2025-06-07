@@ -342,13 +342,15 @@ const FloorPlanViewer = ({
             <ZoomOut />
           </IconButton>
           <Tooltip title="Reset Zoom to 100%">
-            <IconButton 
-              size="small" 
-              onClick={() => dispatch(setZoom(1.0))}
-              disabled={Math.abs(viewSettings.zoom - 1.0) < 0.01}
-            >
-              <RestartAlt />
-            </IconButton>
+            <span>
+              <IconButton 
+                size="small" 
+                onClick={() => dispatch(setZoom(1.0))}
+                disabled={Math.abs(viewSettings.zoom - 1.0) < 0.01}
+              >
+                <RestartAlt />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
 
