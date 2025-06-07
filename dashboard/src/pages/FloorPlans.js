@@ -196,11 +196,13 @@ const FloorPlans = () => {
   const [showInterference, setShowInterference] = useState(false);
   const [coverageType, setCoverageType] = useState('both');
 
-  // Load monitors and coverage when location/floor changes
+  // Load monitors once on component mount
   useEffect(() => {
-    // Always load all monitors (MonitorListPanel will filter them)
     dispatch(fetchMonitors());
-    
+  }, [dispatch]);
+
+  // Load coverage when location/floor changes
+  useEffect(() => {
     if (selectedLocation?._id && selectedFloor?._id) {
       try {
         dispatch(fetchLocationCoverage({ 

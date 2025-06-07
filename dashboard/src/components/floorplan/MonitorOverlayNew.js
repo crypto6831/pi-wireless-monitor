@@ -50,6 +50,7 @@ const MonitorOverlayNew = ({
   useEffect(() => {
     const handleDragOver = (e) => {
       e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = async (e) => {
@@ -63,6 +64,8 @@ const MonitorOverlayNew = ({
           const rect = e.currentTarget.getBoundingClientRect();
           const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
           const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+          
+          console.log('Calculated position:', { x: Math.round(x), y: Math.round(y) });
           
           // Update monitor position via API
           await apiService.updateMonitorPosition(data.monitor._id, {

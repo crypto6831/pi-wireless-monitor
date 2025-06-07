@@ -129,13 +129,16 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
         sx={{
           borderRadius: 1,
           mb: 1,
-          border: 1,
-          borderColor: 'divider',
-          bgcolor: isCurrentlyDragged ? 'action.selected' : 'background.paper',
-          opacity: isCurrentlyDragged ? 0.5 : 1,
+          border: 2,
+          borderColor: isCurrentlyDragged ? 'primary.main' : 'divider',
+          bgcolor: isCurrentlyDragged ? 'primary.50' : 'background.paper',
+          opacity: isCurrentlyDragged ? 0.8 : 1,
           cursor: isDraggable && selectedFloor ? 'grab' : 'default',
+          transform: isCurrentlyDragged ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.2s ease',
           '&:hover': {
             bgcolor: isDraggable && selectedFloor ? 'action.hover' : 'background.paper',
+            transform: isDraggable && selectedFloor ? 'scale(1.01)' : 'scale(1)',
           },
           '&:active': {
             cursor: isDraggable && selectedFloor ? 'grabbing' : 'default',
