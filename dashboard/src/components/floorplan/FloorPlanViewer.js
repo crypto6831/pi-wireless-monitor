@@ -283,15 +283,13 @@ const FloorPlanViewer = ({
   const handleUpload = async () => {
     if (selectedFile && selectedLocation && selectedFloor) {
       try {
+        const formData = new FormData();
+        formData.append('floorPlan', selectedFile);
+        formData.append('floorId', selectedFloor._id);
+        
         await dispatch(uploadFloorPlan({
           locationId: selectedLocation._id,
-          floorId: selectedFloor._id,
-          file: selectedFile,
-          metadata: {
-            address: selectedLocation.address,
-            building: selectedLocation.buildingName,
-            floor: selectedFloor.floorNumber,
-          },
+          formData: formData
         })).unwrap();
         
         setUploadDialogOpen(false);
