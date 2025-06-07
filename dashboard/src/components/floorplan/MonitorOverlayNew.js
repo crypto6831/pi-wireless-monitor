@@ -192,10 +192,6 @@ const MonitorOverlayNew = ({
       dispatch(fetchMonitors());
       setInfoDialogOpen(false);
       setSelectedMonitor(null);
-      
-      if (onMonitorPositionChange) {
-        onMonitorPositionChange(monitor, null);
-      }
     } catch (err) {
       console.error('Error removing monitor from floor:', err);
     }
@@ -314,7 +310,7 @@ const MonitorOverlayNew = ({
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Monitor Details</Typography>
+          Monitor Details
           <IconButton onClick={() => setInfoDialogOpen(false)}>
             <Close />
           </IconButton>
