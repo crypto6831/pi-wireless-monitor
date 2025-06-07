@@ -96,7 +96,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   const canvasRef_local = useRef(null);
 
   useEffect(() => {
-    if (!canvasRef_local.current || !canvasRef.current || !monitors.length) return;
+    if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) return;
 
     const canvas = canvasRef_local.current;
     const ctx = canvas.getContext('2d');
@@ -180,8 +180,8 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   return (
     <canvas
       ref={canvasRef_local}
-      width={canvasRef.current?.width || 800}
-      height={canvasRef.current?.height || 600}
+      width={canvasRef?.current?.width || 800}
+      height={canvasRef?.current?.height || 600}
       style={{
         position: 'absolute',
         top: 0,
@@ -197,7 +197,7 @@ const InterferenceZones = ({ zones = [], viewSettings, canvasRef }) => {
   const canvasRef_local = useRef(null);
 
   useEffect(() => {
-    if (!canvasRef_local.current || !canvasRef.current) return;
+    if (!canvasRef_local.current || !canvasRef?.current) return;
 
     const canvas = canvasRef_local.current;
     const ctx = canvas.getContext('2d');
@@ -242,8 +242,8 @@ const InterferenceZones = ({ zones = [], viewSettings, canvasRef }) => {
   return (
     <canvas
       ref={canvasRef_local}
-      width={canvasRef.current?.width || 800}
-      height={canvasRef.current?.height || 600}
+      width={canvasRef?.current?.width || 800}
+      height={canvasRef?.current?.height || 600}
       style={{
         position: 'absolute',
         top: 0,
