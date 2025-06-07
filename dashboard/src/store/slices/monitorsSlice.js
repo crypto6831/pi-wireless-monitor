@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import { apiService } from '../../services/api';
 
 // Async thunks
 export const fetchMonitors = createAsyncThunk(
   'monitors/fetchMonitors',
   async () => {
-    const response = await api.get('/monitors');
+    const response = await apiService.getMonitors();
     return response.data;
   }
 );
@@ -13,8 +13,16 @@ export const fetchMonitors = createAsyncThunk(
 export const fetchMonitorStats = createAsyncThunk(
   'monitors/fetchStats',
   async (monitorId) => {
-    const response = await api.get(`/monitors/${monitorId}/stats`);
+    const response = await apiService.getMonitor(monitorId);
     return { monitorId, stats: response.data.stats };
+  }
+);
+
+export const updateMonitorPosition = createAsyncThunk(
+  'monitors/updatePosition',
+  async ({ monitorId, position }) => {
+    const response = await apiService.updateMonitorPosition(monitorId, position);
+    return { monitorId, position };
   }
 );
 
@@ -62,6 +70,14 @@ const monitorsSlice = createSlice({
       .addCase(fetchMonitorStats.fulfilled, (state, action) => {
         const { monitorId, stats } = action.payload;
         state.stats[monitorId] = stats;
+      })
+      // Update monitor position
+      .addCase(updateMonitorPosition.fulfilled, (state, action) => {
+        const { monitorId, position } = action.payload;
+        const monitor = state.list.find(m => m._id === monitorId);
+        if (monitor) {
+          monitor.position = position;
+        }
       });
   },
 });

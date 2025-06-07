@@ -33,7 +33,8 @@ import { useDispatch, useSelector } from 'react-redux';
 // Import our new components
 import LocationHierarchy from '../components/locations/LocationHierarchy';
 import FloorPlanViewer from '../components/floorplan/FloorPlanViewer';
-import MonitorOverlay from '../components/floorplan/MonitorOverlay';
+import MonitorOverlayNew from '../components/floorplan/MonitorOverlayNew';
+import MonitorListPanel from '../components/floorplan/MonitorListPanel';
 import CoverageOverlay, { CoverageControls } from '../components/floorplan/CoverageOverlay';
 
 // Import actions
@@ -41,8 +42,8 @@ import {
   fetchLocationMonitors,
   fetchLocationCoverage,
   clearSelectedMonitors,
-  updateMonitorPosition,
 } from '../store/slices/floorPlanSlice';
+import { updateMonitorPosition } from '../store/slices/monitorsSlice';
 import { setSelectedLocation, setSelectedFloor } from '../store/slices/locationsSlice';
 
 const MonitorInfoPanel = ({ monitor, open, onClose }) => {
@@ -297,6 +298,15 @@ const FloorPlans = () => {
           )}
         </Box>
 
+        {/* Monitor List Panel */}
+        <Box sx={{ width: 300, display: 'flex', flexDirection: 'column', m: 1 }}>
+          <MonitorListPanel
+            selectedLocation={selectedLocation}
+            selectedFloor={selectedFloor}
+            onMonitorDragStart={(monitor) => console.log('Monitor drag started:', monitor)}
+          />
+        </Box>
+
         {/* Main Content - Floor Plan Viewer */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', m: 1 }}>
           {!selectedLocation ? (
@@ -343,11 +353,11 @@ const FloorPlans = () => {
               onMonitorDrag={handleMonitorDrag}
               onCanvasClick={handleCanvasClick}
             >
-              <MonitorOverlay
-                monitors={filteredMonitors}
-                selectedMonitors={selectedMonitors}
-                onMonitorSelect={handleMonitorSelect}
-                onMonitorDrag={handleMonitorDrag}
+              <MonitorOverlayNew
+                selectedLocation={selectedLocation}
+                selectedFloor={selectedFloor}
+                onMonitorClick={handleMonitorSelect}
+                onMonitorPositionChange={handleMonitorDrag}
               />
               {viewSettings?.showCoverage && (
                 <CoverageOverlay

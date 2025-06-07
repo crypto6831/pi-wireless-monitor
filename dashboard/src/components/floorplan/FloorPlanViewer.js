@@ -397,7 +397,10 @@ const FloorPlanViewer = ({
       </Toolbar>
 
       {/* Canvas Container */}
-      <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}>
+      <Box 
+        data-floor-plan-container
+        sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}
+      >
         {loading && (
           <Box
             sx={{
