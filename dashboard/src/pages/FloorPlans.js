@@ -41,6 +41,7 @@ import {
   fetchLocationMonitors,
   fetchLocationCoverage,
   clearSelectedMonitors,
+  updateMonitorPosition,
 } from '../store/slices/floorPlanSlice';
 import { setSelectedLocation, setSelectedFloor } from '../store/slices/locationsSlice';
 
@@ -173,7 +174,7 @@ const FloorPlans = () => {
   console.log('FloorPlans - floorPlan state:', floorPlanState);
   
   const { selectedLocation, selectedFloor } = useSelector(state => state.locations || {});
-  const { monitors, coverageAreas, selectedMonitors, loading, error } = useSelector(
+  const { monitors, coverageAreas, selectedMonitors, viewSettings, loading, error } = useSelector(
     state => state.floorPlan || {}
   );
 
@@ -232,6 +233,12 @@ const FloorPlans = () => {
   const handleMonitorSelect = (monitor) => {
     setSelectedMonitor(monitor);
     setMonitorInfoOpen(true);
+  };
+
+  const handleMonitorDrag = (monitorId, newPosition) => {
+    console.log('Monitor dragged:', monitorId, newPosition);
+    // Dispatch action to update monitor position
+    dispatch(updateMonitorPosition({ monitorId, position: newPosition }));
   };
 
   const handleCanvasClick = (coordinates) => {
