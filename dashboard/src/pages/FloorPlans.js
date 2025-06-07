@@ -265,52 +265,64 @@ const FloorPlans = () => {
 
         {/* Main Content - Floor Plan Viewer */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', m: 1 }}>
-          <Paper sx={{ 
-            flexGrow: 1, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 2,
-            p: 3,
-          }}>
-            {!selectedLocation ? (
-              <>
-                <Info sx={{ fontSize: 64, color: 'text.secondary' }} />
-                <Typography variant="h6" color="text.secondary">
-                  Select a location to get started
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Use the location hierarchy on the left to select an address and building
-                </Typography>
-              </>
-            ) : !selectedFloor ? (
-              <>
-                <Layers sx={{ fontSize: 64, color: 'text.secondary' }} />
-                <Typography variant="h6" color="text.secondary">
-                  Add a floor to {selectedLocation.buildingName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Click "Add Floor" in the left panel to create a floor for this building
-                </Typography>
-              </>
-            ) : (
-              <>
-                <Upload sx={{ fontSize: 64, color: 'text.secondary' }} />
-                <Typography variant="h6" color="text.secondary">
-                  Floor plan for {selectedLocation.buildingName} - Floor {selectedFloor.floorNumber}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Click "Upload Floor Plan" in the left panel to upload an image for this floor
-                </Typography>
-                {selectedFloor.floorPlan && (
-                  <Typography variant="body2" color="success.main">
-                    ✓ Floor plan uploaded successfully
-                  </Typography>
-                )}
-              </>
-            )}
-          </Paper>
+          {!selectedLocation ? (
+            <Paper sx={{ 
+              flexGrow: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 2,
+              p: 3,
+            }}>
+              <Info sx={{ fontSize: 64, color: 'text.secondary' }} />
+              <Typography variant="h6" color="text.secondary">
+                Select a location to get started
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Use the location hierarchy on the left to select an address and building
+              </Typography>
+            </Paper>
+          ) : !selectedFloor ? (
+            <Paper sx={{ 
+              flexGrow: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 2,
+              p: 3,
+            }}>
+              <Layers sx={{ fontSize: 64, color: 'text.secondary' }} />
+              <Typography variant="h6" color="text.secondary">
+                Add a floor to {selectedLocation.buildingName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Click "Add Floor" in the left panel to create a floor for this building
+              </Typography>
+            </Paper>
+          ) : (
+            <FloorPlanViewer
+              selectedLocation={selectedLocation}
+              selectedFloor={selectedFloor}
+              onMonitorClick={handleMonitorSelect}
+              onMonitorDrag={handleMonitorDrag}
+              onCanvasClick={handleCanvasClick}
+            >
+              <MonitorOverlay
+                monitors={filteredMonitors}
+                selectedMonitors={selectedMonitors}
+                onMonitorSelect={handleMonitorSelect}
+                onMonitorDrag={handleMonitorDrag}
+              />
+              {viewSettings.showCoverage && (
+                <CoverageOverlay
+                  monitors={filteredMonitors}
+                  coverageAreas={coverageAreas}
+                />
+              )}
+            </FloorPlanViewer>
+          )}
         </Box>
       </Box>
 

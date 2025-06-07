@@ -70,7 +70,14 @@ const FloorPlanViewer = ({
 
   // Load floor plan image when floor changes
   useEffect(() => {
+    console.log('FloorPlanViewer - Effect triggered:', {
+      selectedLocation: selectedLocation?._id,
+      selectedFloor: selectedFloor?._id,
+      hasFloorPlan: !!selectedFloor?.floorPlan
+    });
+    
     if (selectedLocation && selectedFloor && selectedFloor.floorPlan) {
+      console.log('FloorPlanViewer - Fetching floor plan image');
       dispatch(fetchFloorPlanImage({ 
         locationId: selectedLocation._id,
         floorId: selectedFloor._id 
