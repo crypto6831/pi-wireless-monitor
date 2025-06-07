@@ -51,12 +51,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     return matchesSearch;
   });
 
-  // Debug logging
-  console.log('MonitorListPanel DEBUG:', {
-    totalMonitors: monitors.length,
-    filteredMonitors: filteredMonitors.length,
-    monitors: monitors.map(m => ({ name: m.name, monitorId: m.monitorId, locationId: m.locationId, floorId: m.floorId }))
-  });
 
   // Separate monitors into positioned and unpositioned based on current floor
   const { positionedMonitors, unpositionedMonitors } = filteredMonitors.reduce((acc, monitor) => {
@@ -74,16 +68,8 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     return acc;
   }, { positionedMonitors: [], unpositionedMonitors: [] });
 
-  console.log('MonitorListPanel separation DEBUG:', {
-    selectedLocationId: selectedLocation?._id,
-    selectedFloorId: selectedFloor?._id,
-    positionedCount: positionedMonitors.length,
-    unpositionedCount: unpositionedMonitors.length,
-    unpositionedMonitors: unpositionedMonitors.map(m => ({ name: m.name, locationId: m.locationId, floorId: m.floorId }))
-  });
 
   const handleDragStart = useCallback((e, monitor) => {
-    console.log('DEBUG: Drag start triggered for monitor:', monitor.name, monitor);
     setDraggedMonitor(monitor);
     if (onMonitorDragStart) {
       onMonitorDragStart(monitor);
@@ -94,7 +80,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
       type: 'monitor',
       monitor: monitor
     };
-    console.log('DEBUG: Setting drag data:', dragData);
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'move';
   }, [onMonitorDragStart]);
@@ -135,12 +120,6 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
   const renderMonitorItem = (monitor, isDraggable = true) => {
     const isCurrentlyDragged = draggedMonitor && draggedMonitor._id === monitor._id;
     
-    console.log('DEBUG: Rendering monitor item:', {
-      name: monitor.name,
-      isDraggable,
-      selectedFloor: !!selectedFloor,
-      draggableAttribute: isDraggable && selectedFloor
-    });
     
     return (
       <ListItem
@@ -311,7 +290,7 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
                 Unpositioned ({unpositionedMonitors.length})
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-                Drag these monitors onto the floor plan to position them {selectedFloor ? '(Floor selected - draggable)' : '(No floor - not draggable)'}
+                Drag these monitors onto the floor plan to position them
               </Typography>
               <List dense sx={{ p: 0 }}>
                 {unpositionedMonitors.map(monitor => renderMonitorItem(monitor, true))}

@@ -75,14 +75,7 @@ const FloorPlanViewer = ({
 
   // Load floor plan image when floor changes
   useEffect(() => {
-    console.log('FloorPlanViewer - Effect triggered:', {
-      selectedLocation: selectedLocation?._id,
-      selectedFloor: selectedFloor?._id,
-      hasFloorPlan: !!selectedFloor?.floorPlan
-    });
-    
     if (selectedLocation && selectedFloor && selectedFloor.floorPlan) {
-      console.log('FloorPlanViewer - Fetching floor plan image');
       dispatch(fetchFloorPlanImage({ 
         locationId: selectedLocation._id,
         floorId: selectedFloor._id 
@@ -317,7 +310,6 @@ const FloorPlanViewer = ({
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    console.log('DEBUG: FloorPlanViewer - Drag over detected');
     setIsDropZoneActive(true);
   }, []);
 
@@ -330,20 +322,15 @@ const FloorPlanViewer = ({
 
   const handleDrop = useCallback(async (e) => {
     e.preventDefault();
-    console.log('DEBUG: FloorPlanViewer - Drop event triggered', e);
     setIsDropZoneActive(false);
     
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      console.log('DEBUG: FloorPlanViewer - Drop data received:', data);
       
       if (data.type === 'monitor' && selectedLocation && selectedFloor) {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
         const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
-        
-        console.log('DEBUG: FloorPlanViewer - Calculated position:', { x: Math.round(x), y: Math.round(y) });
-        console.log('DEBUG: FloorPlanViewer - Selected location/floor:', selectedLocation._id, selectedFloor._id);
         
         // Update monitor position via API
         await apiService.updateMonitorPosition(data.monitor._id, {
