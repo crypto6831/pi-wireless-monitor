@@ -354,7 +354,6 @@ const FloorPlans = () => {
                 selectedFloor={selectedFloor}
                 onMonitorClick={handleMonitorSelect}
                 onMonitorPositionChange={handleMonitorDrag}
-                onDragStateChange={setIsDragOverFloorPlan}
               />
               {viewSettings?.showCoverage && (
                 <CoverageOverlay

@@ -41,6 +41,8 @@ import {
   clearError,
 } from '../../store/slices/floorPlanSlice';
 import { uploadFloorPlan } from '../../store/slices/locationsSlice';
+import { fetchMonitors } from '../../store/slices/monitorsSlice';
+import { apiService } from '../../services/api';
 
 const FloorPlanViewer = ({ 
   selectedLocation, 
@@ -69,6 +71,7 @@ const FloorPlanViewer = ({
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isDropZoneActive, setIsDropZoneActive] = useState(false);
 
   // Load floor plan image when floor changes
   useEffect(() => {
@@ -310,6 +313,58 @@ const FloorPlanViewer = ({
     }
   };
 
+  // Handle drag and drop for monitor positioning
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    console.log('DEBUG: FloorPlanViewer - Drag over detected');
+    setIsDropZoneActive(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    // Only set to false if we're leaving the container itself, not a child
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDropZoneActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e) => {
+    e.preventDefault();
+    console.log('DEBUG: FloorPlanViewer - Drop event triggered', e);
+    setIsDropZoneActive(false);
+    
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      console.log('DEBUG: FloorPlanViewer - Drop data received:', data);
+      
+      if (data.type === 'monitor' && selectedLocation && selectedFloor) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = (e.clientX - rect.left - viewSettings.panX) / viewSettings.zoom;
+        const y = (e.clientY - rect.top - viewSettings.panY) / viewSettings.zoom;
+        
+        console.log('DEBUG: FloorPlanViewer - Calculated position:', { x: Math.round(x), y: Math.round(y) });
+        console.log('DEBUG: FloorPlanViewer - Selected location/floor:', selectedLocation._id, selectedFloor._id);
+        
+        // Update monitor position via API
+        await apiService.updateMonitorPosition(data.monitor._id, {
+          x: Math.round(x),
+          y: Math.round(y),
+          locationId: selectedLocation._id,
+          floorId: selectedFloor._id,
+        });
+        
+        // Refresh monitors list
+        dispatch(fetchMonitors());
+        
+        if (onMonitorDrag) {
+          onMonitorDrag(data.monitor, { x: Math.round(x), y: Math.round(y) });
+        }
+      }
+    } catch (err) {
+      console.error('Error dropping monitor:', err);
+    }
+  }, [selectedLocation, selectedFloor, viewSettings, dispatch, onMonitorDrag]);
+
   return (
     <Box 
       ref={containerRef}
@@ -402,15 +457,18 @@ const FloorPlanViewer = ({
       {/* Canvas Container */}
       <Box 
         data-floor-plan-container
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         sx={{ 
           position: 'relative', 
           flexGrow: 1, 
           overflow: 'hidden',
-          border: isDragOver ? 2 : 0,
+          border: (isDragOver || isDropZoneActive) ? 2 : 0,
           borderColor: 'primary.main',
           borderStyle: 'dashed',
           transition: 'border 0.2s ease',
-          backgroundColor: isDragOver ? 'primary.50' : 'transparent',
+          backgroundColor: (isDragOver || isDropZoneActive) ? 'primary.50' : 'transparent',
         }}
       >
         {loading && (

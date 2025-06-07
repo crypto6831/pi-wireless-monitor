@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Tooltip,
@@ -27,8 +27,7 @@ const MonitorOverlayNew = ({
   selectedLocation, 
   selectedFloor, 
   onMonitorPositionChange,
-  onMonitorClick,
-  onDragStateChange
+  onMonitorClick
 }) => {
   const dispatch = useDispatch();
   const { list: monitors } = useSelector(state => state.monitors);
@@ -38,21 +37,6 @@ const MonitorOverlayNew = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  // Use refs to store current values without triggering useEffect
-  const selectedLocationRef = useRef(selectedLocation);
-  const selectedFloorRef = useRef(selectedFloor);
-  const viewSettingsRef = useRef(viewSettings);
-  const onMonitorPositionChangeRef = useRef(onMonitorPositionChange);
-
-  // Update refs when values change
-  useEffect(() => {
-    selectedLocationRef.current = selectedLocation;
-    selectedFloorRef.current = selectedFloor;
-    viewSettingsRef.current = viewSettings;
-    onMonitorPositionChangeRef.current = onMonitorPositionChange;
-  }, [selectedLocation, selectedFloor, viewSettings, onMonitorPositionChange]);
 
   // Get monitors positioned on current floor
   const floorMonitors = monitors.filter(monitor => 
@@ -62,97 +46,7 @@ const MonitorOverlayNew = ({
     (monitor.position.x !== 0 || monitor.position.y !== 0)
   );
 
-  // Stable drag handlers that don't change on every render
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    console.log('DEBUG: Drag over detected on floor plan');
-    setIsDragOver(true);
-    if (onDragStateChange) {
-      onDragStateChange(true);
-    }
-  }, []); // Remove onDragStateChange from dependencies
-
-  const handleDragLeave = useCallback((e) => {
-    // Only set to false if we're leaving the container itself, not a child
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      setIsDragOver(false);
-      if (onDragStateChange) {
-        onDragStateChange(false);
-      }
-    }
-  }, []); // Remove onDragStateChange from dependencies
-
-  const handleDrop = useCallback(async (e) => {
-    e.preventDefault();
-    console.log('DEBUG: Drop event triggered', e);
-    setIsDragOver(false);
-    if (onDragStateChange) {
-      onDragStateChange(false);
-    }
-    
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      console.log('DEBUG: Drop data received:', data);
-      
-      const currentLocation = selectedLocationRef.current;
-      const currentFloor = selectedFloorRef.current;
-      const currentViewSettings = viewSettingsRef.current;
-      const currentOnMonitorPositionChange = onMonitorPositionChangeRef.current;
-      
-      if (data.type === 'monitor' && currentLocation && currentFloor) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = (e.clientX - rect.left - currentViewSettings.panX) / currentViewSettings.zoom;
-        const y = (e.clientY - rect.top - currentViewSettings.panY) / currentViewSettings.zoom;
-        
-        console.log('DEBUG: Calculated position:', { x: Math.round(x), y: Math.round(y) });
-        console.log('DEBUG: Selected location/floor:', currentLocation._id, currentFloor._id);
-        
-        // Update monitor position via API
-        await apiService.updateMonitorPosition(data.monitor._id, {
-          x: Math.round(x),
-          y: Math.round(y),
-          locationId: currentLocation._id,
-          floorId: currentFloor._id,
-        });
-        
-        // Refresh monitors list
-        dispatch(fetchMonitors());
-        
-        if (currentOnMonitorPositionChange) {
-          currentOnMonitorPositionChange(data.monitor, { x: Math.round(x), y: Math.round(y) });
-        }
-      }
-    } catch (err) {
-      console.error('Error dropping monitor:', err);
-    }
-  }, [dispatch]); // Remove onDragStateChange from dependencies
-
-  // Handle drag and drop from monitor list - run once after mount
-  useEffect(() => {
-    const container = document.querySelector('[data-floor-plan-container]');
-    console.log('DEBUG: MonitorOverlayNew - Setting up drop zone:', {
-      containerFound: !!container,
-      selectedLocation: !!selectedLocation,
-      selectedFloor: !!selectedFloor
-    });
-    
-    if (container) {
-      console.log('DEBUG: Adding event listeners to container');
-      container.addEventListener('dragover', handleDragOver);
-      container.addEventListener('dragleave', handleDragLeave);
-      container.addEventListener('drop', handleDrop);
-      
-      return () => {
-        console.log('DEBUG: Removing event listeners from container');
-        container.removeEventListener('dragover', handleDragOver);
-        container.removeEventListener('dragleave', handleDragLeave);
-        container.removeEventListener('drop', handleDrop);
-      };
-    } else {
-      console.log('DEBUG: Container not found for drop zone setup');
-    }
-  }, []); // Empty dependency array - run only once
+  // Drag and drop handling is now in FloorPlanViewer component
 
   // Handle monitor repositioning
   const handleMonitorMouseDown = (e, monitor) => {
