@@ -239,3 +239,61 @@ SCAN_INTERVAL=60
 ### Navigation
 - New "Floor Plans" menu item in sidebar (`/floor-plans` route)
 - Integrated with existing dashboard navigation structure
+
+## Floor Plan Drag-and-Drop Implementation
+
+### Monitor Positioning via Drag-and-Drop
+The floor plan feature includes drag-and-drop functionality for positioning monitors visually on floor plans.
+
+#### Key Components:
+- **MonitorListPanel.js**: Shows draggable monitors in "Unpositioned" section
+- **FloorPlanViewer.js**: Canvas-based floor plan with drop zone handling
+- **MonitorOverlayNew.js**: Renders positioned monitors on the floor plan
+
+#### Implementation Details:
+1. **Drag Source**: Unpositioned monitors in MonitorListPanel
+   - Uses HTML5 drag-and-drop API
+   - Transfers monitor data as JSON via dataTransfer
+   - Visual feedback: cursor changes, drag indicators
+
+2. **Drop Target**: FloorPlanViewer canvas container
+   - Handles dragover, dragleave, and drop events
+   - Calculates world coordinates from mouse position
+   - Updates monitor position via API
+
+3. **Monitor States**:
+   - **Unpositioned**: `locationId: null, floorId: null` or different floor
+   - **Positioned**: Has valid locationId, floorId, and x,y coordinates
+
+#### Common Issues and Solutions:
+
+1. **Removed monitors not draggable**:
+   - **Issue**: Monitors with null locationId/floorId weren't showing as draggable
+   - **Solution**: Updated filtering logic to always show null location monitors as unpositioned
+
+2. **Drag events not firing**:
+   - **Issue**: `canDrag` variable was an object instead of boolean
+   - **Solution**: Use `!!selectedFloor` to ensure boolean value for draggable attribute
+
+3. **Component remounting issues**:
+   - **Issue**: Event listeners being constantly removed/re-added
+   - **Solution**: Moved drag-drop handlers to stable FloorPlanViewer component
+
+#### API Integration:
+- **Update Position**: `PUT /api/monitors/:id/position`
+  ```javascript
+  {
+    x: number,
+    y: number,
+    locationId: string,
+    floorId: string
+  }
+  ```
+- **Remove from Floor**: Set locationId and floorId to null, x and y to 0
+
+#### Testing Drag-and-Drop:
+1. Select a floor in the location hierarchy
+2. Drag monitors from "Unpositioned" list
+3. Drop on floor plan to position
+4. Remove monitors via info dialog
+5. Removed monitors appear back in "Unpositioned" list
