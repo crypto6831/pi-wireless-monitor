@@ -54,6 +54,7 @@ export const fetchFloorPlanImage = createAsyncThunk(
   'floorPlan/fetchFloorPlanImage',
   async ({ locationId, floorId }, { rejectWithValue }) => {
     console.log('fetchFloorPlanImage called with:', { locationId, floorId });
+    console.log('About to call apiService.getFloorPlanImage with:', locationId, floorId);
     try {
       const response = await apiService.getFloorPlanImage(locationId, floorId);
       console.log('Floor plan response:', response);
@@ -63,6 +64,7 @@ export const fetchFloorPlanImage = createAsyncThunk(
       return imageUrl;
     } catch (error) {
       console.error('Error fetching floor plan image:', error);
+      console.error('Error response:', error.response);
       return rejectWithValue(error.response?.data?.error || 'Failed to fetch floor plan image');
     }
   }

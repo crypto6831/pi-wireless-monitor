@@ -128,9 +128,16 @@ router.get('/:id/floorplan/image', /* authenticateMonitor, */ [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
+    console.log('Floor plan image request:', {
+      locationId: req.params.id,
+      query: req.query,
+      floorId: req.query.floorId
+    });
+    
     const { floorId } = req.query;
     
     if (!floorId) {
+      console.log('Error: Floor ID is required but not provided');
       return res.status(400).json({ error: 'Floor ID is required' });
     }
     
