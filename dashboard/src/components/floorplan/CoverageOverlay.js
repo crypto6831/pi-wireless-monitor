@@ -255,7 +255,7 @@ const InterferenceZones = ({ zones = [], viewSettings, canvasRef }) => {
   );
 };
 
-const CoverageControls = ({ 
+export const CoverageControls = ({ 
   showHeatmap, 
   onToggleHeatmap, 
   heatmapIntensity, 
@@ -266,7 +266,7 @@ const CoverageControls = ({
   onCoverageTypeChange 
 }) => {
   return (
-    <Paper sx={{ p: 2, position: 'absolute', top: 16, left: 16, minWidth: 250, zIndex: 1000 }}>
+    <Paper sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
         Coverage Settings
       </Typography>
@@ -360,13 +360,12 @@ const CoverageOverlay = ({
   coverageAreas = [], 
   monitors = [], 
   canvasRef,
-  showControls = true 
+  showHeatmap = true,
+  heatmapIntensity = 0.5,
+  showInterference = false,
+  coverageType = 'both'
 }) => {
   const { viewSettings } = useSelector(state => state.floorPlan);
-  const [showHeatmap, setShowHeatmap] = useState(true);
-  const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
-  const [showInterference, setShowInterference] = useState(false);
-  const [coverageType, setCoverageType] = useState('both');
 
   // Sample interference zones (would come from props in real implementation)
   const interferenceZones = [
@@ -422,19 +421,6 @@ const CoverageOverlay = ({
         />
       )}
 
-      {/* Controls */}
-      {showControls && (
-        <CoverageControls
-          showHeatmap={showHeatmap}
-          onToggleHeatmap={setShowHeatmap}
-          heatmapIntensity={heatmapIntensity}
-          onHeatmapIntensityChange={setHeatmapIntensity}
-          showInterference={showInterference}
-          onToggleInterference={setShowInterference}
-          coverageType={coverageType}
-          onCoverageTypeChange={setCoverageType}
-        />
-      )}
     </>
   );
 };

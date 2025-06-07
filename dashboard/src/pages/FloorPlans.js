@@ -34,7 +34,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import LocationHierarchy from '../components/locations/LocationHierarchy';
 import FloorPlanViewer from '../components/floorplan/FloorPlanViewer';
 import MonitorOverlay from '../components/floorplan/MonitorOverlay';
-import CoverageOverlay from '../components/floorplan/CoverageOverlay';
+import CoverageOverlay, { CoverageControls } from '../components/floorplan/CoverageOverlay';
 
 // Import actions
 import {
@@ -186,6 +186,12 @@ const FloorPlans = () => {
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  
+  // Coverage settings state
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [heatmapIntensity, setHeatmapIntensity] = useState(0.5);
+  const [showInterference, setShowInterference] = useState(false);
+  const [coverageType, setCoverageType] = useState('both');
 
   // Load monitors and coverage when location/floor changes
   useEffect(() => {
@@ -267,13 +273,29 @@ const FloorPlans = () => {
       </Typography>
 
       <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left Panel - Location Hierarchy */}
-        <Paper sx={{ width: 350, display: 'flex', flexDirection: 'column', m: 1 }}>
-          <LocationHierarchy
-            onLocationSelect={handleLocationSelect}
-            showCreateButton={true}
-          />
-        </Paper>
+        {/* Left Panel - Location Hierarchy & Coverage Controls */}
+        <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', m: 1, gap: 1 }}>
+          <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <LocationHierarchy
+              onLocationSelect={handleLocationSelect}
+              showCreateButton={true}
+            />
+          </Paper>
+          
+          {/* Coverage Controls - Only show when floor is selected */}
+          {selectedFloor && (
+            <CoverageControls
+              showHeatmap={showHeatmap}
+              onToggleHeatmap={setShowHeatmap}
+              heatmapIntensity={heatmapIntensity}
+              onHeatmapIntensityChange={setHeatmapIntensity}
+              showInterference={showInterference}
+              onToggleInterference={setShowInterference}
+              coverageType={coverageType}
+              onCoverageTypeChange={setCoverageType}
+            />
+          )}
+        </Box>
 
         {/* Main Content - Floor Plan Viewer */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', m: 1 }}>
@@ -331,6 +353,10 @@ const FloorPlans = () => {
                 <CoverageOverlay
                   monitors={filteredMonitors}
                   coverageAreas={coverageAreas}
+                  showHeatmap={showHeatmap}
+                  heatmapIntensity={heatmapIntensity}
+                  showInterference={showInterference}
+                  coverageType={coverageType}
                 />
               )}
             </FloorPlanViewer>
