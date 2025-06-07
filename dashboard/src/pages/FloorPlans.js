@@ -182,6 +182,9 @@ const FloorPlans = () => {
     error = null 
   } = useSelector(state => state.floorPlan || {});
   const { list: monitors = [] } = useSelector(state => state.monitors || {});
+  
+  console.log('FloorPlans - monitors state:', useSelector(state => state.monitors));
+  console.log('FloorPlans - monitors list:', monitors);
 
   const [selectedMonitor, setSelectedMonitor] = useState(null);
   const [monitorInfoOpen, setMonitorInfoOpen] = useState(false);
