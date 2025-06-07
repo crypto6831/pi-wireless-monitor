@@ -136,6 +136,19 @@ const monitorSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
   },
+  // WiFi connection information
+  wifiConnection: {
+    ssid: { type: String, default: null },
+    bssid: { type: String, default: null },
+    rssi: { type: Number, default: null },
+    channel: { type: Number, default: null },
+    frequency: { type: Number, default: null },
+    rxRate: { type: Number, default: null },
+    txRate: { type: Number, default: null },
+    linkSpeed: { type: Number, default: null },
+    quality: { type: Number, default: null },
+    lastUpdated: { type: Date, default: null }
+  },
 }, {
   timestamps: true,
 });

@@ -22,6 +22,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMonitors } from '../../store/slices/monitorsSlice';
 import { apiService } from '../../services/api';
+import MonitorTooltip from './MonitorTooltip';
 
 const MonitorOverlayNew = ({ 
   selectedLocation, 
@@ -195,19 +196,11 @@ const MonitorOverlayNew = ({
             onClick={() => handleMonitorClick(monitor)}
           >
             <Tooltip
-              title={
-                <Box>
-                  <Typography variant="subtitle2">{monitor.name}</Typography>
-                  <Typography variant="caption">ID: {monitor.monitorId}</Typography>
-                  <br />
-                  <Typography variant="caption">Status: {monitor.status}</Typography>
-                  <br />
-                  <Typography variant="caption">
-                    Position: ({monitor.position.x}, {monitor.position.y})
-                  </Typography>
-                </Box>
-              }
+              title={<MonitorTooltip monitor={monitor} />}
               placement="top"
+              arrow
+              enterDelay={300}
+              leaveDelay={200}
             >
               <Paper
                 elevation={3}

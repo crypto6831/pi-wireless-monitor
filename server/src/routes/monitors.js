@@ -374,6 +374,42 @@ router.get('/:monitorId/stats', async (req, res) => {
   }
 });
 
+// Update monitor WiFi connection info
+router.put('/:id/wifi-connection', auth, async (req, res) => {
+  try {
+    const { ssid, bssid, rssi, channel, frequency, rxRate, txRate, linkSpeed, quality } = req.body;
+    
+    const monitor = await Monitor.findById(req.params.id);
+    if (!monitor) {
+      return res.status(404).json({ error: 'Monitor not found' });
+    }
+    
+    // Update WiFi connection data
+    monitor.wifiConnection = {
+      ssid: ssid || null,
+      bssid: bssid || null,
+      rssi: rssi || null,
+      channel: channel || null,
+      frequency: frequency || null,
+      rxRate: rxRate || null,
+      txRate: txRate || null,
+      linkSpeed: linkSpeed || null,
+      quality: quality || null,
+      lastUpdated: new Date()
+    };
+    
+    await monitor.save();
+    
+    res.json({ 
+      success: true, 
+      monitor: monitor 
+    });
+  } catch (error) {
+    logger.error('Error updating WiFi connection:', error);
+    res.status(500).json({ error: 'Failed to update WiFi connection' });
+  }
+});
+
 // Update monitor position
 router.put('/:id/position', [
   body('x').isNumeric().withMessage('X coordinate must be a number'),

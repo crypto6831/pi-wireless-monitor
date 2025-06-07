@@ -75,6 +75,7 @@ export const apiService = {
   updateMonitor: (id, data) => api.put(`/monitors/${id}`, data),
   deleteMonitor: (id) => api.delete(`/monitors/${id}`),
   updateMonitorPosition: (id, position) => api.put(`/monitors/${id}/position`, position),
+  updateMonitorWifiConnection: (id, wifiData) => api.put(`/monitors/${id}/wifi-connection`, wifiData),
   createMonitorCoverage: (id, coverage) => api.post(`/monitors/${id}/coverage`, coverage),
 
   // Networks
