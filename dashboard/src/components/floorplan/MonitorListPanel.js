@@ -142,15 +142,24 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
       selectedFloor: !!selectedFloor,
       canDrag,
       locationId: monitor.locationId,
-      floorId: monitor.floorId
+      floorId: monitor.floorId,
+      draggableAttr: canDrag
     });
     
     return (
       <ListItem
         key={monitor._id}
         draggable={canDrag}
-        onDragStart={(e) => canDrag && handleDragStart(e, monitor)}
+        onDragStart={(e) => {
+          console.log('DEBUG: onDragStart event fired, canDrag:', canDrag);
+          if (canDrag) {
+            handleDragStart(e, monitor);
+          }
+        }}
         onDragEnd={handleDragEnd}
+        onMouseDown={(e) => {
+          console.log('DEBUG: Mouse down on monitor item, canDrag:', canDrag);
+        }}
         sx={{
           borderRadius: 1,
           mb: 1,
@@ -221,10 +230,12 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
           }
         />
         
-        {canDrag && (
+        {canDrag ? (
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
             <DragIndicator sx={{ color: 'text.secondary' }} />
           </Box>
+        ) : (
+          <Box sx={{ width: 24, ml: 1 }} />
         )}
       </ListItem>
     );
