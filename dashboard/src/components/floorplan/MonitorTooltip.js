@@ -105,17 +105,6 @@ const MonitorTooltip = ({ monitor }) => {
               )}
             </Box>
 
-            {/* RX Rate */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Speed sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary">
-                RX Rate:
-              </Typography>
-              <Typography variant="caption" fontWeight="medium">
-                {formatDataRate(wifiConnection.rxRate)}
-              </Typography>
-            </Box>
-
             {/* BSSID */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Router sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -141,7 +130,62 @@ const MonitorTooltip = ({ monitor }) => {
               </Typography>
               <Typography variant="caption" fontWeight="medium">
                 {wifiConnection.channel || 'N/A'}
-                {wifiConnection.frequency && ` (${wifiConnection.frequency} MHz)`}
+                {wifiConnection.frequency && (
+                  <span style={{ color: '#666' }}>
+                    {' '}({wifiConnection.frequency >= 5000 ? '5GHz' : '2.4GHz'} channel)
+                  </span>
+                )}
+              </Typography>
+            </Box>
+
+            {/* Frequency */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+                Frequency:
+              </Typography>
+              <Typography variant="caption" fontWeight="medium">
+                {wifiConnection.frequency ? `${wifiConnection.frequency} MHz` : 'N/A'}
+              </Typography>
+            </Box>
+
+            {/* RX Rate */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Speed sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
+                RX Rate:
+              </Typography>
+              <Typography variant="caption" fontWeight="medium">
+                {formatDataRate(wifiConnection.rxRate)}
+              </Typography>
+            </Box>
+
+            {/* TX Rate */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+                TX Rate:
+              </Typography>
+              <Typography variant="caption" fontWeight="medium">
+                {formatDataRate(wifiConnection.txRate)}
+              </Typography>
+            </Box>
+
+            {/* Link Speed */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+                Link Speed:
+              </Typography>
+              <Typography variant="caption" fontWeight="medium">
+                {formatDataRate(wifiConnection.linkSpeed)}
+              </Typography>
+            </Box>
+
+            {/* Quality */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+                Quality:
+              </Typography>
+              <Typography variant="caption" fontWeight="medium">
+                {wifiConnection.quality ? `${wifiConnection.quality}%` : 'N/A'}
               </Typography>
             </Box>
           </Box>
