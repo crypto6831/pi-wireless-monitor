@@ -274,7 +274,7 @@ const FloorPlans = () => {
 
       <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left Panel - Location Hierarchy & Coverage Controls */}
-        <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', m: 1, gap: 1 }}>
+        <Box sx={{ width: 400, display: 'flex', flexDirection: 'column', m: 1, gap: 1 }}>
           <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <LocationHierarchy
               onLocationSelect={handleLocationSelect}

@@ -466,56 +466,64 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
       {/* Header */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Location Hierarchy
-        </Typography>
-        <Tooltip title="Refresh">
-          <IconButton 
-            onClick={() => {
-              dispatch(fetchLocationHierarchy());
-              dispatch(fetchLocations());
-            }}
-            disabled={loading}
-          >
-            <Refresh />
-          </IconButton>
-        </Tooltip>
-        {showCreateButton && (
-          <Button
-            startIcon={<Add />}
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              console.log('Add Location button clicked');
-              setCreateDialogOpen(true);
-            }}
-          >
-            Add Location
-          </Button>
-        )}
-        {selectedLocation && (
-          <Button
-            startIcon={<Layers />}
-            variant="outlined"
-            size="small"
-            onClick={() => setAddFloorDialogOpen(true)}
-          >
-            Add Floor
-          </Button>
-        )}
-        {selectedLocation && (
-          <Button
-            startIcon={<Upload />}
-            variant="outlined"
-            size="small"
-            onClick={() => setUploadFloorPlanDialogOpen(true)}
-          >
-            Upload Floor Plan
-          </Button>
-        )}
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">
+            Location Hierarchy
+          </Typography>
+          <Tooltip title="Refresh">
+            <IconButton 
+              onClick={() => {
+                dispatch(fetchLocationHierarchy());
+                dispatch(fetchLocations());
+              }}
+              disabled={loading}
+            >
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {showCreateButton && (
+            <Button
+              startIcon={<Add />}
+              variant="contained"
+              fullWidth
+              onClick={() => {
+                console.log('Add Location button clicked');
+                setCreateDialogOpen(true);
+              }}
+            >
+              Add Location
+            </Button>
+          )}
+          
+          {selectedLocation && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                startIcon={<Layers />}
+                variant="outlined"
+                fullWidth
+                onClick={() => setAddFloorDialogOpen(true)}
+              >
+                Add Floor
+              </Button>
+              <Button
+                startIcon={<Upload />}
+                variant="outlined"
+                fullWidth
+                onClick={() => setUploadFloorPlanDialogOpen(true)}
+                disabled={!selectedFloor}
+              >
+                Upload Floor Plan
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Box>
 
       {/* Search */}
