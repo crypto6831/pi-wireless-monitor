@@ -52,6 +52,7 @@ const MonitorOverlayNew = ({
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    console.log('DEBUG: Drag over detected on floor plan');
     setIsDragOver(true);
     if (onDragStateChange) {
       onDragStateChange(true);
@@ -110,16 +111,26 @@ const MonitorOverlayNew = ({
   // Handle drag and drop from monitor list
   useEffect(() => {
     const container = document.querySelector('[data-floor-plan-container]');
+    console.log('DEBUG: MonitorOverlayNew - Setting up drop zone:', {
+      containerFound: !!container,
+      selectedLocation: !!selectedLocation,
+      selectedFloor: !!selectedFloor
+    });
+    
     if (container) {
+      console.log('DEBUG: Adding event listeners to container');
       container.addEventListener('dragover', handleDragOver);
       container.addEventListener('dragleave', handleDragLeave);
       container.addEventListener('drop', handleDrop);
       
       return () => {
+        console.log('DEBUG: Removing event listeners from container');
         container.removeEventListener('dragover', handleDragOver);
         container.removeEventListener('dragleave', handleDragLeave);
         container.removeEventListener('drop', handleDrop);
       };
+    } else {
+      console.log('DEBUG: Container not found for drop zone setup');
     }
   }, [handleDragOver, handleDragLeave, handleDrop]);
 
