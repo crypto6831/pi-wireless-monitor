@@ -547,14 +547,12 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                     }}
                   >
                     {filteredHierarchy[address][building].map((floor, floorIndex) => {
-                      console.log('Floor object in tree:', floor);
                       // Find the actual floor ID from selectedLocation.floors by matching floorNumber
                       const actualFloor = selectedLocation?.floors?.find(f => 
                         f.floorNumber === floor.floorNumber && 
                         selectedLocation._id === floor.locationId
                       );
                       const floorId = actualFloor?._id || `${floor.locationId}-${floor.floorNumber}`;
-                      console.log('Floor ID computed:', { floor, actualFloor, floorId });
                       const isFloorSelected = selectedFloor?._id === floorId;
                       return (
                         <TreeItem
@@ -584,7 +582,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                                     color: isFloorSelected ? 'primary.main' : 'text.primary'
                                   }}
                                 >
-                                  {floor.floorName || `Floor ${floor.floorNumber}`}
+                                  {floor.floorName && floor.floorName.trim() !== floor.floorNumber.toString().trim() && floor.floorName.trim() !== ''
+                                    ? `${floor.floorName} (Floor ${floor.floorNumber})`
+                                    : `Floor ${floor.floorNumber}`
+                                  }
                                 </Typography>
                                 {isFloorSelected && (
                                   <Chip 
@@ -730,7 +731,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
           {selectedFloor && (
             <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
               <Layers sx={{ fontSize: 16, mr: 1 }} />
-              {selectedFloor.floorName || `Floor ${selectedFloor.floorNumber}`}
+              {selectedFloor.floorName && selectedFloor.floorName.trim() !== selectedFloor.floorNumber.toString().trim() && selectedFloor.floorName.trim() !== ''
+                ? `${selectedFloor.floorName} (Floor ${selectedFloor.floorNumber})`
+                : `Floor ${selectedFloor.floorNumber}`
+              }
             </Typography>
           )}
         </Box>
