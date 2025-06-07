@@ -27,6 +27,7 @@ import {
   CloudUpload,
   Refresh,
   CenterFocusStrong,
+  RestartAlt,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -340,6 +341,15 @@ const FloorPlanViewer = ({
           <IconButton size="small" onClick={() => dispatch(setZoom(viewSettings.zoom * 0.8))}>
             <ZoomOut />
           </IconButton>
+          <Tooltip title="Reset Zoom to 100%">
+            <IconButton 
+              size="small" 
+              onClick={() => dispatch(setZoom(1.0))}
+              disabled={Math.abs(viewSettings.zoom - 1.0) < 0.01}
+            >
+              <RestartAlt />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* View Controls */}
