@@ -128,16 +128,9 @@ router.get('/:id/floorplan/image', /* authenticateMonitor, */ [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
-    console.log('Floor plan image request:', {
-      locationId: req.params.id,
-      query: req.query,
-      floorId: req.query.floorId
-    });
-    
     const { floorId } = req.query;
     
     if (!floorId) {
-      console.log('Error: Floor ID is required but not provided');
       return res.status(400).json({ error: 'Floor ID is required' });
     }
     
@@ -147,18 +140,10 @@ router.get('/:id/floorplan/image', /* authenticateMonitor, */ [
     }
     
     const floor = location.floors.find(f => f._id.toString() === floorId);
-    console.log('Found floor:', { 
-      floor: floor ? 'exists' : 'not found',
-      floorPlan: floor?.floorPlan ? 'exists' : 'not found',
-      fileName: floor?.floorPlan?.fileName
-    });
-    
     if (!floor || !floor.floorPlan || !floor.floorPlan.fileName) {
-      console.log('Floor plan missing - floor:', !!floor, 'floorPlan:', !!floor?.floorPlan, 'fileName:', !!floor?.floorPlan?.fileName);
       return res.status(404).json({ error: 'Floor plan not found' });
     }
     
-    console.log('Attempting to get floor plan file:', floor.floorPlan.fileName);
     const file = await fileStorage.getFloorPlan(floor.floorPlan.fileName);
     
     // Set appropriate headers

@@ -104,31 +104,15 @@ class FileStorageService {
   
   async getFloorPlan(fileName) {
     try {
-      console.log('FileStorage.getFloorPlan called with fileName:', fileName);
-      console.log('Base directory:', this.baseDir);
-      console.log('Floor plans directory:', this.floorPlansDir);
-      
       const filePath = path.join(this.floorPlansDir, fileName);
-      console.log('Full file path:', filePath);
-      
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
-      console.log('File exists:', exists);
       
       if (!exists) {
-        // List all files in the directory to help debug
-        try {
-          const files = await fs.readdir(this.floorPlansDir);
-          console.log('Files in floor plans directory:', files);
-        } catch (listError) {
-          console.log('Could not list directory contents:', listError.message);
-        }
         throw new Error('Floor plan not found');
       }
       
       const fileBuffer = await fs.readFile(filePath);
       const stats = await fs.stat(filePath);
-      
-      console.log('Successfully read file, size:', stats.size);
       
       return {
         buffer: fileBuffer,
