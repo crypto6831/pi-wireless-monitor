@@ -236,6 +236,50 @@ router.get('/:monitorId', async (req, res) => {
   }
 });
 
+// Admin update monitor (for dashboard)
+router.put('/:id/admin', [
+  body('name').optional().trim(),
+  body('location').optional().trim(),
+], validate, async (req, res) => {
+  try {
+    const updates = {};
+    if (req.body.name) updates.name = req.body.name;
+    if (req.body.location) updates.location = req.body.location;
+
+    const monitor = await Monitor.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    ).select('-apiKey');
+
+    if (!monitor) {
+      return res.status(404).json({
+        success: false,
+        error: 'Monitor not found',
+      });
+    }
+
+    // Update Redis cache
+    await redis.setEx(
+      `monitor:${monitor.monitorId}`,
+      monitor.toJSON(),
+      3600
+    );
+
+    res.json({
+      success: true,
+      message: 'Monitor updated successfully',
+      monitor,
+    });
+  } catch (error) {
+    logger.error('Admin monitor update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update monitor',
+    });
+  }
+});
+
 // Update monitor settings
 router.put('/:monitorId', authenticateMonitor, [
   body('name').optional().trim(),

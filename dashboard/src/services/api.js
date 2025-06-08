@@ -72,7 +72,7 @@ export const apiService = {
   // Monitors
   getMonitors: () => api.get('/monitors'),
   getMonitor: (id) => api.get(`/monitors/${id}`),
-  updateMonitor: (id, data) => api.put(`/monitors/${id}`, data),
+  updateMonitor: (id, data) => api.put(`/monitors/${id}/admin`, data),
   deleteMonitor: (id) => api.delete(`/monitors/${id}`),
   updateMonitorPosition: (id, position) => api.put(`/monitors/${id}/position`, position),
   updateMonitorWifiConnection: (id, wifiData) => api.put(`/monitors/${id}/wifi-connection`, wifiData),

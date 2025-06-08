@@ -129,7 +129,13 @@ function Monitors() {
 
   const handleSaveMonitor = async (monitorId, updateData) => {
     try {
-      await apiService.updateMonitor(monitorId, updateData);
+      // Find the monitor's MongoDB _id from the monitorId
+      const monitor = monitors.find(m => m.monitorId === monitorId);
+      if (!monitor) {
+        throw new Error('Monitor not found');
+      }
+      
+      await apiService.updateMonitor(monitor._id, updateData);
       // Refresh monitors list to show updated data
       dispatch(fetchMonitors());
     } catch (error) {
