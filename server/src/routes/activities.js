@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Activity = require('../models/Activity');
-const auth = require('../middleware/auth');
+const { optionalAuth } = require('../middleware/auth');
 
 // Get recent activities
 router.get('/recent', async (req, res) => {
@@ -99,7 +99,7 @@ router.get('/monitor/:monitorId', async (req, res) => {
 });
 
 // Create new activity (protected route)
-router.post('/', auth, async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const { type, title, description, monitorId, networkId, alertId, metadata, severity } = req.body;
     
