@@ -5,6 +5,7 @@ const Monitor = require('../models/Monitor');
 const { authenticateMonitor } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const redis = require('../db/redis');
+const ActivityService = require('../services/activityService');
 
 const router = express.Router();
 
@@ -66,6 +67,9 @@ router.post('/register', [
       
       await monitor.save();
       
+      // Log activity for reconnection
+      await ActivityService.logMonitorConnected(monitor);
+      
       logger.info(`Monitor re-registered: ${monitor_id}`);
       
       return res.json({
@@ -111,6 +115,9 @@ router.post('/register', [
     });
 
     await monitor.save();
+
+    // Log activity for new monitor registration
+    await ActivityService.logMonitorRegistered(monitor);
 
     // Cache monitor info in Redis
     await redis.setEx(

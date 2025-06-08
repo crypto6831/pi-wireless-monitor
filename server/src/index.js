@@ -9,6 +9,7 @@ const logger = require('./utils/logger');
 const { connectDB } = require('./db/connection');
 const { connectRedis } = require('./db/redis');
 const socketService = require('./services/socketService');
+const ActivityService = require('./services/activityService');
 
 // Import routes
 const monitorsRouter = require('./routes/monitors');
@@ -19,6 +20,7 @@ const alertsRouter = require('./routes/alerts');
 const serviceMonitorsRouter = require('./routes/serviceMonitors');
 const locationsRouter = require('./routes/locations');
 const floorPlansRouter = require('./routes/floorPlans');
+const activitiesRouter = require('./routes/activities');
 
 // Create Express app
 const app = express();
@@ -69,6 +71,7 @@ app.use('/api/metrics', metricsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/service-monitors', serviceMonitorsRouter);
 app.use('/api/locations', [locationsRouter, floorPlansRouter]);
+app.use('/api/activities', activitiesRouter);
 
 // Socket.IO status endpoint
 app.get('/api/socket/status', (req, res) => {
@@ -120,9 +123,13 @@ async function startServer() {
     }
 
     // Start listening
-    server.listen(config.port, () => {
+    server.listen(config.port, async () => {
       logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
       logger.info(`Health check: http://localhost:${config.port}/health`);
+      
+      // Log system startup activity and create sample activities
+      await ActivityService.logSystemStartup();
+      await ActivityService.createSampleActivities();
     });
 
     // Graceful shutdown
@@ -137,6 +144,9 @@ async function startServer() {
 
 async function gracefulShutdown() {
   logger.info('Graceful shutdown initiated');
+  
+  // Log system shutdown activity
+  await ActivityService.logSystemShutdown();
   
   // Close server
   server.close(() => {

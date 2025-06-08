@@ -6,6 +6,7 @@ import alertsReducer from './slices/alertsSlice';
 import uiReducer from './slices/uiSlice';
 import locationsReducer from './slices/locationsSlice';
 import floorPlanReducer from './slices/floorPlanSlice';
+import activitiesReducer from './slices/activitiesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     ui: uiReducer,
     locations: locationsReducer,
     floorPlan: floorPlanReducer,
+    activities: activitiesReducer,
   },
 }); 

@@ -89,9 +89,12 @@ export const apiService = {
   // Metrics
   getMetrics: (params = {}) => api.get('/metrics', { params }),
   getMetricsByMonitor: (monitorId, params = {}) => api.get(`/metrics/monitor/${monitorId}`, { params }),
+  fetchHealthOverview: () => api.get('/metrics/health/overview'),
+  fetchNetworkStats: () => api.get('/networks/stats/summary'),
 
   // Alerts
   getAlerts: (params = {}) => api.get('/alerts', { params }),
+  getActiveAlerts: () => api.get('/alerts/active'),
   getAlert: (id) => api.get(`/alerts/${id}`),
   markAlertAsRead: (id) => api.put(`/alerts/${id}/read`),
 
@@ -129,6 +132,13 @@ export const apiService = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   deleteFloorPlan: (id) => api.delete(`/locations/${id}/floorplan`),
+
+  // Activities
+  getRecentActivities: (limit = 20) => api.get('/activities/recent', { params: { limit } }),
+  getActivitiesByType: (type, limit = 20) => api.get(`/activities/type/${type}`, { params: { limit } }),
+  getMonitorActivities: (monitorId, limit = 20) => api.get(`/activities/monitor/${monitorId}`, { params: { limit } }),
+  getActivityStats: () => api.get('/activities/stats'),
+  createActivity: (data) => api.post('/activities', data),
 };
 
 export default api; 
