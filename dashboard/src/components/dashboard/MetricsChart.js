@@ -12,33 +12,10 @@ import {
   MenuItem,
   InputLabel
 } from '@mui/material';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { LineChart } from '@mui/x-charts/LineChart';
 import api from '../../services/api';
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
 function MetricsChart() {
-  console.log('MetricsChart component rendering...');
-  
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,105 +64,46 @@ function MetricsChart() {
     const { labels, datasets } = chartData.chartData;
     const timeLabels = labels.map(formatTime);
 
-    const commonOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: activeTab === 0 ? 'System Performance' : 'Network Performance',
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
-    };
-
     switch (activeTab) {
       case 0: // System Performance
         return {
-          data: {
-            labels: timeLabels,
-            datasets: [
-              {
-                label: 'CPU (%)',
-                data: datasets.cpu,
-                borderColor: '#1976d2',
-                backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                tension: 0.1,
-              },
-              {
-                label: 'Memory (%)',
-                data: datasets.memory,
-                borderColor: '#dc004e',
-                backgroundColor: 'rgba(220, 0, 78, 0.1)',
-                tension: 0.1,
-              },
-              {
-                label: 'Temperature (°C)',
-                data: datasets.temperature,
-                borderColor: '#ed6c02',
-                backgroundColor: 'rgba(237, 108, 2, 0.1)',
-                tension: 0.1,
-              },
-            ],
-          },
-          options: commonOptions,
+          xAxis: [{ scaleType: 'point', data: timeLabels }],
+          series: [
+            {
+              data: datasets.cpu,
+              label: 'CPU (%)',
+              color: '#1976d2',
+            },
+            {
+              data: datasets.memory,
+              label: 'Memory (%)',
+              color: '#dc004e',
+            },
+            {
+              data: datasets.temperature,
+              label: 'Temperature (°C)',
+              color: '#ed6c02',
+            }
+          ],
+          height: 300
         };
       
       case 1: // Network Performance
         return {
-          data: {
-            labels: timeLabels,
-            datasets: [
-              {
-                label: 'Latency (ms)',
-                data: datasets.latency,
-                borderColor: '#2e7d32',
-                backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                tension: 0.1,
-              },
-              {
-                label: 'Packet Loss (%)',
-                data: datasets.packetLoss,
-                borderColor: '#d32f2f',
-                backgroundColor: 'rgba(211, 47, 47, 0.1)',
-                tension: 0.1,
-                yAxisID: 'y1',
-              },
-            ],
-          },
-          options: {
-            ...commonOptions,
-            scales: {
-              y: {
-                type: 'linear',
-                display: true,
-                position: 'left',
-                title: {
-                  display: true,
-                  text: 'Latency (ms)',
-                },
-              },
-              y1: {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                title: {
-                  display: true,
-                  text: 'Packet Loss (%)',
-                },
-                grid: {
-                  drawOnChartArea: false,
-                },
-              },
+          xAxis: [{ scaleType: 'point', data: timeLabels }],
+          series: [
+            {
+              data: datasets.latency,
+              label: 'Latency (ms)',
+              color: '#2e7d32',
             },
-          },
+            {
+              data: datasets.packetLoss,
+              label: 'Packet Loss (%)',
+              color: '#d32f2f',
+            }
+          ],
+          height: 300
         };
       
       default:
@@ -266,9 +184,11 @@ function MetricsChart() {
 
       {chartConfig && chartData.count > 0 ? (
         <Box>
-          <Box height={400}>
-            <Line {...chartConfig} />
-          </Box>
+          <LineChart
+            {...chartConfig}
+            margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+            grid={{ vertical: true, horizontal: true }}
+          />
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
             Showing {chartData.count} data points from {new Date(chartData.startDate).toLocaleString()} to {new Date(chartData.endDate).toLocaleString()}
           </Typography>
