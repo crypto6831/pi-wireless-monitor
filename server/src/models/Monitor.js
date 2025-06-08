@@ -149,6 +149,15 @@ const monitorSchema = new mongoose.Schema({
     quality: { type: Number, default: null },
     lastUpdated: { type: Date, default: null }
   },
+  // Configuration synchronization
+  configurationChanged: {
+    type: Boolean,
+    default: false
+  },
+  lastConfigSync: {
+    type: Date,
+    default: null
+  },
 }, {
   timestamps: true,
 });

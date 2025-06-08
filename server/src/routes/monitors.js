@@ -170,15 +170,50 @@ router.post('/heartbeat', authenticateMonitor, async (req, res) => {
       status,
     });
 
-    res.json({
+    // Check for configuration changes
+    const configResponse = {
       success: true,
       message: 'Heartbeat received',
-    });
+    };
+
+    if (req.monitor.configurationChanged) {
+      configResponse.configurationChanged = true;
+      configResponse.configuration = {
+        name: req.monitor.name,
+        location: req.monitor.location
+      };
+    }
+
+    res.json(configResponse);
   } catch (error) {
     logger.error('Heartbeat error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to process heartbeat',
+    });
+  }
+});
+
+// Configuration sync acknowledgment endpoint
+router.post('/config-synced', authenticateMonitor, async (req, res) => {
+  try {
+    // Clear the configuration changed flag and update sync timestamp
+    await Monitor.findByIdAndUpdate(req.monitor._id, {
+      configurationChanged: false,
+      lastConfigSync: new Date()
+    });
+
+    logger.info(`Configuration synced for monitor: ${req.monitorId}`);
+
+    res.json({
+      success: true,
+      message: 'Configuration sync acknowledged',
+    });
+  } catch (error) {
+    logger.error('Config sync acknowledgment error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to acknowledge config sync',
     });
   }
 });
@@ -245,6 +280,11 @@ router.put('/:id/admin', [
     const updates = {};
     if (req.body.name) updates.name = req.body.name;
     if (req.body.location) updates.location = req.body.location;
+
+    // Set configuration changed flag if name or location is being updated
+    if (req.body.name || req.body.location) {
+      updates.configurationChanged = true;
+    }
 
     const monitor = await Monitor.findByIdAndUpdate(
       req.params.id,

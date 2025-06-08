@@ -16,6 +16,7 @@ from requests.packages.urllib3.util.retry import Retry
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import config
 from src.utils.logger import get_logger
+from src.config_manager import ConfigManager
 
 logger = get_logger('api_client')
 
@@ -32,6 +33,7 @@ class APIClient:
             'X-Monitor-ID': config.MONITOR_ID
         }
         self.is_registered = False
+        self.config_manager = ConfigManager()
         logger.info(f"API Client initialized for server: {config.SERVER_URL}")
     
     def _create_session(self) -> requests.Session:
@@ -93,7 +95,7 @@ class APIClient:
             return False
     
     def send_heartbeat(self) -> bool:
-        """Send heartbeat to server"""
+        """Send heartbeat to server and check for configuration changes"""
         try:
             data = {
                 'monitor_id': config.MONITOR_ID,
@@ -103,7 +105,16 @@ class APIClient:
             }
             
             response = self._post('heartbeat', data)
-            return response is not None
+            
+            if response:
+                # Check for configuration changes
+                if response.get('configurationChanged'):
+                    logger.info("Configuration change detected from server")
+                    config_data = response.get('configuration', {})
+                    self._handle_configuration_change(config_data)
+                return True
+            
+            return False
             
         except Exception as e:
             logger.error(f"Error sending heartbeat: {e}")
@@ -410,3 +421,55 @@ class APIClient:
         except Exception as e:
             logger.error(f"Error getting monitor ID: {e}")
             return None
+    
+    def _handle_configuration_change(self, config_data: Dict) -> None:
+        """Handle configuration change from server"""
+        try:
+            logger.info(f"Processing configuration change: {config_data}")
+            
+            # Sync the configuration
+            if self.config_manager.sync_configuration(config_data):
+                # Acknowledge the sync
+                if self._acknowledge_config_sync():
+                    logger.info("Configuration synced and acknowledged successfully")
+                    # Restart the service
+                    self._restart_service()
+                else:
+                    logger.error("Failed to acknowledge configuration sync")
+            else:
+                logger.error("Configuration sync failed")
+                
+        except Exception as e:
+            logger.error(f"Error handling configuration change: {e}")
+    
+    def _acknowledge_config_sync(self) -> bool:
+        """Acknowledge successful configuration sync to server"""
+        try:
+            data = {
+                'monitor_id': config.MONITOR_ID,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            response = self._post('config-synced', data)
+            return response is not None
+            
+        except Exception as e:
+            logger.error(f"Error acknowledging config sync: {e}")
+            return False
+    
+    def _restart_service(self) -> None:
+        """Restart the monitor service"""
+        try:
+            logger.info("Restarting service due to configuration change...")
+            
+            # Use the config manager to restart the service
+            # Use 'exit' method to let systemd restart the service
+            self.config_manager.restart_service(method='exit')
+            
+        except Exception as e:
+            logger.error(f"Error restarting service: {e}")
+            # If restart fails, try alternative method
+            try:
+                self.config_manager.restart_service(method='systemctl')
+            except Exception as e2:
+                logger.error(f"Alternative restart method also failed: {e2}")
