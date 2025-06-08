@@ -139,11 +139,17 @@ const MonitorTooltip = ({ monitor }) => {
               </Typography>
               <Typography variant="caption" fontWeight="medium">
                 {wifiConnection.channel || 'N/A'}
-                {wifiConnection.frequency && (
-                  <span style={{ color: '#666' }}>
-                    {' '}({wifiConnection.frequency >= 5000 ? '5GHz' : '2.4GHz'})
-                  </span>
-                )}
+                {(() => {
+                  console.log('Frequency check:', wifiConnection.frequency, 'Truthy:', !!wifiConnection.frequency);
+                  if (wifiConnection.frequency) {
+                    return (
+                      <span style={{ color: '#666' }}>
+                        {' '}({wifiConnection.frequency >= 5000 ? '5GHz' : '2.4GHz'})
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </Typography>
             </Box>
 
