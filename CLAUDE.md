@@ -72,20 +72,22 @@ The server exposes REST APIs at `http://localhost:3001/api/`:
 - `/alerts` - System alerts
 - `/locations` - Building/floor hierarchy, floor plan management
 - `/service-monitors` - Service monitoring (ping, HTTP, TCP, UDP checks)
+- `/activities` - System activity tracking and logging
 
 All endpoints require JWT authentication (except monitor registration).
 
 ### Real-time Updates
 - Server uses Socket.IO for WebSocket connections
-- Events: `monitor:update`, `network:update`, `metric:update`, `alert:new`
+- Events: `monitor:update`, `network:update`, `metric:update`, `alert:new`, `activity:new`
 - Redis pub/sub pattern for scalability
 
 ### Database Schema
 - **monitors**: Raspberry Pi devices with auth tokens, location positioning (x,y coordinates)
 - **networks**: WiFi networks with signal strength
-- **metrics**: Performance data (latency, packet loss)
+- **metrics**: Performance data (latency, packet loss, system stats)
 - **devices**: Detected devices on networks
 - **alerts**: System notifications
+- **activities**: System activity logs with timestamps and metadata
 - **locations**: Building/floor hierarchy with floor plan storage
 - **coverageAreas**: WiFi coverage zones for monitors (circle, polygon, rectangle)
 - **serviceMonitors**: Service monitoring configurations (ping, HTTP, TCP, UDP)
@@ -396,3 +398,141 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 - **Incomplete Fields**: Check nmcli output and regex parsing in scanner.py
 - **Authentication Errors**: Verify API key and monitor ID in Pi configuration
 - **Data Overwriting**: Disable WiFi data collection scheduling if needed to preserve manual data
+
+## Activity Tracking System Implementation
+
+### ✅ COMPLETED - Full Activity Tracking and Recent Activity Dashboard
+
+#### Backend Implementation:
+- **Activity Model** (`server/src/models/Activity.js`): Comprehensive activity logging with types, metadata, and real-time events
+- **Activity Routes** (`server/src/routes/activities.js`): Full REST API for activity management
+- **Activity Service** (`server/src/services/activityService.js`): Helper service for easy activity logging across the application
+- **Integration**: Activity logging hooks added to monitor registration, system startup/shutdown
+
+#### Activity Types:
+- `monitor_connected`, `monitor_disconnected` - Monitor status changes
+- `network_discovered`, `network_lost` - WiFi network detection
+- `alert_triggered`, `alert_resolved` - Alert lifecycle
+- `device_connected`, `device_disconnected` - Device detection
+- `system_startup`, `system_shutdown` - System lifecycle
+- `coverage_changed` - Coverage area modifications
+
+#### Frontend Implementation:
+- **Activities Redux Slice** (`dashboard/src/store/slices/activitiesSlice.js`): State management for activity data
+- **Enhanced RecentActivity Component** (`dashboard/src/components/dashboard/RecentActivity.js`): Rich UI with icons, severity colors, and timestamps
+- **API Integration**: Complete API service functions for fetching activities
+- **Real-time Updates**: Socket.IO integration for live activity updates
+
+#### API Endpoints:
+- `GET /api/activities/recent?limit=20` - Get recent activities
+- `GET /api/activities/type/:type?limit=20` - Get activities by type
+- `GET /api/activities/monitor/:id?limit=20` - Get activities for specific monitor
+- `GET /api/activities/stats` - Get activity statistics
+- `POST /api/activities` - Create new activity (protected)
+
+#### Features:
+- **Rich UI Display**: Activity icons, severity color coding, human-readable timestamps
+- **Real-time Updates**: Live activity feed via Socket.IO
+- **Activity Metadata**: Structured data storage for detailed context
+- **Sample Data**: Auto-generated sample activities on system startup
+- **Error Handling**: Graceful fallbacks and loading states
+
+#### Testing the Feature:
+1. Dashboard shows Recent Activity section with live data
+2. Activities display with proper icons and timestamps
+3. Sample activities created on system startup
+4. New activities logged when monitors connect/disconnect
+5. Real-time updates appear automatically
+
+## System Metrics Dashboard Implementation
+
+### ✅ COMPLETED - Interactive System Metrics Charts
+
+#### Backend Metrics API:
+- **Historical Data Endpoint**: `GET /api/metrics/monitor/:id/history?period=1h&metric=all`
+- **Latest Metrics**: `GET /api/metrics/monitor/:id/latest`
+- **Health Overview**: `GET /api/metrics/health/overview`
+- **Chart-Ready Data**: Pre-formatted data structure with labels and datasets
+
+#### Frontend Implementation:
+- **MetricsChart Component** (`dashboard/src/components/dashboard/MetricsChart.js`): Full-featured chart component using MUI X-Charts
+- **Tabbed Interface**: System Performance vs Network Performance tabs
+- **Period Selector**: 1h, 6h, 24h, 7d time range options
+- **Real-time Data**: Fetches from active monitor automatically
+
+#### Chart Features:
+- **System Performance Tab**:
+  - CPU usage percentage (blue line)
+  - Memory usage percentage (red line)  
+  - Temperature in Celsius (orange line)
+- **Network Performance Tab**:
+  - Latency in milliseconds (green line)
+  - Packet Loss percentage (red line)
+
+#### Technical Implementation:
+- **MUI X-Charts LineChart**: Professional charting with smooth animations
+- **Redux Integration**: Connected to monitors store for active monitor detection
+- **Error Handling**: Loading states, error messages, and no-data scenarios
+- **Responsive Design**: Adapts to container size with proper margins and grid
+
+#### Data Sources:
+- **CPU**: System CPU usage percentage from monitor
+- **Memory**: RAM usage percentage 
+- **Temperature**: CPU temperature in Celsius
+- **Latency**: Network ping latency to 8.8.8.8
+- **Packet Loss**: Network packet loss percentage
+
+#### UI Features:
+- **Time Labels**: Formatted timestamps (HH:MM format)
+- **Color Coding**: Consistent colors across chart series
+- **Data Info**: Shows data point count and time range
+- **Period Selection**: Dropdown to change time window
+- **Loading States**: Spinner during data fetching
+- **Error Handling**: Alert messages for failures
+
+#### API Data Format:
+```javascript
+{
+  "success": true,
+  "period": "1h",
+  "count": 58,
+  "chartData": {
+    "labels": ["2025-06-08T11:09:40.838Z", ...],
+    "datasets": {
+      "cpu": [0, 0.5, 0.2, ...],
+      "memory": [14.6, 14.7, 14.6, ...],
+      "temperature": [39.4, 38.9, 39.9, ...],
+      "latency": [9.954, 10.071, 9.659, ...],
+      "packetLoss": [0, 0, 0, ...]
+    }
+  }
+}
+```
+
+#### Testing the Feature:
+1. Navigate to Dashboard main page
+2. Scroll down to see System Metrics section
+3. View real-time charts with historical data
+4. Switch between System Performance and Network Performance tabs
+5. Change time period using dropdown selector
+6. Monitor shows "Living" monitor data with 60+ data points
+
+#### Important Notes:
+- **MUI X-Charts Required**: Component uses `@mui/x-charts` LineChart component
+- **Chart.js Compatibility**: Chart.js implementation had rendering issues, stick with MUI X-Charts
+- **Active Monitor Detection**: Automatically finds and displays data from active monitor
+- **Real-time Updates**: Charts refresh when monitor data changes
+
+### Dashboard Sections Status:
+✅ **Monitor Status Cards** - Live monitor data with positioning and health  
+✅ **System Health** - CPU, RAM, temperature with color-coded status  
+✅ **Active Alerts** - Real-time alert management (currently no alerts)  
+✅ **Network Overview** - Network statistics and signal strength ranges  
+✅ **Recent Activity** - Live activity feed with icons and timestamps  
+✅ **System Metrics** - Interactive charts with historical performance data  
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
