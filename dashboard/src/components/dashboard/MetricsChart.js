@@ -16,6 +16,8 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import api from '../../services/api';
 
 function MetricsChart() {
+  console.log('MetricsChart component rendering...');
+  
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,11 +26,15 @@ function MetricsChart() {
   const monitors = useSelector((state) => state.monitors.list);
   const activeMonitor = monitors.find(m => m.status === 'active');
 
+  // Debug logging
+  console.log('MetricsChart - monitors:', monitors);
+  console.log('MetricsChart - activeMonitor:', activeMonitor);
+
   useEffect(() => {
     if (activeMonitor) {
       fetchMetricsData();
     }
-  }, [activeMonitor, period]);
+  }, [activeMonitor, period]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMetricsData = async () => {
     if (!activeMonitor) {
