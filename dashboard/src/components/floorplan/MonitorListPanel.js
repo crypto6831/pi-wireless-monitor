@@ -249,13 +249,15 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
           Available Monitors
         </Typography>
         <Tooltip title="Refresh">
-          <IconButton 
-            size="small" 
-            onClick={() => dispatch(fetchMonitors())}
-            disabled={loading}
-          >
-            <Refresh />
-          </IconButton>
+          <span>
+            <IconButton 
+              size="small" 
+              onClick={() => dispatch(fetchMonitors())}
+              disabled={loading}
+            >
+              <Refresh />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
 
