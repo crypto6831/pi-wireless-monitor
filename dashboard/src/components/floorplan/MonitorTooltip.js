@@ -55,9 +55,6 @@ const MonitorTooltip = ({ monitor }) => {
 
   const wifiConnection = monitor.wifiConnection || {};
   const signalQuality = getSignalQuality(wifiConnection.rssi);
-  
-  // Debug logging
-  console.log('MonitorTooltip - WiFi Connection Data:', wifiConnection);
 
   return (
     <Box sx={{ p: 1.5, minWidth: 280 }}>
@@ -143,7 +140,7 @@ const MonitorTooltip = ({ monitor }) => {
                 {wifiConnection.channel || 'N/A'}
                 {wifiConnection.frequency && (
                   <span style={{ color: '#666' }}>
-                    {' '}({wifiConnection.frequency} MHz)
+                    {' '}({(wifiConnection.frequency / 1000).toFixed(2)} GHz)
                   </span>
                 )}
               </Typography>
