@@ -172,7 +172,7 @@ class PiWirelessMonitor:
             success = self.api_client.send_wifi_connection_data(interface_info)
             
             if success:
-                logger.debug(f"WiFi connection info sent: SSID={interface_info.get('connected_ssid')}, "
+                logger.info(f"WiFi connection info sent: SSID={interface_info.get('connected_ssid')}, "
                            f"RSSI={interface_info.get('signal_level')} dBm")
             else:
                 logger.warning("Failed to send WiFi connection info")

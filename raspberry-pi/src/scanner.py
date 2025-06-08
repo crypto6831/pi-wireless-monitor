@@ -237,7 +237,7 @@ class WiFiScanner:
                     if line.startswith('yes:'):  # Active connection
                         # Use regex to properly parse the line with escaped colons in BSSID
                         # Format: yes:SSID:BSSID:CHAN:FREQ:RATE:SIGNAL
-                        pattern = r'yes:([^:]*):([^:]*(?:\\\\:[^:]*)*):([^:]*):([^:]*):([^:]*):([^:]*)'
+                        pattern = r'yes:([^:]*):([^:]*(?:\\:[^:]*)*):([^:]*):([^:]*):([^:]*):([^:]*)'
                         match = re.match(pattern, line)
                         
                         if match:
@@ -247,7 +247,7 @@ class WiFiScanner:
                             
                             # Parse BSSID (remove escaping)
                             if bssid and bssid != '--':
-                                info['connected_bssid'] = bssid.replace('\\\\:', ':')
+                                info['connected_bssid'] = bssid.replace('\\:', ':')
                             
                             # Parse channel
                             if channel and channel != '--':
