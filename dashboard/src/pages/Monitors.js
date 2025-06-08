@@ -36,11 +36,14 @@ import {
   Close as CloseIcon,
   Wifi as WifiIcon,
   Router as RouterIcon,
-  Speed as SpeedIcon
+  Speed as SpeedIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { fetchMonitors, fetchMonitorStats } from '../store/slices/monitorsSlice';
 import { fetchLatestMetrics } from '../store/slices/metricsSlice';
 import ServiceMonitorsList from '../components/monitors/ServiceMonitorsList';
+import MonitorEditDialog from '../components/monitors/MonitorEditDialog';
+import { apiService } from '../services/api';
 
 function Monitors() {
   const dispatch = useDispatch();
@@ -48,6 +51,8 @@ function Monitors() {
   const metrics = useSelector((state) => state.metrics.latest);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedMonitor, setSelectedMonitor] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingMonitor, setEditingMonitor] = useState(null);
 
   useEffect(() => {
     dispatch(fetchMonitors());
@@ -115,6 +120,21 @@ function Monitors() {
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
+  };
+
+  const handleEditMonitor = (monitor) => {
+    setEditingMonitor(monitor);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveMonitor = async (monitorId, updateData) => {
+    try {
+      await apiService.updateMonitor(monitorId, updateData);
+      // Refresh monitors list to show updated data
+      dispatch(fetchMonitors());
+    } catch (error) {
+      throw error; // Re-throw to let dialog handle the error
+    }
   };
 
   if (loading) {
@@ -444,6 +464,14 @@ function Monitors() {
                   <Button 
                     size="small" 
                     color="primary"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleEditMonitor(monitor)}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    size="small" 
+                    color="primary"
                     startIcon={<SettingsIcon />}
                     onClick={() => {
                       setSelectedMonitor(monitor);
@@ -498,6 +526,17 @@ function Monitors() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Monitor Edit Dialog */}
+      <MonitorEditDialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingMonitor(null);
+        }}
+        monitor={editingMonitor}
+        onSave={handleSaveMonitor}
+      />
     </Box>
   );
 }
