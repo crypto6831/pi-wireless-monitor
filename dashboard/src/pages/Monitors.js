@@ -263,124 +263,149 @@ function Monitors() {
                       <Typography variant="subtitle2" gutterBottom>
                         WiFi Connection
                       </Typography>
-                      <List dense>
-                        <ListItem>
-                          <ListItemIcon>
-                            <WifiIcon fontSize="small" />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="SSID"
-                            secondary={monitor.wifiConnection.ssid || 'Unknown'}
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon>
-                            <RouterIcon fontSize="small" />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary="BSSID"
-                            secondary={
+                      
+                      {/* Network Information */}
+                      <Box mb={2}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12}>
+                            <Box display="flex" alignItems="center" gap={1} mb={1}>
+                              <WifiIcon fontSize="small" color="primary" />
+                              <Typography variant="body1" fontWeight="bold">
+                                {monitor.wifiConnection.ssid || 'Unknown Network'}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <RouterIcon fontSize="small" color="action" />
+                              <Typography variant="body2" color="text.secondary">
+                                BSSID:
+                              </Typography>
                               <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                                 {monitor.wifiConnection.bssid || 'Unknown'}
                               </Typography>
-                            }
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemText 
-                            primary="Signal Strength (RSSI)"
-                            secondary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="body2">
-                                  {monitor.wifiConnection.rssi ? `${monitor.wifiConnection.rssi} dBm` : 'Unknown'}
-                                </Typography>
-                                {monitor.wifiConnection.rssi && (
-                                  <Chip
-                                    label={getSignalQuality(monitor.wifiConnection.rssi).label}
-                                    size="small"
-                                    sx={{ 
-                                      backgroundColor: getSignalQuality(monitor.wifiConnection.rssi).color,
-                                      color: 'white',
-                                      fontSize: '0.75rem'
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemText 
-                            primary="Channel"
-                            secondary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="body2">
-                                  {monitor.wifiConnection.channel || 'Unknown'}
-                                </Typography>
-                                {monitor.wifiConnection.frequency && (
-                                  <Chip
-                                    label={getBandFromFrequency(monitor.wifiConnection.frequency)}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemText 
-                            primary="Frequency"
-                            secondary={monitor.wifiConnection.frequency ? `${monitor.wifiConnection.frequency} MHz` : 'Unknown'}
-                          />
-                        </ListItem>
-                        <Grid container spacing={1} sx={{ px: 2, py: 1 }}>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      {/* Signal Quality */}
+                      <Box mb={2}>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Signal Strength
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="h6">
+                                {monitor.wifiConnection.rssi ? `${monitor.wifiConnection.rssi} dBm` : 'Unknown'}
+                              </Typography>
+                              {monitor.wifiConnection.rssi && (
+                                <Chip
+                                  label={getSignalQuality(monitor.wifiConnection.rssi).label}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: getSignalQuality(monitor.wifiConnection.rssi).color,
+                                    color: 'white',
+                                    fontSize: '0.75rem'
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Quality
+                            </Typography>
+                            <Typography variant="h6">
+                              {monitor.wifiConnection.quality ? `${monitor.wifiConnection.quality}%` : 'Unknown'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      {/* Channel & Frequency */}
+                      <Box mb={2}>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Channel
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="h6">
+                                {monitor.wifiConnection.channel || 'Unknown'}
+                              </Typography>
+                              {monitor.wifiConnection.frequency && (
+                                <Chip
+                                  label={getBandFromFrequency(monitor.wifiConnection.frequency)}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Frequency
+                            </Typography>
+                            <Typography variant="h6">
+                              {monitor.wifiConnection.frequency ? `${monitor.wifiConnection.frequency} MHz` : 'Unknown'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      {/* Data Rates */}
+                      <Box mb={2}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Data Rates
+                        </Typography>
+                        <Grid container spacing={1}>
                           <Grid item xs={4}>
-                            <Box textAlign="center">
+                            <Box textAlign="center" sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                               <SpeedIcon color="primary" fontSize="small" />
-                              <Typography variant="caption" display="block">RX Rate</Typography>
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                RX Rate
+                              </Typography>
                               <Typography variant="body2" fontWeight="bold">
                                 {formatDataRate(monitor.wifiConnection.rxRate)}
                               </Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
-                            <Box textAlign="center">
+                            <Box textAlign="center" sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                               <SpeedIcon color="primary" fontSize="small" />
-                              <Typography variant="caption" display="block">TX Rate</Typography>
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                TX Rate
+                              </Typography>
                               <Typography variant="body2" fontWeight="bold">
                                 {formatDataRate(monitor.wifiConnection.txRate)}
                               </Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
-                            <Box textAlign="center">
+                            <Box textAlign="center" sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                               <SpeedIcon color="primary" fontSize="small" />
-                              <Typography variant="caption" display="block">Link Speed</Typography>
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                Link Speed
+                              </Typography>
                               <Typography variant="body2" fontWeight="bold">
                                 {formatDataRate(monitor.wifiConnection.linkSpeed)}
                               </Typography>
                             </Box>
                           </Grid>
                         </Grid>
-                        <ListItem>
-                          <ListItemText 
-                            primary="Quality"
-                            secondary={monitor.wifiConnection.quality ? `${monitor.wifiConnection.quality}%` : 'Unknown'}
-                          />
-                        </ListItem>
-                        {monitor.wifiConnection.lastUpdated && (
-                          <ListItem>
-                            <ListItemIcon>
-                              <TimeIcon fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary="Last Updated"
-                              secondary={new Date(monitor.wifiConnection.lastUpdated).toLocaleString()}
-                            />
-                          </ListItem>
-                        )}
-                      </List>
+                      </Box>
+
+                      {/* Last Updated */}
+                      {monitor.wifiConnection.lastUpdated && (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <TimeIcon fontSize="small" color="action" />
+                          <Typography variant="caption" color="text.secondary">
+                            Last updated: {new Date(monitor.wifiConnection.lastUpdated).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      )}
                     </>
                   )}
 
