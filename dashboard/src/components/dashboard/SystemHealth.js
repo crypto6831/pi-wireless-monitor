@@ -82,6 +82,7 @@ function SystemHealth() {
               </ListItemIcon>
               <ListItemText
                 primary={monitor?.name || monitorHealth.monitorId}
+                secondaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <Box mt={1}>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
