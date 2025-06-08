@@ -12,14 +12,15 @@ import {
   MenuItem,
   InputLabel
 } from '@mui/material';
-import { LineChart } from '@mui/x-charts/LineChart';
+// Temporarily comment out LineChart to test if that's the issue
+// import { LineChart } from '@mui/x-charts/LineChart';
 import api from '../../services/api';
 
 function MetricsChart() {
   console.log('MetricsChart component rendering...');
   
   const [chartData, setChartData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false to see static content
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [period, setPeriod] = useState('1h');
@@ -125,87 +126,28 @@ function MetricsChart() {
     setPeriod(event.target.value);
   };
 
-  if (!activeMonitor) {
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          System Metrics
-        </Typography>
-        <Alert severity="info" sx={{ mt: 2 }}>
-          No active monitors found. Please ensure at least one monitor is connected.
-        </Alert>
-      </Box>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          System Metrics
-        </Typography>
-        <Box display="flex" justifyContent="center" alignItems="center" height={200}>
-          <CircularProgress />
-        </Box>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          System Metrics
-        </Typography>
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
-
-  const chartConfig = getChartConfig();
-
+  // Simplified return for testing
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">
-          System Metrics - {activeMonitor.name}
+      <Typography variant="h6" gutterBottom>
+        System Metrics - TEST
+      </Typography>
+      <Box p={2}>
+        <Typography variant="body1">
+          Monitor Count: {monitors.length}
         </Typography>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Period</InputLabel>
-          <Select value={period} onChange={handlePeriodChange} label="Period">
-            <MenuItem value="1h">Last Hour</MenuItem>
-            <MenuItem value="6h">Last 6 Hours</MenuItem>
-            <MenuItem value="24h">Last 24 Hours</MenuItem>
-            <MenuItem value="7d">Last 7 Days</MenuItem>
-          </Select>
-        </FormControl>
+        <Typography variant="body1">
+          Active Monitor: {activeMonitor ? activeMonitor.name : 'None'}
+        </Typography>
+        <Typography variant="body1">
+          Component Status: Rendering Successfully
+        </Typography>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            Error: {error}
+          </Alert>
+        )}
       </Box>
-
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab label="System Performance" />
-        <Tab label="Network Performance" />
-      </Tabs>
-
-      {chartConfig && chartData.count > 0 ? (
-        <Box>
-          <LineChart
-            {...chartConfig}
-            margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
-            grid={{ vertical: true, horizontal: true }}
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            Showing {chartData.count} data points from {new Date(chartData.startDate).toLocaleString()} to {new Date(chartData.endDate).toLocaleString()}
-          </Typography>
-        </Box>
-      ) : (
-        <Box textAlign="center" py={4}>
-          <Typography variant="body2" color="text.secondary">
-            No metrics data available for the selected period
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 }
