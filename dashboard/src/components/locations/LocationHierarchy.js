@@ -450,8 +450,10 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
     
     return (
       <SimpleTreeView
-        defaultCollapseIcon={<ExpandMore />}
-        defaultExpandIcon={<ChevronRight />}
+        slots={{
+          collapseIcon: ExpandMore,
+          expandIcon: ChevronRight,
+        }}
         expandedItems={expandedNodes}
         onExpandedItemsChange={(event, nodeIds) => setExpandedNodes(nodeIds)}
         sx={{ flexGrow: 1, overflowY: 'auto' }}
@@ -646,15 +648,17 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
             Location Hierarchy
           </Typography>
           <Tooltip title="Refresh">
-            <IconButton 
-              onClick={() => {
-                dispatch(fetchLocationHierarchy());
-                dispatch(fetchLocations());
-              }}
-              disabled={loading}
-            >
-              <Refresh />
-            </IconButton>
+            <span>
+              <IconButton 
+                onClick={() => {
+                  dispatch(fetchLocationHierarchy());
+                  dispatch(fetchLocations());
+                }}
+                disabled={loading}
+              >
+                <Refresh />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
         
