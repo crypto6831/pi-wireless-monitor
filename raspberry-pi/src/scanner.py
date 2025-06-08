@@ -235,19 +235,31 @@ class WiFiScanner:
                 lines = result.stdout.strip().split('\n')
                 for line in lines:
                     if line.startswith('yes:'):  # Active connection
-                        # Use regex to properly parse the line with escaped colons in BSSID
+                        # Split the line and handle BSSID with escaped colons
                         # Format: yes:SSID:BSSID:CHAN:FREQ:RATE:SIGNAL
-                        pattern = r'yes:([^:]*):([^:]*(?:\\:[^:]*)*):([^:]*):([^:]*):([^:]*):([^:]*)'
-                        match = re.match(pattern, line)
-                        
-                        if match:
-                            ssid, bssid, channel, freq, rate, signal = match.groups()
+                        parts = line.split(':')
+                        if len(parts) >= 7:
+                            ssid = parts[1]
+                            # BSSID spans multiple parts due to escaped colons
+                            bssid_parts = []
+                            i = 2
+                            while i < len(parts) and len(bssid_parts) < 6:  # MAC has 6 parts
+                                bssid_parts.append(parts[i])
+                                i += 1
+                            bssid = ':'.join(bssid_parts).replace('\\', '')
+                            
+                            # Remaining parts are channel, freq, rate, signal
+                            if i + 3 < len(parts):
+                                channel = parts[i]
+                                freq = parts[i + 1] 
+                                rate = parts[i + 2]
+                                signal = parts[i + 3]
                             
                             info['connected_ssid'] = ssid if ssid != '--' else ''
                             
-                            # Parse BSSID (remove escaping)
+                            # Parse BSSID 
                             if bssid and bssid != '--':
-                                info['connected_bssid'] = bssid.replace('\\:', ':')
+                                info['connected_bssid'] = bssid
                             
                             # Parse channel
                             if channel and channel != '--':
@@ -283,7 +295,7 @@ class WiFiScanner:
                                     info['signal_level'] = int((signal_val / 2) - 100)
                                 except ValueError:
                                     pass
-                        break
+                            break
             
             # Get link quality from /proc/net/wireless
             try:
