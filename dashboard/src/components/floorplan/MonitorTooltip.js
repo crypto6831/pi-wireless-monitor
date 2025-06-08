@@ -12,7 +12,7 @@ import {
   AccessTime,
   WifiTethering,
   Devices,
-  Frequency,
+  Radio,
   Download,
   Upload,
   Link,
@@ -132,7 +132,7 @@ const MonitorTooltip = ({ monitor }) => {
 
             {/* Channel & Frequency */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Frequency sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Radio sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="caption" color="text.secondary">
                 Channel:
               </Typography>
