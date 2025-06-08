@@ -11,6 +11,13 @@ import {
   Speed,
   AccessTime,
   WifiTethering,
+  Devices,
+  Frequency,
+  Download,
+  Upload,
+  Link,
+  BarChart,
+  Place,
 } from '@mui/icons-material';
 
 const MonitorTooltip = ({ monitor }) => {
@@ -107,7 +114,7 @@ const MonitorTooltip = ({ monitor }) => {
 
             {/* BSSID */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Router sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Devices sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="caption" color="text.secondary">
                 BSSID:
               </Typography>
@@ -123,34 +130,25 @@ const MonitorTooltip = ({ monitor }) => {
               </Typography>
             </Box>
 
-            {/* Channel */}
+            {/* Channel & Frequency */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+              <Frequency sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
                 Channel:
               </Typography>
               <Typography variant="caption" fontWeight="medium">
                 {wifiConnection.channel || 'N/A'}
                 {wifiConnection.frequency && (
                   <span style={{ color: '#666' }}>
-                    {' '}({wifiConnection.frequency >= 5000 ? '5GHz' : '2.4GHz'} channel)
+                    {' '}({(wifiConnection.frequency / 1000).toFixed(2)} GHz)
                   </span>
                 )}
               </Typography>
             </Box>
 
-            {/* Frequency */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
-                Frequency:
-              </Typography>
-              <Typography variant="caption" fontWeight="medium">
-                {wifiConnection.frequency ? `${wifiConnection.frequency} MHz` : 'N/A'}
-              </Typography>
-            </Box>
-
             {/* RX Rate */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Speed sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Download sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="caption" color="text.secondary">
                 RX Rate:
               </Typography>
@@ -161,7 +159,8 @@ const MonitorTooltip = ({ monitor }) => {
 
             {/* TX Rate */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+              <Upload sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
                 TX Rate:
               </Typography>
               <Typography variant="caption" fontWeight="medium">
@@ -171,7 +170,8 @@ const MonitorTooltip = ({ monitor }) => {
 
             {/* Link Speed */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+              <Link sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
                 Link Speed:
               </Typography>
               <Typography variant="caption" fontWeight="medium">
@@ -181,7 +181,8 @@ const MonitorTooltip = ({ monitor }) => {
 
             {/* Quality */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 2.5 }}>
+              <BarChart sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
                 Quality:
               </Typography>
               <Typography variant="caption" fontWeight="medium">
@@ -210,9 +211,12 @@ const MonitorTooltip = ({ monitor }) => {
       </Box>
 
       {/* Position */}
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-        Position: ({monitor.position?.x || 0}, {monitor.position?.y || 0})
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+        <Place sx={{ fontSize: 16, color: 'text.secondary' }} />
+        <Typography variant="caption" color="text.secondary">
+          Position: ({monitor.position?.x || 0}, {monitor.position?.y || 0})
+        </Typography>
+      </Box>
     </Box>
   );
 };
