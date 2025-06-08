@@ -140,7 +140,7 @@ const MonitorTooltip = ({ monitor }) => {
               <Typography variant="caption" fontWeight="medium">
                 {wifiConnection.channel || 'N/A'}
                 {wifiConnection.frequency && (
-                  <span style={{ color: '#666', marginLeft: '4px' }}>
+                  <span style={{ marginLeft: '4px' }}>
                     ({wifiConnection.frequency >= 5000 ? '5GHz' : '2.4GHz'})
                   </span>
                 )}
