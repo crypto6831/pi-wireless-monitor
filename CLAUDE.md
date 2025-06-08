@@ -531,6 +531,63 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 ✅ **Recent Activity** - Live activity feed with icons and timestamps  
 ✅ **System Metrics** - Interactive charts with historical performance data  
 
+## Enhanced Metrics Page Implementation
+
+### ✅ COMPLETED - MUI X-Charts Integration for Metrics Page
+
+#### Replaced Chart.js with MUI X-Charts:
+- **Removed Chart.js Dependencies**: Eliminated Chart.js imports and complex Chart.js configuration
+- **MUI X-Charts Integration**: Implemented `LineChart` from `@mui/x-charts/LineChart` for consistency with Dashboard
+- **Professional Charting**: Same high-quality charts as Dashboard System Metrics section
+
+#### Enhanced User Interface:
+- **Tabbed Chart Interface**: System Performance vs Network Performance tabs
+- **Simplified Controls**: Monitor selection dropdown + Period toggle buttons (1H, 6H, 24H, 7D)
+- **Consistent Styling**: Matches Dashboard System Metrics colors and formatting
+- **Loading States**: CircularProgress for initial load, LinearProgress for data fetching
+- **Error Handling**: Alert messages for failed API calls
+
+#### Chart Configuration:
+- **System Performance Tab**:
+  - CPU Usage (%) - Blue line (#1976d2)
+  - Memory Usage (%) - Red line (#dc004e)
+  - Temperature (°C) - Orange line (#ed6c02)
+
+- **Network Performance Tab**:
+  - Latency (ms) - Green line (#2e7d32)
+  - Packet Loss (%) - Red line (#d32f2f)
+
+#### Technical Implementation:
+- **Direct API Integration**: Bypasses Redux store for faster data fetching via `api.get()`
+- **Real-time Updates**: Automatic refresh when monitor or period selection changes
+- **Data Processing**: Time formatting (HH:MM), chart configuration, and series data mapping
+- **Summary Cards**: Dynamic current values using `getCurrentMetricValue()` function
+
+#### API Endpoint Usage:
+- **Metrics History**: `GET /api/metrics/monitor/:id/history?period=${period}&metric=all`
+- **Chart-Ready Data**: Pre-formatted response with labels and datasets
+- **Time Range Support**: 1h, 6h, 24h, 7d periods with data point counts
+
+#### Features:
+- **Interactive Charts**: Zoom, hover tooltips, grid lines, professional styling
+- **Data Information**: Shows data point count and time range below charts
+- **Responsive Design**: Adapts to container size with proper margins
+- **Monitor Selection**: Dropdown to switch between available monitors
+- **Current Values**: Summary cards display latest metric values with proper formatting
+
+#### Testing the Enhanced Metrics Page:
+1. Navigate to: `http://47.128.13.65:3000/metrics`
+2. Select monitor from dropdown
+3. Switch between System Performance and Network Performance tabs
+4. Change time periods using toggle buttons
+5. View real-time charts with professional MUI X-Charts styling
+6. Check summary cards for current metric values
+
+#### Code Location:
+- **Main Component**: `dashboard/src/pages/Metrics.js`
+- **Chart Implementation**: MUI X-Charts LineChart with custom configuration
+- **API Integration**: Direct API calls bypassing Redux for performance
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
