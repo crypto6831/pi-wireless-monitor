@@ -167,6 +167,7 @@ class PiWirelessMonitor:
         try:
             # Get current WiFi interface info
             interface_info = self.scanner.get_interface_info()
+            logger.info(f"DEBUG - WiFi interface_info: {interface_info}")
             
             # Send to server
             success = self.api_client.send_wifi_connection_data(interface_info)
