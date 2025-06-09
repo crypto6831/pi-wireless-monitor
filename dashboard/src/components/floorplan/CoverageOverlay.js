@@ -120,7 +120,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     const height = canvas.height / zoom;
 
     // Use global heatmap intensity if not overridden
-    const effectiveIntensity = heatmapSettings.enabled ? (intensity || heatmapSettings.intensity) : intensity;
+    const effectiveIntensity = (heatmapSettings.enabled !== false) ? (intensity || heatmapSettings.intensity) : intensity;
 
     for (let x = 0; x < width; x += gridSize) {
       for (let y = 0; y < height; y += gridSize) {
@@ -403,7 +403,7 @@ const CoverageOverlay = ({
     },
   ];
 
-  const shouldShowHeatmap = (showHeatmap && heatmapSettings.enabled) && (coverageType === 'heatmap' || coverageType === 'both');
+  const shouldShowHeatmap = (showHeatmap && (heatmapSettings.enabled !== false)) && (coverageType === 'heatmap' || coverageType === 'both');
   const shouldShowAreas = coverageType === 'areas' || coverageType === 'both';
 
   // Use global heatmap intensity if local not specified
