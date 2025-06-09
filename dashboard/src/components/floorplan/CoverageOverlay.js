@@ -12,10 +12,12 @@ import {
   Paper,
   Divider,
 } from '@mui/material';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCoverageSettings, selectSignalThresholds, selectHeatmapSettings, selectDefaultCoverageArea } from '../../store/slices/coverageSettingsSlice';
 
 const CoverageArea = ({ area, viewSettings, canvasRef }) => {
   const canvasOverlayRef = useRef(null);
+  const defaultStyling = useSelector(selectDefaultCoverageArea);
 
   useEffect(() => {
     if (!canvasOverlayRef.current || !canvasRef.current) return;
@@ -32,11 +34,11 @@ const CoverageArea = ({ area, viewSettings, canvasRef }) => {
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
 
-    // Set area style
-    ctx.fillStyle = area.style?.fillColor || '#4CAF50';
-    ctx.globalAlpha = area.style?.fillOpacity || 0.3;
-    ctx.strokeStyle = area.style?.strokeColor || '#2196F3';
-    ctx.lineWidth = (area.style?.strokeWidth || 2) / zoom; // Adjust for zoom
+    // Set area style using global defaults
+    ctx.fillStyle = area.style?.fillColor || defaultStyling.fillColor;
+    ctx.globalAlpha = area.style?.fillOpacity || defaultStyling.fillOpacity;
+    ctx.strokeStyle = area.style?.strokeColor || defaultStyling.strokeColor;
+    ctx.lineWidth = (area.style?.strokeWidth || defaultStyling.strokeWidth) / zoom; // Adjust for zoom
 
     // Draw based on coverage type
     switch (area.coverageType) {
@@ -74,7 +76,7 @@ const CoverageArea = ({ area, viewSettings, canvasRef }) => {
     }
 
     ctx.restore();
-  }, [area, viewSettings, canvasRef]);
+  }, [area, viewSettings, canvasRef, defaultStyling]);
 
   return (
     <canvas
@@ -94,6 +96,8 @@ const CoverageArea = ({ area, viewSettings, canvasRef }) => {
 
 const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) => {
   const canvasRef_local = useRef(null);
+  const signalThresholds = useSelector(selectSignalThresholds);
+  const heatmapSettings = useSelector(selectHeatmapSettings);
 
   useEffect(() => {
     if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) return;
@@ -114,6 +118,9 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     const gridSize = 20; // Heatmap resolution
     const width = canvas.width / zoom;
     const height = canvas.height / zoom;
+
+    // Use global heatmap intensity if not overridden
+    const effectiveIntensity = heatmapSettings.enabled ? (intensity || heatmapSettings.intensity) : intensity;
 
     for (let x = 0; x < width; x += gridSize) {
       for (let y = 0; y < height; y += gridSize) {
@@ -141,30 +148,30 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         // Convert back to dBm
         const averageSignal = totalSignal > 0 ? 10 * Math.log10(totalSignal) : -100;
         
-        // Map signal strength to color
+        // Map signal strength to color using global thresholds
         let alpha = 0;
         let color = '';
 
-        if (averageSignal > -50) {
+        if (averageSignal > signalThresholds.excellent) {
           // Excellent signal (green)
           color = '76, 175, 80'; // #4CAF50
-          alpha = 0.8 * intensity;
-        } else if (averageSignal > -60) {
+          alpha = 0.8 * effectiveIntensity;
+        } else if (averageSignal > signalThresholds.good) {
           // Good signal (light green)
           color = '139, 195, 74'; // #8BC34A
-          alpha = 0.6 * intensity;
-        } else if (averageSignal > -70) {
+          alpha = 0.6 * effectiveIntensity;
+        } else if (averageSignal > signalThresholds.fair) {
           // Fair signal (yellow)
           color = '255, 235, 59'; // #FFEB3B
-          alpha = 0.4 * intensity;
-        } else if (averageSignal > -80) {
+          alpha = 0.4 * effectiveIntensity;
+        } else if (averageSignal > signalThresholds.poor) {
           // Poor signal (orange)
           color = '255, 152, 0'; // #FF9800
-          alpha = 0.3 * intensity;
-        } else if (averageSignal > -90) {
+          alpha = 0.3 * effectiveIntensity;
+        } else if (averageSignal > signalThresholds.weak) {
           // Weak signal (red)
           color = '244, 67, 54'; // #F44336
-          alpha = 0.2 * intensity;
+          alpha = 0.2 * effectiveIntensity;
         }
 
         if (alpha > 0) {
@@ -175,7 +182,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     }
 
     ctx.restore();
-  }, [monitors, viewSettings, intensity, canvasRef]);
+  }, [monitors, viewSettings, intensity, canvasRef, signalThresholds, heatmapSettings]);
 
   return (
     <canvas
@@ -265,6 +272,8 @@ export const CoverageControls = ({
   coverageType,
   onCoverageTypeChange 
 }) => {
+  const signalThresholds = useSelector(selectSignalThresholds);
+  
   return (
     <Paper sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
@@ -325,18 +334,18 @@ export const CoverageControls = ({
         </Select>
       </FormControl>
 
-      {/* Legend */}
+      {/* Legend with dynamic thresholds */}
       <Box sx={{ mt: 2 }}>
         <Typography variant="caption" gutterBottom>
           Signal Strength Legend
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {[
-            { color: '#4CAF50', label: 'Excellent (>-50 dBm)' },
-            { color: '#8BC34A', label: 'Good (-50 to -60 dBm)' },
-            { color: '#FFEB3B', label: 'Fair (-60 to -70 dBm)' },
-            { color: '#FF9800', label: 'Poor (-70 to -80 dBm)' },
-            { color: '#F44336', label: 'Weak (<-80 dBm)' },
+            { color: '#4CAF50', label: `Excellent (>${signalThresholds.excellent} dBm)` },
+            { color: '#8BC34A', label: `Good (${signalThresholds.excellent} to ${signalThresholds.good} dBm)` },
+            { color: '#FFEB3B', label: `Fair (${signalThresholds.good} to ${signalThresholds.fair} dBm)` },
+            { color: '#FF9800', label: `Poor (${signalThresholds.fair} to ${signalThresholds.poor} dBm)` },
+            { color: '#F44336', label: `Weak (<${signalThresholds.poor} dBm)` },
           ].map(item => (
             <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box
@@ -365,7 +374,14 @@ const CoverageOverlay = ({
   showInterference = false,
   coverageType = 'both'
 }) => {
+  const dispatch = useDispatch();
   const { viewSettings } = useSelector(state => state.floorPlan);
+  const heatmapSettings = useSelector(selectHeatmapSettings);
+
+  // Fetch coverage settings on component mount
+  useEffect(() => {
+    dispatch(fetchCoverageSettings());
+  }, [dispatch]);
 
   // Sample interference zones (would come from props in real implementation)
   const interferenceZones = [
@@ -387,8 +403,11 @@ const CoverageOverlay = ({
     },
   ];
 
-  const shouldShowHeatmap = showHeatmap && (coverageType === 'heatmap' || coverageType === 'both');
+  const shouldShowHeatmap = (showHeatmap && heatmapSettings.enabled) && (coverageType === 'heatmap' || coverageType === 'both');
   const shouldShowAreas = coverageType === 'areas' || coverageType === 'both';
+
+  // Use global heatmap intensity if local not specified
+  const effectiveIntensity = heatmapIntensity !== 0.5 ? heatmapIntensity : heatmapSettings.intensity;
 
   return (
     <>
@@ -398,7 +417,7 @@ const CoverageOverlay = ({
           monitors={monitors}
           viewSettings={viewSettings}
           canvasRef={canvasRef}
-          intensity={heatmapIntensity}
+          intensity={effectiveIntensity}
         />
       )}
 

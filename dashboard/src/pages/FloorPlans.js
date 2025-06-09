@@ -44,6 +44,7 @@ import {
 } from '../store/slices/floorPlanSlice';
 import { updateMonitorPosition, fetchMonitors } from '../store/slices/monitorsSlice';
 import { setSelectedLocation, setSelectedFloor } from '../store/slices/locationsSlice';
+import { fetchCoverageSettings } from '../store/slices/coverageSettingsSlice';
 
 const MonitorInfoPanel = ({ monitor, open, onClose }) => {
   if (!monitor) return null;
@@ -189,9 +190,10 @@ const FloorPlans = () => {
   const [showInterference, setShowInterference] = useState(false);
   const [coverageType, setCoverageType] = useState('both');
 
-  // Load monitors once on component mount
+  // Load monitors and coverage settings once on component mount
   useEffect(() => {
     dispatch(fetchMonitors());
+    dispatch(fetchCoverageSettings());
   }, [dispatch]);
 
   // Load coverage when location/floor changes

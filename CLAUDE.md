@@ -636,6 +636,115 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 - **Chart Implementation**: MUI X-Charts LineChart with custom configuration
 - **API Integration**: Direct API calls bypassing Redux for performance
 
+## Coverage Settings Feature Implementation
+
+### ✅ COMPLETED - Comprehensive Coverage Configuration System
+
+#### Backend Implementation:
+- **CoverageSettings Model** (`server/src/models/CoverageSettings.js`): Global configuration with signal thresholds, heatmap settings, calculation algorithms, and validation rules
+- **Coverage Management Routes** (`server/src/routes/coverage.js`): Full CRUD operations for individual coverage areas
+- **Coverage Settings Routes** (`server/src/routes/coverageSettings.js`): Global settings management with validation and reset functionality
+- **API Integration**: Complete route registration in `server/src/index.js` with proper middleware and error handling
+
+#### API Endpoints:
+- **Coverage Area Management**:
+  - `GET /api/coverage` - List all coverage areas with filtering
+  - `GET /api/coverage/:id` - Get specific coverage area
+  - `PUT /api/coverage/:id` - Update coverage area properties
+  - `DELETE /api/coverage/:id` - Delete coverage area
+- **Global Coverage Settings**:
+  - `GET /api/settings/coverage` - Get global configuration
+  - `PUT /api/settings/coverage` - Update global settings with validation
+  - `POST /api/settings/coverage/reset` - Reset to default values
+  - `GET /api/settings/coverage/version` - Get settings version info
+
+#### Frontend Implementation:
+- **Enhanced Settings Page** (`dashboard/src/pages/Settings.js`): Tabbed interface with Coverage as primary tab
+- **CoverageSettings Component** (`dashboard/src/components/settings/CoverageSettings.js`): Comprehensive configuration interface with real-time validation
+- **CoverageAreaManager Component** (`dashboard/src/components/settings/CoverageAreaManager.js`): Coverage area CRUD management with visual indicators
+- **API Service Integration** (`dashboard/src/services/api.js`): Complete API functions for all coverage operations
+
+#### Configuration Categories:
+
+**1. Signal Strength Thresholds**
+- Interactive sliders for excellent (-50 dBm), good (-60 dBm), fair (-70 dBm), poor (-80 dBm) levels
+- Real-time validation ensuring proper hierarchy (excellent ≥ good ≥ fair ≥ poor)
+- Color-coded chips showing current threshold ranges
+
+**2. Heatmap Visualization Settings**
+- Intensity control (0-100%) for heatmap opacity
+- Radius setting (5-100px) for coverage area size
+- Blur control (0-50px) for smoothing effects
+- Gradient configuration with predefined color stops
+
+**3. Default Coverage Area Styling**
+- Fill and stroke color configuration with live preview
+- Opacity controls for fill and stroke elements
+- Stroke width settings (1-10px)
+- Visual style preview boxes
+
+**4. Coverage Calculation Settings**
+- Interpolation method selection (linear, inverse-distance, kriging)
+- Sampling resolution (0.5-5m) for coverage calculations
+- Maximum interpolation distance (10-200m) limits
+
+**5. Auto-Update Configuration**
+- Toggle for automatic coverage recalculation
+- Update interval settings (60-3600 seconds)
+- Monitor change detection and response settings
+
+#### Coverage Area Management Features:
+- **Interactive Table View**: Monitor status, coverage type, dimensions, signal ranges, and styling
+- **Visual Type Indicators**: Icons for circle, rectangle, and polygon coverage areas
+- **Edit Functionality**: In-place editing of coverage area properties
+- **Delete Confirmation**: Safety dialogs for irreversible operations
+- **Status Monitoring**: Live monitor connection status with color indicators
+
+#### Key Technical Features:
+- **Real-time Validation**: Immediate feedback on invalid configurations
+- **Unsaved Changes Detection**: Alerts when settings are modified but not saved
+- **Error Handling**: Comprehensive error messages and recovery options
+- **Reset Functionality**: One-click reset to factory defaults with confirmation
+- **Version Tracking**: Settings versioning for change management
+
+#### Testing the Coverage Settings:
+1. Navigate to Settings page: `http://47.128.13.65:3000/settings`
+2. Click the "Coverage" tab (primary tab)
+3. **Signal Thresholds Section**:
+   - Adjust threshold sliders and observe real-time updates
+   - Verify hierarchy validation (error on invalid ranges)
+   - Check color-coded threshold chips
+4. **Heatmap Settings Section**:
+   - Modify intensity, radius, and blur controls
+   - Observe live preview effects
+5. **Coverage Area Management**:
+   - View existing coverage areas in interactive table
+   - Edit individual coverage areas via edit dialog
+   - Delete coverage areas with confirmation
+6. **Save/Reset Operations**:
+   - Make changes and observe "unsaved changes" indicator
+   - Save changes and verify success message
+   - Test reset to defaults functionality
+
+#### Implementation Notes:
+- **Mongoose Schema Fix**: Used object with underscore keys instead of Map with dot notation for gradient configuration
+- **API Export Fix**: Corrected default export to return `apiService` object instead of raw Axios instance
+- **Docker Build Issues**: Required complete cache clearing and rebuild to resolve persistent import problems
+- **Development Server Cache**: React dev server required multiple restart cycles to clear cached modules
+
+#### File Locations:
+- **Backend Models**: `server/src/models/CoverageSettings.js`
+- **Backend Routes**: `server/src/routes/coverage.js`, `server/src/routes/coverageSettings.js`
+- **Frontend Settings**: `dashboard/src/pages/Settings.js`
+- **Frontend Components**: `dashboard/src/components/settings/CoverageSettings.js`, `dashboard/src/components/settings/CoverageAreaManager.js`
+- **API Services**: `dashboard/src/services/api.js` (coverage functions added)
+
+#### Known Issues and Solutions:
+- **Gradient Field Schema**: Mongoose Maps don't support dot notation keys - use underscore notation instead
+- **API Import Resolution**: Ensure `apiService` object is exported as default, not raw Axios instance
+- **Docker Cache Problems**: Use `--no-cache` flag and remove images completely for problematic builds
+- **Development Server Cache**: Restart containers multiple times to clear React dev server module cache
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
