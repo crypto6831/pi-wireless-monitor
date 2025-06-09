@@ -152,9 +152,9 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
             Math.pow(y - monitor.position.y, 2)
           );
 
-          // Simple signal propagation model (inverse square law with obstacles)
-          const baseSignal = -30; // dBm at 1 meter
-          const pathLoss = 20 * Math.log10(distance || 1) + 20 * Math.log10(2400); // 2.4GHz
+          // Realistic indoor WiFi signal propagation model
+          const baseSignal = -30; // dBm at 1 meter (typical WiFi transmit power)
+          const pathLoss = 20 * Math.log10(Math.max(distance, 1)); // Free space path loss (simplified)
           const signal = baseSignal - pathLoss;
 
           totalSignal += Math.pow(10, signal / 10); // Convert to linear scale
@@ -164,9 +164,9 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         // Convert back to dBm
         const averageSignal = totalSignal > 0 ? 10 * Math.log10(totalSignal) : -100;
         
-        // Debug signal calculation for first few points
-        if (x < 40 && y < 40 && x % 20 === 0 && y % 20 === 0) {
-          console.log(`Point (${x},${y}): totalSignal=${totalSignal.toFixed(2)}, averageSignal=${averageSignal.toFixed(2)}`);
+        // Debug signal calculation for troubleshooting (can be removed in production)
+        if (x === 0 && y === 0) {
+          console.log(`Sample point: totalSignal=${totalSignal.toFixed(2)}, averageSignal=${averageSignal.toFixed(2)}`);
         }
         
         // Map signal strength to color using global thresholds
@@ -176,31 +176,31 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         if (averageSignal > signalThresholds.excellent) {
           // Excellent signal (green)
           color = '76, 175, 80'; // #4CAF50
-          alpha = 0.9; // Make very visible for testing
+          alpha = 0.8;
         } else if (averageSignal > signalThresholds.good) {
           // Good signal (light green)
           color = '139, 195, 74'; // #8BC34A
-          alpha = 0.8; // Make very visible for testing
+          alpha = 0.7;
         } else if (averageSignal > signalThresholds.fair) {
           // Fair signal (yellow)
           color = '255, 235, 59'; // #FFEB3B
-          alpha = 0.7; // Make very visible for testing
+          alpha = 0.6;
         } else if (averageSignal > signalThresholds.poor) {
           // Poor signal (orange)
           color = '255, 152, 0'; // #FF9800
-          alpha = 0.6; // Make very visible for testing
+          alpha = 0.5;
         } else if (averageSignal > signalThresholds.weak) {
           // Weak signal (red)
           color = '244, 67, 54'; // #F44336
-          alpha = 0.5; // Make very visible for testing
+          alpha = 0.4;
         }
 
         if (alpha > 0) {
           ctx.fillStyle = `rgba(${color}, ${alpha})`;
           ctx.fillRect(x, y, gridSize, gridSize);
-          // Debug: Log the first few rectangles being drawn
-          if (x < 60 && y < 60) {
-            console.log(`Drawing rect at (${x},${y}) with color rgba(${color}, ${alpha})`);
+          // Log drawing for debugging (remove in production)
+          if (x === 0 && y === 0) {
+            console.log(`Drawing first rect with color rgba(${color}, ${alpha})`);
           }
         }
       }
@@ -220,8 +220,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 1000, // Increase z-index to be above everything
-        border: '2px solid red', // Debug border to see canvas position
+        zIndex: 8, // Above floor plan but below UI elements
       }}
     />
   );
