@@ -166,23 +166,23 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         if (averageSignal > signalThresholds.excellent) {
           // Excellent signal (green)
           color = '76, 175, 80'; // #4CAF50
-          alpha = 0.8 * effectiveIntensity;
+          alpha = 0.9; // Make very visible for testing
         } else if (averageSignal > signalThresholds.good) {
           // Good signal (light green)
           color = '139, 195, 74'; // #8BC34A
-          alpha = 0.6 * effectiveIntensity;
+          alpha = 0.8; // Make very visible for testing
         } else if (averageSignal > signalThresholds.fair) {
           // Fair signal (yellow)
           color = '255, 235, 59'; // #FFEB3B
-          alpha = 0.4 * effectiveIntensity;
+          alpha = 0.7; // Make very visible for testing
         } else if (averageSignal > signalThresholds.poor) {
           // Poor signal (orange)
           color = '255, 152, 0'; // #FF9800
-          alpha = 0.3 * effectiveIntensity;
+          alpha = 0.6; // Make very visible for testing
         } else if (averageSignal > signalThresholds.weak) {
           // Weak signal (red)
           color = '244, 67, 54'; // #F44336
-          alpha = 0.2 * effectiveIntensity;
+          alpha = 0.5; // Make very visible for testing
         }
 
         if (alpha > 0) {
