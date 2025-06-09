@@ -139,6 +139,18 @@ export const apiService = {
   getMonitorActivities: (monitorId, limit = 20) => api.get(`/activities/monitor/${monitorId}`, { params: { limit } }),
   getActivityStats: () => api.get('/activities/stats'),
   createActivity: (data) => api.post('/activities', data),
+
+  // Coverage Area Management
+  getCoverageAreas: (filters = {}) => api.get('/coverage', { params: filters }),
+  getCoverageArea: (id) => api.get(`/coverage/${id}`),
+  updateCoverageArea: (id, data) => api.put(`/coverage/${id}`, data),
+  deleteCoverageArea: (id) => api.delete(`/coverage/${id}`),
+
+  // Coverage Settings
+  getCoverageSettings: () => api.get('/settings/coverage'),
+  updateCoverageSettings: (data) => api.put('/settings/coverage', data),
+  resetCoverageSettings: () => api.post('/settings/coverage/reset'),
+  getCoverageSettingsVersion: () => api.get('/settings/coverage/version'),
 };
 
 export default api; 
