@@ -140,8 +140,15 @@ router.get('/:id/floorplan/image', /* authenticateMonitor, */ [
     }
     
     const floor = location.floors.find(f => f._id.toString() === floorId);
-    if (!floor || !floor.floorPlan || !floor.floorPlan.fileName) {
+    if (!floor || !floor.floorPlan) {
       return res.status(404).json({ error: 'Floor plan not found' });
+    }
+    
+    if (!floor.floorPlan.fileName) {
+      return res.status(404).json({ 
+        error: 'Floor plan file missing - please re-upload the floor plan',
+        code: 'MISSING_FILE' 
+      });
     }
     
     const file = await fileStorage.getFloorPlan(floor.floorPlan.fileName);
