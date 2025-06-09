@@ -153,4 +153,4 @@ export const apiService = {
   getCoverageSettingsVersion: () => api.get('/settings/coverage/version'),
 };
 
-export default api; 
+export default apiService; 

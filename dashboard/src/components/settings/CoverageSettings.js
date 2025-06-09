@@ -48,14 +48,6 @@ function CoverageSettings() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      console.log('API object:', api);
-      console.log('getCoverageSettings function:', api.getCoverageSettings);
-      console.log('Available API functions:', Object.keys(api));
-      
-      if (typeof api.getCoverageSettings !== 'function') {
-        throw new Error('getCoverageSettings is not a function. Available functions: ' + Object.keys(api).join(', '));
-      }
-      
       const response = await api.getCoverageSettings();
       setSettings(response.data.settings);
       setTempSettings(response.data.settings);
