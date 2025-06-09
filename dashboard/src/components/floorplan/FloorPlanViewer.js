@@ -500,7 +500,9 @@ const FloorPlanViewer = ({
         />
 
         {/* Render children (monitors, coverage areas, etc.) */}
-        {children}
+        {React.Children.map(children, child =>
+          React.cloneElement(child, { canvasRef })
+        )}
       </Box>
 
       {/* Upload Dialog */}
