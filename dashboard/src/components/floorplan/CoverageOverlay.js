@@ -188,6 +188,10 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         if (alpha > 0) {
           ctx.fillStyle = `rgba(${color}, ${alpha})`;
           ctx.fillRect(x, y, gridSize, gridSize);
+          // Debug: Log the first few rectangles being drawn
+          if (x < 60 && y < 60) {
+            console.log(`Drawing rect at (${x},${y}) with color rgba(${color}, ${alpha})`);
+          }
         }
       }
     }
@@ -206,7 +210,8 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 5,
+        zIndex: 1000, // Increase z-index to be above everything
+        border: '2px solid red', // Debug border to see canvas position
       }}
     />
   );
