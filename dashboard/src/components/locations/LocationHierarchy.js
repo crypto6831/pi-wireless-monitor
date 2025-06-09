@@ -331,15 +331,6 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
           setAddFloorDialogOpen(true);
         }
         break;
-      case 'upload-floorplan':
-        const locationForUpload = locations.find(loc => 
-          loc.address === data.address && loc.buildingName === data.building
-        );
-        if (locationForUpload) {
-          dispatch(setSelectedLocation(locationForUpload));
-          setUploadFloorPlanDialogOpen(true);
-        }
-        break;
       case 'delete-floor':
         handleDeleteFloor(data.floorId);
         break;
@@ -784,12 +775,6 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                 <Add fontSize="small" />
               </ListItemIcon>
               <ListItemText>Add Floor</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={() => handleContextMenuAction('upload-floorplan', contextMenu.data)}>
-              <ListItemIcon>
-                <Upload fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Upload Floor Plan</ListItemText>
             </MenuItem>
             <Divider />
             <MenuItem onClick={() => handleContextMenuAction('delete-location', contextMenu.data)}>
