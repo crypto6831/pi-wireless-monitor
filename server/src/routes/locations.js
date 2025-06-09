@@ -85,8 +85,8 @@ router.post('/', [
   }
 });
 
-// PUT /api/locations/:id - Update location
-router.put('/:id', authenticateMonitor, [
+// PUT /api/locations/:id - Update location (public for dashboard access)
+router.put('/:id', [
   param('id').isMongoId().withMessage('Invalid location ID'),
   body('address').optional().trim().notEmpty().withMessage('Address cannot be empty'),
   body('buildingName').optional().trim().notEmpty().withMessage('Building name cannot be empty'),
@@ -114,8 +114,8 @@ router.put('/:id', authenticateMonitor, [
   }
 });
 
-// DELETE /api/locations/:id - Delete location
-router.delete('/:id', authenticateMonitor, [
+// DELETE /api/locations/:id - Delete location (public for dashboard access)
+router.delete('/:id', [
   param('id').isMongoId().withMessage('Invalid location ID')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -211,8 +211,8 @@ router.post('/:id/floors', [
   }
 });
 
-// DELETE /api/locations/:id/floors/:floorId - Remove a floor
-router.delete('/:id/floors/:floorId', authenticateMonitor, [
+// DELETE /api/locations/:id/floors/:floorId - Remove a floor (public for dashboard access)
+router.delete('/:id/floors/:floorId', [
   param('id').isMongoId().withMessage('Invalid location ID'),
   param('floorId').isMongoId().withMessage('Invalid floor ID')
 ], handleValidationErrors, async (req, res) => {
