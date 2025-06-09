@@ -141,6 +141,11 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
             console.log('Monitor without position:', monitor.name || monitor.id);
             return;
           }
+          
+          // Debug first monitor position
+          if (x === 0 && y === 0) {
+            console.log('Monitor position:', monitor.position, 'Monitor name:', monitor.name);
+          }
 
           const distance = Math.sqrt(
             Math.pow(x - monitor.position.x, 2) + 
@@ -158,6 +163,11 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
 
         // Convert back to dBm
         const averageSignal = totalSignal > 0 ? 10 * Math.log10(totalSignal) : -100;
+        
+        // Debug signal calculation for first few points
+        if (x < 40 && y < 40 && x % 20 === 0 && y % 20 === 0) {
+          console.log(`Point (${x},${y}): totalSignal=${totalSignal.toFixed(2)}, averageSignal=${averageSignal.toFixed(2)}`);
+        }
         
         // Map signal strength to color using global thresholds
         let alpha = 0;
