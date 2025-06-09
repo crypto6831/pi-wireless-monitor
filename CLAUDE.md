@@ -531,6 +531,54 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 ✅ **Recent Activity** - Live activity feed with icons and timestamps  
 ✅ **System Metrics** - Interactive charts with historical performance data  
 
+## Recent Bug Fixes and Improvements (June 2025)
+
+### Authentication Issues Fixed
+- **Problem**: Dashboard API calls returning 401 Unauthorized errors for location management
+- **Root Cause**: Location routes (PUT, DELETE) required monitor authentication but dashboard uses different auth
+- **Solution**: Removed `authenticateMonitor` middleware from dashboard management routes in `server/src/routes/locations.js`
+- **Files Fixed**: `server/src/routes/locations.js:89,118,215`
+
+### Redux Location Edit Error Fixed  
+- **Problem**: Location editing failed with "Cannot read properties of undefined (reading '_id')" error
+- **Root Cause**: Redux slice expected `response.data.location` but API returns `response.data` directly
+- **Solution**: Updated `updateLocation` thunk and added defensive programming
+- **Files Fixed**: `dashboard/src/store/slices/locationsSlice.js:56,191-197`
+
+### Floor Plan Image Loading Fixed
+- **Problem**: Floor plan images showing 404 errors and "Floor plan not found" 
+- **Root Cause**: Database had incomplete floor plan metadata (missing `fileName` field from failed uploads)
+- **Solution**: Improved error handling to distinguish missing files from missing floor plans
+- **Files Fixed**: `server/src/routes/floorPlans.js:147-152`
+- **Error Message**: Now shows "Floor plan file missing - please re-upload the floor plan"
+
+### Floor Plan Upload UX Improvements
+- **Problem**: Upload button appeared non-functional when no floor selected
+- **Solution**: Added helpful UI feedback and debugging
+- **Improvements**:
+  - Button shows "(Select floor first)" when disabled
+  - Tooltip explains floor selection requirement  
+  - Console debugging for state tracking
+- **Files Fixed**: `dashboard/src/components/locations/LocationHierarchy.js:695-703`
+
+### Confusing Context Menu Option Removed
+- **Problem**: Building context menu had non-functional "Upload Floor Plan" option
+- **Root Cause**: Floor plans require specific floor selection, but building menu doesn't select floors
+- **Solution**: Removed confusing context menu option entirely
+- **Files Fixed**: `dashboard/src/components/locations/LocationHierarchy.js` (removed lines 788-793 and handler)
+
+### Current Floor Plan Upload Workflow
+1. Navigate to Floor Plans page: `http://47.128.13.65:3000/floor-plans`
+2. **Select a specific floor** by clicking it in the location tree
+3. Upload button becomes enabled (no longer shows "Select floor first")
+4. Click "Upload Floor Plan" button
+5. Choose file in dialog and upload
+
+### Debugging Added
+- Console logging for floor selection state changes
+- Upload button click tracking
+- Better error messages for missing floor plan files
+
 ## Enhanced Metrics Page Implementation
 
 ### ✅ COMPLETED - MUI X-Charts Integration for Metrics Page
