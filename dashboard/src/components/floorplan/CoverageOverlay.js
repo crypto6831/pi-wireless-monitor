@@ -100,8 +100,16 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   const heatmapSettings = useSelector(selectHeatmapSettings);
 
   useEffect(() => {
-    if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) return;
+    if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) {
+      console.log('SignalHeatmap: Not rendering -', {
+        hasLocalCanvas: !!canvasRef_local.current,
+        hasMainCanvas: !!canvasRef?.current,
+        monitorsLength: monitors.length
+      });
+      return;
+    }
 
+    console.log('SignalHeatmap: Starting render with', monitors.length, 'monitors');
     const canvas = canvasRef_local.current;
     const ctx = canvas.getContext('2d');
     const { zoom, panX, panY } = viewSettings;
@@ -129,7 +137,10 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
 
         // Calculate signal strength at this point from all monitors
         monitors.forEach(monitor => {
-          if (!monitor.position) return;
+          if (!monitor.position) {
+            console.log('Monitor without position:', monitor.name || monitor.id);
+            return;
+          }
 
           const distance = Math.sqrt(
             Math.pow(x - monitor.position.x, 2) + 
@@ -182,6 +193,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     }
 
     ctx.restore();
+    console.log('SignalHeatmap: Render completed');
   }, [monitors, viewSettings, intensity, canvasRef, signalThresholds, heatmapSettings]);
 
   return (
