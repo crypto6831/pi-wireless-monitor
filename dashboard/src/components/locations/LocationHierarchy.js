@@ -155,6 +155,7 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
         const floor = selectedLocation.floors.find(f => f._id === floorId);
         console.log('Found floor:', floor);
         if (floor) {
+          console.log('Dispatching setSelectedFloor with:', floor);
           dispatch(setSelectedFloor(floor));
           if (onLocationSelect) {
             onLocationSelect(selectedLocation, floor);
@@ -692,10 +693,14 @@ const LocationHierarchy = ({ onLocationSelect, showCreateButton = true }) => {
                 startIcon={<Upload />}
                 variant="outlined"
                 fullWidth
-                onClick={() => setUploadFloorPlanDialogOpen(true)}
+                onClick={() => {
+                  console.log('Upload button clicked, selectedFloor:', selectedFloor);
+                  setUploadFloorPlanDialogOpen(true);
+                }}
                 disabled={!selectedFloor}
+                title={!selectedFloor ? "Please select a floor first" : "Upload floor plan for this floor"}
               >
-                Upload Floor Plan
+                Upload Floor Plan {!selectedFloor ? "(Select floor first)" : ""}
               </Button>
             </Box>
           )}
