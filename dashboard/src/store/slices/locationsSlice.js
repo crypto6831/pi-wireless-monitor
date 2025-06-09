@@ -53,7 +53,7 @@ export const updateLocation = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await apiService.updateLocation(id, data);
-      return response.data.location;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to update location');
     }
@@ -188,9 +188,11 @@ const locationsSlice = createSlice({
       
       // Update location
       .addCase(updateLocation.fulfilled, (state, action) => {
-        const index = state.locations.findIndex(loc => loc._id === action.payload._id);
-        if (index !== -1) {
-          state.locations[index] = action.payload;
+        if (action.payload && action.payload._id) {
+          const index = state.locations.findIndex(loc => loc._id === action.payload._id);
+          if (index !== -1) {
+            state.locations[index] = action.payload;
+          }
         }
       })
       
