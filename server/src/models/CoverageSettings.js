@@ -15,17 +15,16 @@ const coverageSettingsSchema = new mongoose.Schema({
     radius: { type: Number, default: 25, min: 5, max: 100 },
     blur: { type: Number, default: 15, min: 0, max: 50 },
     gradient: {
-      type: Map,
-      of: String,
-      default: new Map([
-        ['0.0', '#313695'],
-        ['0.1', '#4575b4'],
-        ['0.3', '#74add1'],
-        ['0.5', '#abd9e9'],
-        ['0.7', '#fee090'],
-        ['0.9', '#f46d43'],
-        ['1.0', '#a50026']
-      ])
+      type: Object,
+      default: {
+        '0_0': '#313695',
+        '0_1': '#4575b4',
+        '0_3': '#74add1',
+        '0_5': '#abd9e9',
+        '0_7': '#fee090',
+        '0_9': '#f46d43',
+        '1_0': '#a50026'
+      }
     }
   },
   
