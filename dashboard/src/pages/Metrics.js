@@ -30,7 +30,7 @@ import {
 import { LineChart } from '@mui/x-charts/LineChart';
 import { fetchMetricsHistory, setSelectedPeriod } from '../store/slices/metricsSlice';
 import { fetchMonitors } from '../store/slices/monitorsSlice';
-import api from '../services/api';
+import apiService from '../services/api';
 
 function Metrics() {
   const dispatch = useDispatch();
@@ -68,7 +68,9 @@ function Metrics() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/metrics/monitor/${selectedMonitor}/history?period=${period}&metric=all`);
+      console.log('Metrics page: Fetching data for monitor:', selectedMonitor, 'period:', period);
+      const response = await apiService.getMetricsHistory(selectedMonitor, { period, metric: 'all' });
+      console.log('Metrics page: Response received:', response.data);
       setChartData(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch metrics data');
