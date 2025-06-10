@@ -41,13 +41,14 @@ import {
 } from '@mui/icons-material';
 import { fetchAlerts, acknowledgeAlert, deleteAlert } from '../store/slices/alertsSlice';
 import { fetchLocations } from '../store/slices/locationsSlice';
+import { fetchMonitors } from '../store/slices/monitorsSlice';
 import api from '../services/api';
 
 function Alerts() {
   const dispatch = useDispatch();
   const { list: alerts, loading } = useSelector((state) => state.alerts);
   const monitors = useSelector((state) => state.monitors.list);
-  const locations = useSelector((state) => state.locations.list);
+  const locations = useSelector((state) => state.locations.locations);
   
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [filterMonitor, setFilterMonitor] = useState('all');
@@ -60,6 +61,7 @@ function Alerts() {
   useEffect(() => {
     dispatch(fetchAlerts());
     dispatch(fetchLocations());
+    dispatch(fetchMonitors());
   }, [dispatch]);
 
   const getSeverityIcon = (severity) => {
