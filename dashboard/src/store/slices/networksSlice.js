@@ -65,7 +65,7 @@ const networksSlice = createSlice({
       })
       .addCase(fetchNetworks.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload.networks;
+        state.list = action.payload.networks || [];
         state.lastUpdate = new Date().toISOString();
       })
       .addCase(fetchNetworks.rejected, (state, action) => {
