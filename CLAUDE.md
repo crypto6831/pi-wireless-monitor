@@ -745,6 +745,56 @@ Monitors on floor plans now display detailed WiFi connection information when ho
 - **Docker Cache Problems**: Use `--no-cache` flag and remove images completely for problematic builds
 - **Development Server Cache**: Restart containers multiple times to clear React dev server module cache
 
+## Debugging "No Data Showing" Issues
+
+### Networks Tab "No Networks Detected" Bug Fix (June 2025)
+
+**Problem**: Networks tab showed "No networks detected" despite 92+ networks in database and working API endpoints.
+
+**Root Cause**: Redux slice API import/usage mismatch - trying to use `api.get()` directly instead of `apiService.getNetworks()`.
+
+**Debugging Process**:
+1. **Verify Backend Data**: Check database and API endpoints directly
+   ```bash
+   curl -s http://localhost:3001/api/networks | head -200
+   ```
+2. **Add Console Logging**: Add debugging to Redux slice and component
+   ```javascript
+   console.log('Networks useEffect - networks.length:', networks.length);
+   console.log('fetchNetworks thunk called with:', { monitorId, active });
+   console.log('API response received:', response.data);
+   ```
+3. **Check Error Logs**: Look for rejected Redux actions
+   ```javascript
+   .addCase(fetchNetworks.rejected, (state, action) => {
+     console.log('fetchNetworks.rejected - action.error:', action.error);
+   })
+   ```
+
+**Key Error**: `TypeError: _services_api__WEBPACK_IMPORTED_MODULE_0__.default.get is not a function`
+
+**Solution**: 
+- Import `apiService` instead of `api`
+- Use `apiService.getNetworks()` instead of `api.get('/networks')`
+- Ensure consistent API service usage across all Redux slices
+
+**Files Fixed**:
+- `dashboard/src/store/slices/networksSlice.js` - Fixed API imports and calls
+
+**Debugging Commands for Similar Issues**:
+```bash
+# Check API data exists
+curl -s http://localhost:3001/api/networks | grep -o '"ssid":"[^"]*"' | head -10
+
+# Check API service functions
+grep -n "getNetworks\|fetchNetworkStats" dashboard/src/services/api.js
+
+# Check Redux slice imports
+grep -n "import.*api" dashboard/src/store/slices/*.js
+```
+
+**Prevention**: Always verify API service exports match Redux slice imports when adding new endpoints.
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
