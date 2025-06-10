@@ -109,20 +109,49 @@ function Alerts() {
     const locationIds = [...new Set(monitors.filter(m => m.locationId).map(m => m.locationId))];
     return locationIds.map(locationId => {
       const location = locations.find(l => l._id === locationId);
-      return { id: locationId, name: location ? `${location.address} - ${location.building}` : locationId };
+      return { id: locationId, name: location ? `${location.address} - ${location.buildingName}` : locationId };
     });
   };
 
   // Get unique floors for selected location
   const getUniqueFloors = () => {
+    if (!locations || !Array.isArray(locations)) return [];
+    
     if (filterLocation === 'all') {
       // Get all floors from all monitors
-      const floors = [...new Set(monitors.filter(m => m.floorId).map(m => m.floorId))];
-      return floors.map(floorId => ({ id: floorId, name: floorId }));
+      const floorIds = [...new Set(monitors.filter(m => m.floorId).map(m => m.floorId))];
+      return floorIds.map(floorId => {
+        // Find the floor in any location
+        for (const location of locations) {
+          const floor = location.floors?.find(f => f._id === floorId);
+          if (floor) {
+            return { 
+              id: floorId, 
+              name: floor.floorName || floor.floorNumber || `Floor ${floor.floorNumber}` 
+            };
+          }
+        }
+        return { id: floorId, name: floorId }; // Fallback if floor not found
+      });
     } else {
       // Get floors only for selected location
-      const floors = [...new Set(monitors.filter(m => m.locationId === filterLocation && m.floorId).map(m => m.floorId))];
-      return floors.map(floorId => ({ id: floorId, name: floorId }));
+      const location = locations.find(l => l._id === filterLocation);
+      if (!location || !location.floors) return [];
+      
+      // Get floor IDs that have monitors
+      const monitorFloorIds = new Set(
+        monitors
+          .filter(m => m.locationId === filterLocation && m.floorId)
+          .map(m => m.floorId)
+      );
+      
+      // Return only floors that have monitors
+      return location.floors
+        .filter(floor => monitorFloorIds.has(floor._id))
+        .map(floor => ({
+          id: floor._id,
+          name: floor.floorName || floor.floorNumber || `Floor ${floor.floorNumber}`
+        }));
     }
   };
 
@@ -132,12 +161,19 @@ function Alerts() {
     if (!monitor) return { location: 'Unknown', floor: 'Unknown' };
     
     if (!locations || !Array.isArray(locations)) {
-      return { location: 'Unknown', floor: monitor.floorId || 'Unknown' };
+      return { location: 'Unknown', floor: 'Unknown' };
     }
     
     const location = locations.find(l => l._id === monitor.locationId);
-    const locationName = location ? `${location.address} - ${location.building}` : 'Unknown';
-    const floorName = monitor.floorId || 'Unknown';
+    const locationName = location ? `${location.address} - ${location.building || location.buildingName}` : 'Unknown';
+    
+    let floorName = 'Unknown';
+    if (monitor.floorId && location && location.floors) {
+      const floor = location.floors.find(f => f._id === monitor.floorId);
+      if (floor) {
+        floorName = floor.floorName || floor.floorNumber || `Floor ${floor.floorNumber}`;
+      }
+    }
     
     return { location: locationName, floor: floorName };
   };
