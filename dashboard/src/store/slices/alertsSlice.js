@@ -67,6 +67,20 @@ const alertsSlice = createSlice({
     error: null,
   },
   reducers: {
+    setAlerts: (state, action) => {
+      const alerts = action.payload;
+      state.list = alerts;
+      state.loading = false;
+      state.error = null;
+      
+      // Organize alerts by severity for active alerts
+      state.active = {
+        critical: alerts.filter(a => a.status === 'active' && a.severity === 'critical'),
+        high: alerts.filter(a => a.status === 'active' && a.severity === 'high'),
+        medium: alerts.filter(a => a.status === 'active' && a.severity === 'medium'),
+        low: alerts.filter(a => a.status === 'active' && a.severity === 'low'),
+      };
+    },
     addAlert: (state, action) => {
       const alert = action.payload;
       state.list.unshift(alert);
@@ -145,5 +159,5 @@ const alertsSlice = createSlice({
   },
 });
 
-export const { addAlert, updateAlert, deleteAlert } = alertsSlice.actions;
+export const { setAlerts, addAlert, updateAlert, deleteAlert } = alertsSlice.actions;
 export default alertsSlice.reducer; 

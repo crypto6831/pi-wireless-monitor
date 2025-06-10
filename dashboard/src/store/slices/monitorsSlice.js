@@ -39,6 +39,11 @@ const monitorsSlice = createSlice({
     selectMonitor: (state, action) => {
       state.selectedMonitorId = action.payload;
     },
+    setMonitors: (state, action) => {
+      state.list = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
     updateMonitorStatus: (state, action) => {
       const { monitorId, status } = action.payload;
       const monitor = state.list.find(m => m.monitorId === monitorId);
@@ -82,5 +87,5 @@ const monitorsSlice = createSlice({
   },
 });
 
-export const { selectMonitor, updateMonitorStatus, clearError } = monitorsSlice.actions;
+export const { selectMonitor, setMonitors, updateMonitorStatus, clearError } = monitorsSlice.actions;
 export default monitorsSlice.reducer; 
