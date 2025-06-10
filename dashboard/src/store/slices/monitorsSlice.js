@@ -43,6 +43,7 @@ const monitorsSlice = createSlice({
       state.list = action.payload;
       state.loading = false;
       state.error = null;
+      console.log('setMonitors action - monitors set:', action.payload?.length);
     },
     updateMonitorStatus: (state, action) => {
       const { monitorId, status } = action.payload;
@@ -66,10 +67,12 @@ const monitorsSlice = createSlice({
       .addCase(fetchMonitors.fulfilled, (state, action) => {
         state.loading = false;
         state.list = action.payload.monitors;
+        console.log('fetchMonitors.fulfilled - monitors loaded:', action.payload.monitors?.length);
       })
       .addCase(fetchMonitors.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+        console.error('fetchMonitors.rejected - error:', action.error.message);
       })
       // Fetch monitor stats
       .addCase(fetchMonitorStats.fulfilled, (state, action) => {
