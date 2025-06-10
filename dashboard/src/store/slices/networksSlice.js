@@ -1,17 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import apiService from '../../services/api';
 
 // Async thunks
 export const fetchNetworks = createAsyncThunk(
   'networks/fetchNetworks',
   async ({ monitorId, active } = {}) => {
     console.log('fetchNetworks thunk called with:', { monitorId, active });
-    const params = new URLSearchParams();
-    if (monitorId) params.append('monitorId', monitorId);
-    if (active) params.append('active', 'true');
-    
-    console.log('Making API call to:', `/networks?${params}`);
-    const response = await api.get(`/networks?${params}`);
+    console.log('Making API call to getNetworks...');
+    const response = await apiService.getNetworks();
     console.log('API response received:', response.data);
     return response.data;
   }
@@ -20,7 +16,7 @@ export const fetchNetworks = createAsyncThunk(
 export const fetchNetworkHistory = createAsyncThunk(
   'networks/fetchHistory',
   async (networkId) => {
-    const response = await api.get(`/networks/${networkId}/history`);
+    const response = await apiService.getNetwork(networkId);
     return { networkId, history: response.data.history };
   }
 );
@@ -28,7 +24,7 @@ export const fetchNetworkHistory = createAsyncThunk(
 export const fetchNetworkStats = createAsyncThunk(
   'networks/fetchStats',
   async (monitorId) => {
-    const response = await api.fetchNetworkStats();
+    const response = await apiService.fetchNetworkStats();
     return response.data.stats;
   }
 );
