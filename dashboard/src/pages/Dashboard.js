@@ -5,7 +5,6 @@ import MonitorStatusCard from '../components/dashboard/MonitorStatusCard';
 import NetworkOverview from '../components/dashboard/NetworkOverview';
 import AlertSummary from '../components/dashboard/AlertSummary';
 import MetricsChart from '../components/dashboard/MetricsChart';
-console.log('Dashboard: MetricsChart imported successfully', MetricsChart);
 import RecentActivity from '../components/dashboard/RecentActivity';
 import SystemHealth from '../components/dashboard/SystemHealth';
 import { fetchHealthOverview } from '../store/slices/metricsSlice';
@@ -96,7 +95,6 @@ function Dashboard() {
         {/* Metrics Charts */}
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
-            {console.log('Dashboard: About to render MetricsChart')}
             <MetricsChart />
           </Paper>
         </Grid>

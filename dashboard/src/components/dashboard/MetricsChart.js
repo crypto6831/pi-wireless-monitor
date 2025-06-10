@@ -25,16 +25,7 @@ function MetricsChart() {
   const monitorsLoading = useSelector((state) => state.monitors.loading);
   const activeMonitor = monitors.find(m => m.status === 'active');
 
-  // Add mount/unmount logging
   useEffect(() => {
-    console.log('MetricsChart component mounted');
-    return () => {
-      console.log('MetricsChart component unmounted');
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('MetricsChart useEffect - monitors:', monitors.length, 'activeMonitor:', activeMonitor?.monitorId, 'loading:', monitorsLoading);
     if (activeMonitor && !monitorsLoading) {
       fetchMetricsData();
     } else if (monitors.length === 0 && !monitorsLoading) {
@@ -51,6 +42,12 @@ function MetricsChart() {
       return;
     }
 
+    // Prevent rapid successive calls
+    if (loading) {
+      console.log('Skipping fetch - already loading');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -63,8 +60,19 @@ function MetricsChart() {
       console.error('Metrics fetch error:', err);
       console.error('Error response:', err.response);
       console.error('Error status:', err.response?.status);
-      console.error('Error config:', err.config);
-      setError(err.response?.data?.message || err.message || 'Failed to fetch metrics data');
+      
+      // Handle rate limiting specifically
+      if (err.response?.status === 429) {
+        setError('Too many requests. Please wait a moment and the data will load automatically.');
+        // Retry after 5 seconds for rate limit errors
+        setTimeout(() => {
+          if (activeMonitor) {
+            fetchMetricsData();
+          }
+        }, 5000);
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch metrics data');
+      }
     } finally {
       setLoading(false);
     }
