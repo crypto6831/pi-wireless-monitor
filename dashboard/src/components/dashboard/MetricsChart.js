@@ -25,6 +25,14 @@ function MetricsChart() {
   const monitorsLoading = useSelector((state) => state.monitors.loading);
   const activeMonitor = monitors.find(m => m.status === 'active');
 
+  // Add mount/unmount logging
+  useEffect(() => {
+    console.log('MetricsChart component mounted');
+    return () => {
+      console.log('MetricsChart component unmounted');
+    };
+  }, []);
+
   useEffect(() => {
     console.log('MetricsChart useEffect - monitors:', monitors.length, 'activeMonitor:', activeMonitor?.monitorId, 'loading:', monitorsLoading);
     if (activeMonitor && !monitorsLoading) {
