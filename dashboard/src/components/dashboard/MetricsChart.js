@@ -29,6 +29,9 @@ function MetricsChart() {
   const currentRequestRef = useRef(null);
   const lastRequestKey = useRef(null);
 
+  // Debug logging for component state
+  console.log('MetricsChart render - monitors:', monitors.length, 'loading:', monitorsLoading, 'activeMonitor:', activeMonitor?.monitorId);
+
   useEffect(() => {
     if (activeMonitor && !monitorsLoading) {
       fetchMetricsData();

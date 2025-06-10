@@ -95,6 +95,7 @@ function Dashboard() {
         {/* Metrics Charts */}
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
+            {console.log('Dashboard: About to render MetricsChart - monitors:', monitors.length)}
             <MetricsChart />
           </Paper>
         </Grid>
