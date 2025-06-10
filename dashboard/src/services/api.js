@@ -89,6 +89,8 @@ export const apiService = {
   // Metrics
   getMetrics: (params = {}) => api.get('/metrics', { params }),
   getMetricsByMonitor: (monitorId, params = {}) => api.get(`/metrics/monitor/${monitorId}`, { params }),
+  getMetricsHistory: (monitorId, params = {}) => api.get(`/metrics/monitor/${monitorId}/history`, { params }),
+  getLatestMetrics: (monitorId) => api.get(`/metrics/monitor/${monitorId}/latest`),
   fetchHealthOverview: () => api.get('/metrics/health/overview'),
   fetchNetworkStats: () => api.get('/networks/stats/summary'),
 

@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import apiService from '../../services/api';
 
 // Async thunks
 export const fetchMetricsHistory = createAsyncThunk(
   'metrics/fetchHistory',
   async ({ monitorId, period = '1h', metric = 'all' }) => {
-    const response = await api.get(`/metrics/monitor/${monitorId}/history?period=${period}&metric=${metric}`);
+    const response = await apiService.getMetricsHistory(monitorId, { period, metric });
     return response.data;
   }
 );
@@ -13,7 +13,7 @@ export const fetchMetricsHistory = createAsyncThunk(
 export const fetchLatestMetrics = createAsyncThunk(
   'metrics/fetchLatest',
   async (monitorId) => {
-    const response = await api.get(`/metrics/monitor/${monitorId}/latest`);
+    const response = await apiService.getLatestMetrics(monitorId);
     return { monitorId, metrics: response.data.metrics };
   }
 );
@@ -21,8 +21,7 @@ export const fetchLatestMetrics = createAsyncThunk(
 export const fetchHealthOverview = createAsyncThunk(
   'metrics/fetchHealth',
   async (monitorId) => {
-    const params = monitorId ? `?monitorId=${monitorId}` : '';
-    const response = await api.get(`/metrics/health/overview${params}`);
+    const response = await apiService.fetchHealthOverview();
     return response.data.overview;
   }
 );
