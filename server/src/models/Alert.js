@@ -78,6 +78,11 @@ const alertSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
   },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
 }, {
   timestamps: true,
 });
