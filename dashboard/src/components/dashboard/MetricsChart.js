@@ -95,6 +95,8 @@ function MetricsChart() {
       );
       
       console.log('Metrics response:', response.data);
+      console.log('Chart data datasets:', response.data.chartData?.datasets);
+      console.log('Chart data count:', response.data.count);
       setChartData(response.data);
       
     } catch (err) {
@@ -136,9 +138,15 @@ function MetricsChart() {
   };
 
   const getChartConfig = () => {
-    if (!chartData || !chartData.chartData) return null;
+    console.log('getChartConfig called - chartData:', chartData);
+    if (!chartData || !chartData.chartData) {
+      console.log('No chart data available');
+      return null;
+    }
 
     const { labels, datasets } = chartData.chartData;
+    console.log('Chart labels length:', labels?.length);
+    console.log('Chart datasets:', Object.keys(datasets || {}));
     const timeLabels = labels.map(formatTime);
 
     switch (activeTab) {
@@ -236,6 +244,7 @@ function MetricsChart() {
   }
 
   const chartConfig = getChartConfig();
+  console.log('Final render - chartConfig:', chartConfig, 'chartData.count:', chartData?.count);
 
   return (
     <Box>
