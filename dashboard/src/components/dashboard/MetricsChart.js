@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Typography,
@@ -24,6 +24,10 @@ function MetricsChart() {
   const monitors = useSelector((state) => state.monitors.list);
   const monitorsLoading = useSelector((state) => state.monitors.loading);
   const activeMonitor = monitors.find(m => m.status === 'active');
+  
+  // Refs for request deduplication
+  const currentRequestRef = useRef(null);
+  const lastRequestKey = useRef(null);
 
   useEffect(() => {
     if (activeMonitor && !monitorsLoading) {
@@ -35,6 +39,15 @@ function MetricsChart() {
     }
   }, [activeMonitor, period, monitorsLoading, monitors.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cleanup effect to cancel requests on unmount
+  useEffect(() => {
+    return () => {
+      if (currentRequestRef.current) {
+        currentRequestRef.current.cancel('Component unmounted');
+      }
+    };
+  }, []);
+
   const fetchMetricsData = async () => {
     if (!activeMonitor) {
       setError('No active monitors found');
@@ -42,21 +55,52 @@ function MetricsChart() {
       return;
     }
 
-    // Prevent rapid successive calls
-    if (loading) {
-      console.log('Skipping fetch - already loading');
+    // Create request key for deduplication
+    const requestKey = `${activeMonitor.monitorId}-${period}`;
+    
+    // Skip if same request is already in progress
+    if (currentRequestRef.current && lastRequestKey.current === requestKey) {
+      console.log('Skipping duplicate request:', requestKey);
       return;
+    }
+    
+    // Cancel any previous request
+    if (currentRequestRef.current) {
+      console.log('Cancelling previous request');
+      currentRequestRef.current.cancel('New request started');
     }
 
     try {
       setLoading(true);
       setError(null);
+      lastRequestKey.current = requestKey;
+      
       console.log('Fetching metrics for monitor:', activeMonitor.monitorId, 'period:', period);
-      console.log('API base URL:', process.env.REACT_APP_API_URL);
-      const response = await apiService.getMetricsHistory(activeMonitor.monitorId, { period, metric: 'all' });
+      
+      // Create cancellable request
+      const abortController = new AbortController();
+      currentRequestRef.current = {
+        cancel: (reason) => {
+          console.log('Request cancelled:', reason);
+          abortController.abort();
+        }
+      };
+      
+      const response = await apiService.getMetricsHistory(
+        activeMonitor.monitorId, 
+        { period, metric: 'all' }
+      );
+      
       console.log('Metrics response:', response.data);
       setChartData(response.data);
+      
     } catch (err) {
+      // Ignore cancelled requests
+      if (err.name === 'AbortError' || err.message === 'cancelled') {
+        console.log('Request was cancelled');
+        return;
+      }
+      
       console.error('Metrics fetch error:', err);
       console.error('Error response:', err.response);
       console.error('Error status:', err.response?.status);
@@ -64,16 +108,17 @@ function MetricsChart() {
       // Handle rate limiting specifically
       if (err.response?.status === 429) {
         setError('Too many requests. Please wait a moment and the data will load automatically.');
-        // Retry after 5 seconds for rate limit errors
+        // Retry after 3 seconds for rate limit errors
         setTimeout(() => {
-          if (activeMonitor) {
+          if (activeMonitor && lastRequestKey.current === requestKey) {
             fetchMetricsData();
           }
-        }, 5000);
+        }, 3000);
       } else {
         setError(err.response?.data?.message || err.message || 'Failed to fetch metrics data');
       }
     } finally {
+      currentRequestRef.current = null;
       setLoading(false);
     }
   };
