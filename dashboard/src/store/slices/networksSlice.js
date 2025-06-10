@@ -64,6 +64,8 @@ const networksSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchNetworks.fulfilled, (state, action) => {
+        console.log('fetchNetworks.fulfilled - action.payload:', action.payload);
+        console.log('Networks array:', action.payload.networks?.length, 'items');
         state.loading = false;
         state.list = action.payload.networks || [];
         state.lastUpdate = new Date().toISOString();

@@ -43,10 +43,16 @@ function Networks() {
 
   useEffect(() => {
     // Only fetch if we don't have data or it's stale
+    console.log('Networks useEffect - networks.length:', networks.length, 'networks:', networks);
     if (networks.length === 0) {
+      console.log('Calling handleRefresh...');
       handleRefresh();
     }
   }, []);
+
+  useEffect(() => {
+    console.log('Networks updated:', networks.length, 'items');
+  }, [networks]);
 
   const getSignalStrengthColor = (strength) => {
     if (strength >= -50) return 'success';
