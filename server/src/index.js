@@ -47,11 +47,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting
+// Rate limiting - temporarily disabled for metrics endpoints
 const limiter = rateLimit({
   windowMs: config.api.rateLimitWindow,
   max: config.api.rateLimitMax,
   message: 'Too many requests from this IP',
+  skip: (req) => {
+    // Skip rate limiting for metrics endpoints to resolve dashboard issues
+    return req.path.includes('/metrics/');
+  }
 });
 app.use('/api/', limiter);
 
