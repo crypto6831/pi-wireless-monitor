@@ -103,6 +103,7 @@ function Alerts() {
 
   // Get unique locations from monitors
   const getUniqueLocations = () => {
+    if (!locations || !Array.isArray(locations)) return [];
     const locationIds = [...new Set(monitors.filter(m => m.locationId).map(m => m.locationId))];
     return locationIds.map(locationId => {
       const location = locations.find(l => l._id === locationId);
@@ -127,6 +128,10 @@ function Alerts() {
   const getMonitorLocationInfo = (monitorId) => {
     const monitor = monitors.find(m => m.monitorId === monitorId);
     if (!monitor) return { location: 'Unknown', floor: 'Unknown' };
+    
+    if (!locations || !Array.isArray(locations)) {
+      return { location: 'Unknown', floor: monitor.floorId || 'Unknown' };
+    }
     
     const location = locations.find(l => l._id === monitor.locationId);
     const locationName = location ? `${location.address} - ${location.building}` : 'Unknown';
