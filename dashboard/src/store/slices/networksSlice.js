@@ -25,8 +25,7 @@ export const fetchNetworkHistory = createAsyncThunk(
 export const fetchNetworkStats = createAsyncThunk(
   'networks/fetchStats',
   async (monitorId) => {
-    const params = monitorId ? `?monitorId=${monitorId}` : '';
-    const response = await api.get(`/networks/stats/summary${params}`);
+    const response = await api.fetchNetworkStats();
     return response.data.stats;
   }
 );

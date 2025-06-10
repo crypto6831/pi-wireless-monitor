@@ -40,7 +40,7 @@ function MetricsChart() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/metrics/monitor/${activeMonitor.monitorId}/history?period=${period}&metric=all`);
+      const response = await api.getMetricsHistory(activeMonitor.monitorId, { period, metric: 'all' });
       setChartData(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch metrics data');

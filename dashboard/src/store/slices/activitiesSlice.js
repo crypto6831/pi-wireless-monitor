@@ -6,7 +6,7 @@ export const fetchRecentActivities = createAsyncThunk(
   'activities/fetchRecent',
   async (limit = 20, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/activities/recent?limit=${limit}`);
+      const response = await api.getRecentActivities(limit);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch activities');
@@ -18,7 +18,7 @@ export const fetchActivitiesByType = createAsyncThunk(
   'activities/fetchByType',
   async ({ type, limit = 20 }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/activities/type/${type}?limit=${limit}`);
+      const response = await api.getActivitiesByType(type, limit);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch activities by type');
@@ -30,7 +30,7 @@ export const fetchActivityStats = createAsyncThunk(
   'activities/fetchStats',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/activities/stats');
+      const response = await api.getActivityStats();
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch activity stats');
