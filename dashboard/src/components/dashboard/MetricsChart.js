@@ -22,13 +22,15 @@ function MetricsChart() {
   const [activeTab, setActiveTab] = useState(0);
   const [period, setPeriod] = useState('1h');
   const monitors = useSelector((state) => state.monitors.list);
+  const monitorsLoading = useSelector((state) => state.monitors.loading);
   const activeMonitor = monitors.find(m => m.status === 'active');
 
   useEffect(() => {
-    if (activeMonitor) {
+    console.log('MetricsChart useEffect - monitors:', monitors.length, 'activeMonitor:', activeMonitor?.monitorId, 'loading:', monitorsLoading);
+    if (activeMonitor && !monitorsLoading) {
       fetchMetricsData();
     }
-  }, [activeMonitor, period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeMonitor, period, monitorsLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMetricsData = async () => {
     if (!activeMonitor) {
