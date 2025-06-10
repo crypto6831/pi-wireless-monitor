@@ -9,6 +9,7 @@ import RecentActivity from '../components/dashboard/RecentActivity';
 import SystemHealth from '../components/dashboard/SystemHealth';
 import { fetchHealthOverview } from '../store/slices/metricsSlice';
 import { fetchNetworkStats } from '../store/slices/networksSlice';
+import { fetchMonitors } from '../store/slices/monitorsSlice';
 
 function Dashboard() {
   const dispatch = useDispatch();
@@ -19,6 +20,7 @@ function Dashboard() {
 
   useEffect(() => {
     // Load initial data
+    dispatch(fetchMonitors());
     dispatch(fetchHealthOverview());
     dispatch(fetchNetworkStats());
   }, [dispatch]);
@@ -27,6 +29,7 @@ function Dashboard() {
     // Set up auto-refresh
     if (autoRefresh) {
       const interval = setInterval(() => {
+        dispatch(fetchMonitors());
         dispatch(fetchHealthOverview());
         dispatch(fetchNetworkStats());
       }, refreshInterval);
