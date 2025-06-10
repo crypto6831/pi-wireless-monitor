@@ -29,8 +29,12 @@ function MetricsChart() {
     console.log('MetricsChart useEffect - monitors:', monitors.length, 'activeMonitor:', activeMonitor?.monitorId, 'loading:', monitorsLoading);
     if (activeMonitor && !monitorsLoading) {
       fetchMetricsData();
+    } else if (monitors.length === 0 && !monitorsLoading) {
+      // Clear any existing error when no monitors yet
+      setError(null);
+      setLoading(false);
     }
-  }, [activeMonitor, period, monitorsLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeMonitor, period, monitorsLoading, monitors.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMetricsData = async () => {
     if (!activeMonitor) {
@@ -43,13 +47,16 @@ function MetricsChart() {
       setLoading(true);
       setError(null);
       console.log('Fetching metrics for monitor:', activeMonitor.monitorId, 'period:', period);
+      console.log('API base URL:', process.env.REACT_APP_API_URL);
       const response = await apiService.getMetricsHistory(activeMonitor.monitorId, { period, metric: 'all' });
       console.log('Metrics response:', response.data);
       setChartData(response.data);
     } catch (err) {
       console.error('Metrics fetch error:', err);
       console.error('Error response:', err.response);
-      setError(err.response?.data?.message || 'Failed to fetch metrics data');
+      console.error('Error status:', err.response?.status);
+      console.error('Error config:', err.config);
+      setError(err.response?.data?.message || err.message || 'Failed to fetch metrics data');
     } finally {
       setLoading(false);
     }
