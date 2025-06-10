@@ -5,11 +5,14 @@ import api from '../../services/api';
 export const fetchNetworks = createAsyncThunk(
   'networks/fetchNetworks',
   async ({ monitorId, active } = {}) => {
+    console.log('fetchNetworks thunk called with:', { monitorId, active });
     const params = new URLSearchParams();
     if (monitorId) params.append('monitorId', monitorId);
     if (active) params.append('active', 'true');
     
+    console.log('Making API call to:', `/networks?${params}`);
     const response = await api.get(`/networks?${params}`);
+    console.log('API response received:', response.data);
     return response.data;
   }
 );
@@ -71,6 +74,8 @@ const networksSlice = createSlice({
         state.lastUpdate = new Date().toISOString();
       })
       .addCase(fetchNetworks.rejected, (state, action) => {
+        console.log('fetchNetworks.rejected - action.error:', action.error);
+        console.log('fetchNetworks.rejected - action.payload:', action.payload);
         state.loading = false;
         state.error = action.error.message;
       })
