@@ -216,8 +216,19 @@ class SocketService {
         const cached = await redis.getJson('monitors:active');
         if (cached) return cached;
       }
-      // TODO: Get from database
-      return [];
+      
+      // Get from database
+      const Monitor = require('../models/Monitor');
+      const monitors = await Monitor.find({ status: 'active' })
+        .select('monitorId name location status lastHeartbeat isOnline uptime')
+        .lean();
+      
+      // Cache for next time
+      if (redis.isConnected() && monitors.length > 0) {
+        await redis.setEx('monitors:active', monitors, 60); // Cache for 1 minute
+      }
+      
+      return monitors;
     } catch (error) {
       logger.error('Error getting active monitors:', error);
       return [];
@@ -231,8 +242,21 @@ class SocketService {
         const cached = await redis.getJson('alerts:recent');
         if (cached) return cached;
       }
-      // TODO: Get from database
-      return [];
+      
+      // Get from database
+      const Alert = require('../models/Alert');
+      const alerts = await Alert.find({ status: 'active' })
+        .sort('-createdAt')
+        .limit(10)
+        .select('monitorId type severity message status timestamp createdAt')
+        .lean();
+      
+      // Cache for next time
+      if (redis.isConnected() && alerts.length > 0) {
+        await redis.setEx('alerts:recent', alerts, 30); // Cache for 30 seconds
+      }
+      
+      return alerts;
     } catch (error) {
       logger.error('Error getting recent alerts:', error);
       return [];

@@ -1,9 +1,9 @@
 import io from 'socket.io-client';
 import { store } from '../store/store';
-import { updateMonitorStatus } from '../store/slices/monitorsSlice';
+import { updateMonitorStatus, setMonitors } from '../store/slices/monitorsSlice';
 import { updateNetwork } from '../store/slices/networksSlice';
 import { updateLatestMetrics } from '../store/slices/metricsSlice';
-import { addAlert, updateAlert } from '../store/slices/alertsSlice';
+import { addAlert, updateAlert, setAlerts } from '../store/slices/alertsSlice';
 import { setSocketConnected, addNotification } from '../store/slices/uiSlice';
 
 class SocketService {
@@ -66,6 +66,7 @@ class SocketService {
     // Monitor events
     this.socket.on('monitors:list', (monitors) => {
       console.log('Received monitors list:', monitors);
+      store.dispatch(setMonitors(monitors));
     });
 
     this.socket.on('monitor:heartbeat', (data) => {
@@ -149,6 +150,7 @@ class SocketService {
     // Recent alerts
     this.socket.on('alerts:recent', (alerts) => {
       console.log('Recent alerts:', alerts);
+      store.dispatch(setAlerts(alerts));
     });
   }
 
