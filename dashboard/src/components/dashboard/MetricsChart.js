@@ -13,7 +13,7 @@ import {
   InputLabel
 } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
-import api from '../../services/api';
+import apiService from '../../services/api';
 
 function MetricsChart() {
   const [chartData, setChartData] = useState(null);
@@ -40,9 +40,13 @@ function MetricsChart() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.getMetricsHistory(activeMonitor.monitorId, { period, metric: 'all' });
+      console.log('Fetching metrics for monitor:', activeMonitor.monitorId, 'period:', period);
+      const response = await apiService.getMetricsHistory(activeMonitor.monitorId, { period, metric: 'all' });
+      console.log('Metrics response:', response.data);
       setChartData(response.data);
     } catch (err) {
+      console.error('Metrics fetch error:', err);
+      console.error('Error response:', err.response);
       setError(err.response?.data?.message || 'Failed to fetch metrics data');
     } finally {
       setLoading(false);
