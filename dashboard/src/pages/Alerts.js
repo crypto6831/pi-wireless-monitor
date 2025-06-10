@@ -40,21 +40,26 @@ import {
   NotificationsActive as AlertIcon
 } from '@mui/icons-material';
 import { fetchAlerts, acknowledgeAlert, deleteAlert } from '../store/slices/alertsSlice';
+import { fetchLocations } from '../store/slices/locationsSlice';
 import api from '../services/api';
 
 function Alerts() {
   const dispatch = useDispatch();
   const { list: alerts, loading } = useSelector((state) => state.alerts);
   const monitors = useSelector((state) => state.monitors.list);
+  const locations = useSelector((state) => state.locations.list);
   
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [filterMonitor, setFilterMonitor] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterFloor, setFilterFloor] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAlerts());
+    dispatch(fetchLocations());
   }, [dispatch]);
 
   const getSeverityIcon = (severity) => {
@@ -96,6 +101,40 @@ function Alerts() {
     return labels[type] || type;
   };
 
+  // Get unique locations from monitors
+  const getUniqueLocations = () => {
+    const locationIds = [...new Set(monitors.filter(m => m.locationId).map(m => m.locationId))];
+    return locationIds.map(locationId => {
+      const location = locations.find(l => l._id === locationId);
+      return { id: locationId, name: location ? `${location.address} - ${location.building}` : locationId };
+    });
+  };
+
+  // Get unique floors for selected location
+  const getUniqueFloors = () => {
+    if (filterLocation === 'all') {
+      // Get all floors from all monitors
+      const floors = [...new Set(monitors.filter(m => m.floorId).map(m => m.floorId))];
+      return floors.map(floorId => ({ id: floorId, name: floorId }));
+    } else {
+      // Get floors only for selected location
+      const floors = [...new Set(monitors.filter(m => m.locationId === filterLocation && m.floorId).map(m => m.floorId))];
+      return floors.map(floorId => ({ id: floorId, name: floorId }));
+    }
+  };
+
+  // Get monitor location info
+  const getMonitorLocationInfo = (monitorId) => {
+    const monitor = monitors.find(m => m.monitorId === monitorId);
+    if (!monitor) return { location: 'Unknown', floor: 'Unknown' };
+    
+    const location = locations.find(l => l._id === monitor.locationId);
+    const locationName = location ? `${location.address} - ${location.building}` : 'Unknown';
+    const floorName = monitor.floorId || 'Unknown';
+    
+    return { location: locationName, floor: floorName };
+  };
+
   const handleAcknowledge = async (alertId) => {
     try {
       await api.put(`/alerts/${alertId}/acknowledge`);
@@ -119,9 +158,25 @@ function Alerts() {
     setDetailsOpen(true);
   };
 
+  const handleLocationChange = (locationId) => {
+    setFilterLocation(locationId);
+    // Reset floor filter when location changes
+    setFilterFloor('all');
+  };
+
   const filteredAlerts = alerts.filter(alert => {
     if (filterSeverity !== 'all' && alert.severity !== filterSeverity) return false;
     if (filterMonitor !== 'all' && alert.monitorId !== filterMonitor) return false;
+    
+    // Location and floor filtering
+    if (filterLocation !== 'all' || filterFloor !== 'all') {
+      const monitor = monitors.find(m => m.monitorId === alert.monitorId);
+      if (!monitor) return false;
+      
+      if (filterLocation !== 'all' && monitor.locationId !== filterLocation) return false;
+      if (filterFloor !== 'all' && monitor.floorId !== filterFloor) return false;
+    }
+    
     if (filterStatus !== 'all') {
       if (filterStatus === 'active' && (alert.acknowledged || alert.resolved)) return false;
       if (filterStatus === 'acknowledged' && !alert.acknowledged) return false;
@@ -227,7 +282,7 @@ function Alerts() {
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <FormControl fullWidth size="small">
               <InputLabel>Severity</InputLabel>
               <Select
@@ -242,7 +297,41 @@ function Alerts() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Location</InputLabel>
+              <Select
+                value={filterLocation}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                label="Location"
+              >
+                <MenuItem value="all">All Locations</MenuItem>
+                {getUniqueLocations().map((location) => (
+                  <MenuItem key={location.id} value={location.id}>
+                    {location.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Floor</InputLabel>
+              <Select
+                value={filterFloor}
+                onChange={(e) => setFilterFloor(e.target.value)}
+                label="Floor"
+              >
+                <MenuItem value="all">All Floors</MenuItem>
+                {getUniqueFloors().map((floor) => (
+                  <MenuItem key={floor.id} value={floor.id}>
+                    {floor.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
             <FormControl fullWidth size="small">
               <InputLabel>Monitor</InputLabel>
               <Select
@@ -259,7 +348,7 @@ function Alerts() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <FormControl fullWidth size="small">
               <InputLabel>Status</InputLabel>
               <Select
@@ -286,6 +375,8 @@ function Alerts() {
               <TableCell>Severity</TableCell>
               <TableCell>Type</TableCell>
               <TableCell>Monitor</TableCell>
+              <TableCell>Location</TableCell>
+              <TableCell>Floor</TableCell>
               <TableCell>Message</TableCell>
               <TableCell>Time</TableCell>
               <TableCell>Status</TableCell>
@@ -293,56 +384,69 @@ function Alerts() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAlerts.map((alert) => (
-              <TableRow key={alert._id}>
-                <TableCell>
-                  <Chip
-                    icon={getSeverityIcon(alert.severity)}
-                    label={alert.severity}
-                    color={getSeverityColor(alert.severity)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{getTypeLabel(alert.type)}</TableCell>
-                <TableCell>
-                  {monitors.find(m => m.monitorId === alert.monitorId)?.name || alert.monitorId}
-                </TableCell>
-                <TableCell>{alert.message}</TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {new Date(alert.createdAt).toLocaleString()}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {alert.resolved ? (
-                    <Chip label="Resolved" color="success" size="small" />
-                  ) : alert.acknowledged ? (
-                    <Chip label="Acknowledged" color="info" size="small" />
-                  ) : (
-                    <Chip label="Active" color="warning" size="small" />
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="View Details">
-                    <IconButton size="small" onClick={() => handleViewDetails(alert)}>
-                      <ViewIcon />
-                    </IconButton>
-                  </Tooltip>
-                  {!alert.acknowledged && !alert.resolved && (
-                    <Tooltip title="Acknowledge">
-                      <IconButton size="small" onClick={() => handleAcknowledge(alert._id)}>
-                        <CheckIcon />
+            {filteredAlerts.map((alert) => {
+              const locationInfo = getMonitorLocationInfo(alert.monitorId);
+              return (
+                <TableRow key={alert._id}>
+                  <TableCell>
+                    <Chip
+                      icon={getSeverityIcon(alert.severity)}
+                      label={alert.severity}
+                      color={getSeverityColor(alert.severity)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{getTypeLabel(alert.type)}</TableCell>
+                  <TableCell>
+                    {monitors.find(m => m.monitorId === alert.monitorId)?.name || alert.monitorId}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {locationInfo.location}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {locationInfo.floor}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{alert.message}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {new Date(alert.createdAt).toLocaleString()}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {alert.resolved ? (
+                      <Chip label="Resolved" color="success" size="small" />
+                    ) : alert.acknowledged ? (
+                      <Chip label="Acknowledged" color="info" size="small" />
+                    ) : (
+                      <Chip label="Active" color="warning" size="small" />
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="View Details">
+                      <IconButton size="small" onClick={() => handleViewDetails(alert)}>
+                        <ViewIcon />
                       </IconButton>
                     </Tooltip>
-                  )}
-                  <Tooltip title="Delete">
-                    <IconButton size="small" onClick={() => handleDelete(alert._id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
+                    {!alert.acknowledged && !alert.resolved && (
+                      <Tooltip title="Acknowledge">
+                        <IconButton size="small" onClick={() => handleAcknowledge(alert._id)}>
+                          <CheckIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Delete">
+                      <IconButton size="small" onClick={() => handleDelete(alert._id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
         {!loading && filteredAlerts.length === 0 && (
@@ -396,6 +500,18 @@ function Alerts() {
                   <Typography variant="body2" color="text.secondary">Monitor</Typography>
                   <Typography>
                     {monitors.find(m => m.monitorId === selectedAlert.monitorId)?.name || selectedAlert.monitorId}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Location</Typography>
+                  <Typography>
+                    {getMonitorLocationInfo(selectedAlert.monitorId).location}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Floor</Typography>
+                  <Typography>
+                    {getMonitorLocationInfo(selectedAlert.monitorId).floor}
                   </Typography>
                 </Grid>
               </Grid>
