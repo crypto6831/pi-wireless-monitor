@@ -93,14 +93,17 @@ function Metrics() {
 
   const fetchServiceMonitors = async () => {
     try {
+      console.log('Fetching service monitors for:', selectedMonitor);
       const response = await apiService.getServiceMonitorsWithMetrics(selectedMonitor);
-      setServiceMonitors(response.data);
-      if (response.data.length > 0 && !selectedServiceMonitor) {
+      console.log('Service monitors response:', response.data);
+      setServiceMonitors(response.data || []);
+      if (response.data && response.data.length > 0 && !selectedServiceMonitor) {
         setSelectedServiceMonitor(response.data[0]._id);
       }
     } catch (err) {
       console.error('Failed to fetch service monitors:', err);
       setServiceMonitors([]);
+      setChartData(null); // Clear any existing chart data
     }
   };
 
@@ -138,6 +141,10 @@ function Metrics() {
     if (!chartData || !chartData.chartData) return null;
 
     const { labels, datasets } = chartData.chartData;
+    
+    // Validate data exists and has length
+    if (!labels || labels.length === 0) return null;
+    
     const timeLabels = labels.map(formatTime);
 
     if (metricType === 'system') {
@@ -147,21 +154,21 @@ function Metrics() {
             xAxis: [{ scaleType: 'point', data: timeLabels }],
             series: [
               {
-                data: datasets.cpu,
+                data: datasets.cpu || [],
                 label: 'CPU (%)',
                 color: '#1976d2',
               },
               {
-                data: datasets.memory,
+                data: datasets.memory || [],
                 label: 'Memory (%)',
                 color: '#dc004e',
               },
               {
-                data: datasets.temperature,
+                data: datasets.temperature || [],
                 label: 'Temperature (°C)',
                 color: '#ed6c02',
               }
-            ],
+            ].filter(serie => serie.data.length > 0), // Only include series with data
             height: 400
           };
         
@@ -170,16 +177,16 @@ function Metrics() {
             xAxis: [{ scaleType: 'point', data: timeLabels }],
             series: [
               {
-                data: datasets.latency,
+                data: datasets.latency || [],
                 label: 'Latency (ms)',
                 color: '#2e7d32',
               },
               {
-                data: datasets.packetLoss,
+                data: datasets.packetLoss || [],
                 label: 'Packet Loss (%)',
                 color: '#d32f2f',
               }
-            ],
+            ].filter(serie => serie.data.length > 0),
             height: 400
           };
         
@@ -190,38 +197,47 @@ function Metrics() {
       // Service monitor metrics
       switch (activeTab) {
         case 0: // Service Performance
+          const perfSeries = [
+            {
+              data: datasets.latency || [],
+              label: 'Response Time (ms)',
+              color: '#1976d2',
+            },
+            {
+              data: datasets.jitter || [],
+              label: 'Jitter (ms)',
+              color: '#ed6c02',
+            }
+          ].filter(serie => serie.data.length > 0);
+          
+          // Return null if no series have data
+          if (perfSeries.length === 0) return null;
+          
           return {
             xAxis: [{ scaleType: 'point', data: timeLabels }],
-            series: [
-              {
-                data: datasets.latency,
-                label: 'Response Time (ms)',
-                color: '#1976d2',
-              },
-              {
-                data: datasets.jitter,
-                label: 'Jitter (ms)',
-                color: '#ed6c02',
-              }
-            ],
+            series: perfSeries,
             height: 400
           };
         
         case 1: // Service Availability
+          const availSeries = [
+            {
+              data: datasets.successRate || [],
+              label: 'Success Rate (%)',
+              color: '#2e7d32',
+            },
+            {
+              data: datasets.packetLoss || [],
+              label: 'Packet Loss (%)',
+              color: '#d32f2f',
+            }
+          ].filter(serie => serie.data.length > 0);
+          
+          if (availSeries.length === 0) return null;
+          
           return {
             xAxis: [{ scaleType: 'point', data: timeLabels }],
-            series: [
-              {
-                data: datasets.successRate,
-                label: 'Success Rate (%)',
-                color: '#2e7d32',
-              },
-              {
-                data: datasets.packetLoss,
-                label: 'Packet Loss (%)',
-                color: '#d32f2f',
-              }
-            ],
+            series: availSeries,
             height: 400
           };
         
@@ -323,11 +339,13 @@ function Metrics() {
                         {monitor.name} ({monitor.monitorId})
                       </MenuItem>
                     ))
-                  : serviceMonitors.map((sm) => (
-                      <MenuItem key={sm._id} value={sm._id}>
-                        {sm.serviceName} ({sm.type})
-                      </MenuItem>
-                    ))
+                  : serviceMonitors.length > 0 
+                    ? serviceMonitors.map((sm) => (
+                        <MenuItem key={sm._id} value={sm._id}>
+                          {sm.serviceName} ({sm.type})
+                        </MenuItem>
+                      ))
+                    : <MenuItem value="" disabled>No service monitors configured</MenuItem>
                 }
               </Select>
             </FormControl>
@@ -358,7 +376,7 @@ function Metrics() {
           <Tab label={metricType === 'system' ? 'Network Performance' : 'Service Availability'} />
         </Tabs>
 
-        {chartConfig && chartData?.count > 0 ? (
+        {chartConfig && chartData?.count > 0 && chartConfig.series && chartConfig.series.length > 0 ? (
           <Box>
             <LineChart
               {...chartConfig}
@@ -372,7 +390,10 @@ function Metrics() {
         ) : (
           <Box textAlign="center" py={4}>
             <Typography variant="body2" color="text.secondary">
-              No metrics data available for the selected period
+              {metricType === 'service' && serviceMonitors.length === 0 
+                ? 'No service monitors configured. Please add service monitors first.'
+                : 'No metrics data available for the selected period'
+              }
             </Typography>
           </Box>
         )}
