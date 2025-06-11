@@ -67,6 +67,7 @@ function Metrics() {
   }, [selectedMonitor, metricType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    console.log('Metrics data fetch effect triggered:', { metricType, selectedMonitor, selectedServiceMonitor, period });
     if (metricType === 'system' && selectedMonitor) {
       fetchMetricsData();
     } else if (metricType === 'service' && selectedServiceMonitor) {
@@ -272,7 +273,8 @@ function Metrics() {
   };
 
   const handlePeriodChange = (event, newPeriod) => {
-    if (newPeriod) {
+    console.log('Period change requested:', { current: period, new: newPeriod });
+    if (newPeriod && newPeriod !== period) {
       setPeriod(newPeriod);
     }
   };
