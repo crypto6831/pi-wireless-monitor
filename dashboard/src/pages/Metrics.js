@@ -50,7 +50,10 @@ function Metrics() {
   }, [dispatch]);
 
   useEffect(() => {
+    console.log('Monitors from Redux:', monitors);
+    console.log('Current selectedMonitor:', selectedMonitor);
     if (monitors.length > 0 && !selectedMonitor) {
+      console.log('Setting selectedMonitor to:', monitors[0].monitorId);
       setSelectedMonitor(monitors[0].monitorId);
     }
   }, [monitors, selectedMonitor]);
@@ -81,10 +84,15 @@ function Metrics() {
       setLoading(true);
       setError(null);
       console.log('Metrics page: Fetching data for monitor:', selectedMonitor, 'period:', period);
+      console.log('API URL will be:', `/metrics/monitor/${selectedMonitor}/history?period=${period}&metric=all`);
       const response = await apiService.getMetricsHistory(selectedMonitor, { period, metric: 'all' });
       console.log('Metrics page: Response received:', response.data);
+      console.log('Response chartData:', response.data?.chartData);
+      console.log('Response count:', response.data?.count);
       setChartData(response.data);
     } catch (err) {
+      console.error('Metrics fetch error:', err);
+      console.error('Error response:', err.response);
       setError(err.response?.data?.message || 'Failed to fetch metrics data');
     } finally {
       setLoading(false);
@@ -138,12 +146,21 @@ function Metrics() {
   };
 
   const getChartConfig = () => {
-    if (!chartData || !chartData.chartData) return null;
+    console.log('getChartConfig called, chartData:', chartData);
+    if (!chartData || !chartData.chartData) {
+      console.log('getChartConfig returning null - no chartData');
+      return null;
+    }
 
     const { labels, datasets } = chartData.chartData;
+    console.log('Chart labels length:', labels?.length);
+    console.log('Chart datasets:', datasets);
     
     // Validate data exists and has length
-    if (!labels || labels.length === 0) return null;
+    if (!labels || labels.length === 0) {
+      console.log('getChartConfig returning null - no labels');
+      return null;
+    }
     
     const timeLabels = labels.map(formatTime);
 
@@ -376,7 +393,14 @@ function Metrics() {
           <Tab label={metricType === 'system' ? 'Network Performance' : 'Service Availability'} />
         </Tabs>
 
-        {chartConfig && chartData?.count > 0 && chartConfig.series && chartConfig.series.length > 0 ? (
+        {(() => {
+          console.log('Chart render conditions:');
+          console.log('- chartConfig exists:', !!chartConfig);
+          console.log('- chartData?.count:', chartData?.count);
+          console.log('- chartConfig?.series exists:', !!chartConfig?.series);
+          console.log('- chartConfig?.series?.length:', chartConfig?.series?.length);
+          return chartConfig && chartData?.count > 0 && chartConfig.series && chartConfig.series.length > 0;
+        })() ? (
           <Box>
             <LineChart
               {...chartConfig}
