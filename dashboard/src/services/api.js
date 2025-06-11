@@ -102,6 +102,8 @@ export const apiService = {
 
   // Service Monitors
   getServiceMonitors: () => api.get('/service-monitors'),
+  getServiceMonitorsWithMetrics: (monitorId) => api.get('/service-monitors/with-metrics', { params: { monitorId } }),
+  getServiceMonitorHistory: (id, params = {}) => api.get(`/service-monitors/${id}/history`, { params }),
   createServiceMonitor: (data) => api.post('/service-monitors', data),
   updateServiceMonitor: (id, data) => api.put(`/service-monitors/${id}`, data),
   deleteServiceMonitor: (id) => api.delete(`/service-monitors/${id}`),

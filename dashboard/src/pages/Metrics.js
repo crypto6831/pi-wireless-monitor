@@ -39,8 +39,11 @@ function Metrics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMonitor, setSelectedMonitor] = useState('');
+  const [selectedServiceMonitor, setSelectedServiceMonitor] = useState('');
+  const [serviceMonitors, setServiceMonitors] = useState([]);
   const [period, setPeriod] = useState('1h');
   const [activeTab, setActiveTab] = useState(0);
+  const [metricType, setMetricType] = useState('system'); // 'system' or 'service'
 
   useEffect(() => {
     dispatch(fetchMonitors());
@@ -52,11 +55,20 @@ function Metrics() {
     }
   }, [monitors, selectedMonitor]);
 
+  // Fetch service monitors when monitor is selected
   useEffect(() => {
-    if (selectedMonitor) {
-      fetchMetricsData();
+    if (selectedMonitor && metricType === 'service') {
+      fetchServiceMonitors();
     }
-  }, [selectedMonitor, period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedMonitor, metricType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (metricType === 'system' && selectedMonitor) {
+      fetchMetricsData();
+    } else if (metricType === 'service' && selectedServiceMonitor) {
+      fetchServiceMetricsData();
+    }
+  }, [selectedMonitor, selectedServiceMonitor, period, metricType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMetricsData = async () => {
     if (!selectedMonitor) {
@@ -79,6 +91,40 @@ function Metrics() {
     }
   };
 
+  const fetchServiceMonitors = async () => {
+    try {
+      const response = await apiService.getServiceMonitorsWithMetrics(selectedMonitor);
+      setServiceMonitors(response.data);
+      if (response.data.length > 0 && !selectedServiceMonitor) {
+        setSelectedServiceMonitor(response.data[0]._id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch service monitors:', err);
+      setServiceMonitors([]);
+    }
+  };
+
+  const fetchServiceMetricsData = async () => {
+    if (!selectedServiceMonitor) {
+      setError('No service monitor selected');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching service metrics for:', selectedServiceMonitor, 'period:', period);
+      const response = await apiService.getServiceMonitorHistory(selectedServiceMonitor, { period });
+      console.log('Service metrics response:', response.data);
+      setChartData(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch service metrics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', { 
@@ -94,50 +140,94 @@ function Metrics() {
     const { labels, datasets } = chartData.chartData;
     const timeLabels = labels.map(formatTime);
 
-    switch (activeTab) {
-      case 0: // System Performance
-        return {
-          xAxis: [{ scaleType: 'point', data: timeLabels }],
-          series: [
-            {
-              data: datasets.cpu,
-              label: 'CPU (%)',
-              color: '#1976d2',
-            },
-            {
-              data: datasets.memory,
-              label: 'Memory (%)',
-              color: '#dc004e',
-            },
-            {
-              data: datasets.temperature,
-              label: 'Temperature (°C)',
-              color: '#ed6c02',
-            }
-          ],
-          height: 400
-        };
-      
-      case 1: // Network Performance
-        return {
-          xAxis: [{ scaleType: 'point', data: timeLabels }],
-          series: [
-            {
-              data: datasets.latency,
-              label: 'Latency (ms)',
-              color: '#2e7d32',
-            },
-            {
-              data: datasets.packetLoss,
-              label: 'Packet Loss (%)',
-              color: '#d32f2f',
-            }
-          ],
-          height: 400
-        };
-      
-      default:
-        return null;
+    if (metricType === 'system') {
+      switch (activeTab) {
+        case 0: // System Performance
+          return {
+            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            series: [
+              {
+                data: datasets.cpu,
+                label: 'CPU (%)',
+                color: '#1976d2',
+              },
+              {
+                data: datasets.memory,
+                label: 'Memory (%)',
+                color: '#dc004e',
+              },
+              {
+                data: datasets.temperature,
+                label: 'Temperature (°C)',
+                color: '#ed6c02',
+              }
+            ],
+            height: 400
+          };
+        
+        case 1: // Network Performance
+          return {
+            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            series: [
+              {
+                data: datasets.latency,
+                label: 'Latency (ms)',
+                color: '#2e7d32',
+              },
+              {
+                data: datasets.packetLoss,
+                label: 'Packet Loss (%)',
+                color: '#d32f2f',
+              }
+            ],
+            height: 400
+          };
+        
+        default:
+          return null;
+      }
+    } else {
+      // Service monitor metrics
+      switch (activeTab) {
+        case 0: // Service Performance
+          return {
+            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            series: [
+              {
+                data: datasets.latency,
+                label: 'Response Time (ms)',
+                color: '#1976d2',
+              },
+              {
+                data: datasets.jitter,
+                label: 'Jitter (ms)',
+                color: '#ed6c02',
+              }
+            ],
+            height: 400
+          };
+        
+        case 1: // Service Availability
+          return {
+            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            series: [
+              {
+                data: datasets.successRate,
+                label: 'Success Rate (%)',
+                color: '#2e7d32',
+              },
+              {
+                data: datasets.packetLoss,
+                label: 'Packet Loss (%)',
+                color: '#d32f2f',
+              }
+            ],
+            height: 400
+          };
+        
+        default:
+          return null;
+      }
     }
   };
 
@@ -155,6 +245,11 @@ function Metrics() {
     if (!chartData?.chartData?.datasets?.[metric]) return 0;
     const values = chartData.chartData.datasets[metric];
     return values[values.length - 1] || 0;
+  };
+
+  const handleMetricTypeChange = (event) => {
+    setMetricType(event.target.value);
+    setActiveTab(0); // Reset to first tab
   };
 
   if (loading && !chartData) {
@@ -194,19 +289,46 @@ function Metrics() {
       {/* Controls */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Monitor</InputLabel>
+              <InputLabel>Metric Type</InputLabel>
               <Select
-                value={selectedMonitor}
-                onChange={(e) => setSelectedMonitor(e.target.value)}
-                label="Monitor"
+                value={metricType}
+                onChange={handleMetricTypeChange}
+                label="Metric Type"
               >
-                {monitors.map((monitor) => (
-                  <MenuItem key={monitor.monitorId} value={monitor.monitorId}>
-                    {monitor.name} ({monitor.monitorId})
-                  </MenuItem>
-                ))}
+                <MenuItem value="system">System Metrics</MenuItem>
+                <MenuItem value="service">Service Monitors</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>{metricType === 'system' ? 'Monitor' : 'Service'}</InputLabel>
+              <Select
+                value={metricType === 'system' ? selectedMonitor : selectedServiceMonitor}
+                onChange={(e) => {
+                  if (metricType === 'system') {
+                    setSelectedMonitor(e.target.value);
+                  } else {
+                    setSelectedServiceMonitor(e.target.value);
+                  }
+                }}
+                label={metricType === 'system' ? 'Monitor' : 'Service'}
+              >
+                {metricType === 'system' 
+                  ? monitors.map((monitor) => (
+                      <MenuItem key={monitor.monitorId} value={monitor.monitorId}>
+                        {monitor.name} ({monitor.monitorId})
+                      </MenuItem>
+                    ))
+                  : serviceMonitors.map((sm) => (
+                      <MenuItem key={sm._id} value={sm._id}>
+                        {sm.serviceName} ({sm.type})
+                      </MenuItem>
+                    ))
+                }
               </Select>
             </FormControl>
           </Grid>
@@ -232,8 +354,8 @@ function Metrics() {
         {loading && <LinearProgress />}
         
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab label="System Performance" />
-          <Tab label="Network Performance" />
+          <Tab label={metricType === 'system' ? 'System Performance' : 'Service Performance'} />
+          <Tab label={metricType === 'system' ? 'Network Performance' : 'Service Availability'} />
         </Tabs>
 
         {chartConfig && chartData?.count > 0 ? (
@@ -258,90 +380,181 @@ function Metrics() {
 
       {/* Summary Cards */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <CpuIcon color="primary" />
-                <Typography variant="h6">CPU Usage</Typography>
-              </Box>
-              <Typography variant="h4">
-                {getCurrentMetricValue('cpu').toFixed(0)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {metricType === 'system' ? (
+          <>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <CpuIcon color="primary" />
+                    <Typography variant="h6">CPU Usage</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('cpu').toFixed(0)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <MemoryIcon color="primary" />
-                <Typography variant="h6">Memory</Typography>
-              </Box>
-              <Typography variant="h4">
-                {getCurrentMetricValue('memory').toFixed(0)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <MemoryIcon color="primary" />
+                    <Typography variant="h6">Memory</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('memory').toFixed(0)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <TempIcon color="primary" />
-                <Typography variant="h6">Temperature</Typography>
-              </Box>
-              <Typography variant="h4">
-                {getCurrentMetricValue('temperature').toFixed(0)}°C
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <TempIcon color="primary" />
+                    <Typography variant="h6">Temperature</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('temperature').toFixed(0)}°C
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <NetworkIcon color="primary" />
-                <Typography variant="h6">Latency</Typography>
-              </Box>
-              <Typography variant="h4">
-                {getCurrentMetricValue('latency').toFixed(0)}ms
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <NetworkIcon color="primary" />
+                    <Typography variant="h6">Latency</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('latency').toFixed(0)}ms
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <SpeedIcon color="primary" />
-                <Typography variant="h6">Packet Loss</Typography>
-              </Box>
-              <Typography variant="h4">
-                {getCurrentMetricValue('packetLoss').toFixed(1)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <SpeedIcon color="primary" />
+                    <Typography variant="h6">Packet Loss</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('packetLoss').toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </>
+        ) : (
+          <>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <NetworkIcon color="primary" />
+                    <Typography variant="h6">Response Time</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('latency').toFixed(0)}ms
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <ChartIcon color="primary" />
+                    <Typography variant="h6">Success Rate</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {chartData?.successRate || getCurrentMetricValue('successRate').toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Overall
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <SpeedIcon color="primary" />
+                    <Typography variant="h6">Jitter</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('jitter').toFixed(1)}ms
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <SpeedIcon color="primary" />
+                    <Typography variant="h6">Packet Loss</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {getCurrentMetricValue('packetLoss').toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Current
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <NetworkIcon color="primary" />
+                    <Typography variant="h6">Service Type</Typography>
+                  </Box>
+                  <Typography variant="h4">
+                    {chartData?.serviceMonitor?.type?.toUpperCase() || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {chartData?.serviceMonitor?.target || 'No target'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </>
+        )}
       </Grid>
     </Box>
   );

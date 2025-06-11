@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ServiceMonitor = require('../models/ServiceMonitor');
+const ServiceMetric = require('../models/ServiceMetric');
 const Monitor = require('../models/Monitor');
 const logger = require('../utils/logger');
 
@@ -193,6 +194,19 @@ router.put('/:id/check', async (req, res) => {
     const checkResult = req.body;
     await serviceMonitor.updateLastCheck(checkResult);
     
+    // Store metric in history
+    const metric = new ServiceMetric({
+      serviceMonitorId: serviceMonitor._id,
+      monitorId: serviceMonitor.monitorId,
+      timestamp: checkResult.timestamp || new Date(),
+      status: checkResult.status,
+      latency: checkResult.latency,
+      packetLoss: checkResult.packetLoss,
+      jitter: checkResult.jitter,
+      errorMessage: checkResult.errorMessage
+    });
+    await metric.save();
+    
     // Emit real-time update via Socket.IO
     const socketService = require('../services/socketService');
     if (socketService.io) {
@@ -264,6 +278,106 @@ router.post('/bulk/:action', async (req, res) => {
   } catch (error) {
     logger.error('Error in bulk operation:', error);
     res.status(500).json({ error: 'Failed to perform bulk operation' });
+  }
+});
+
+// Get historical metrics for a service monitor
+router.get('/:id/history', async (req, res) => {
+  try {
+    const { period = '1h' } = req.query;
+    const serviceMonitor = await ServiceMonitor.findById(req.params.id);
+    
+    if (!serviceMonitor) {
+      return res.status(404).json({ error: 'Service monitor not found' });
+    }
+    
+    // Get metrics for the specified period
+    const metrics = await ServiceMetric.getMetricsForPeriod(serviceMonitor._id, period);
+    
+    // Calculate success rate
+    const successRate = await ServiceMetric.calculateSuccessRate(serviceMonitor._id, period);
+    
+    // Format data for charts
+    const chartData = {
+      labels: [],
+      datasets: {
+        latency: [],
+        packetLoss: [],
+        jitter: [],
+        successRate: []
+      }
+    };
+    
+    // Process metrics
+    const statusCounts = metrics.length;
+    let upCount = 0;
+    
+    metrics.forEach(metric => {
+      chartData.labels.push(metric.timestamp);
+      chartData.datasets.latency.push(metric.latency || 0);
+      chartData.datasets.packetLoss.push(metric.packetLoss || 0);
+      chartData.datasets.jitter.push(metric.jitter || 0);
+      
+      // Calculate rolling success rate
+      if (metric.status === 'up') upCount++;
+      const currentIndex = chartData.labels.length;
+      const rate = currentIndex > 0 ? (upCount / currentIndex) * 100 : 0;
+      chartData.datasets.successRate.push(rate);
+    });
+    
+    res.json({
+      success: true,
+      serviceMonitor: {
+        id: serviceMonitor._id,
+        serviceName: serviceMonitor.serviceName,
+        target: serviceMonitor.target,
+        type: serviceMonitor.type
+      },
+      period,
+      count: metrics.length,
+      startDate: metrics.length > 0 ? metrics[0].timestamp : null,
+      endDate: metrics.length > 0 ? metrics[metrics.length - 1].timestamp : null,
+      successRate: successRate.toFixed(2),
+      chartData
+    });
+  } catch (error) {
+    logger.error('Error fetching service monitor history:', error);
+    res.status(500).json({ error: 'Failed to fetch service monitor history' });
+  }
+});
+
+// Get all service monitors with their latest metrics
+router.get('/with-metrics', async (req, res) => {
+  try {
+    const { monitorId } = req.query;
+    
+    let query = {};
+    if (monitorId) {
+      query.monitorId = monitorId;
+    }
+    
+    const serviceMonitors = await ServiceMonitor.find(query)
+      .sort({ serviceName: 1 })
+      .lean();
+    
+    // Add latest metric info to each service monitor
+    const monitorsWithMetrics = await Promise.all(
+      serviceMonitors.map(async (sm) => {
+        const latestMetric = await ServiceMetric.findOne({ serviceMonitorId: sm._id })
+          .sort({ timestamp: -1 })
+          .lean();
+        
+        return {
+          ...sm,
+          latestMetric
+        };
+      })
+    );
+    
+    res.json(monitorsWithMetrics);
+  } catch (error) {
+    logger.error('Error fetching service monitors with metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch service monitors with metrics' });
   }
 });
 
