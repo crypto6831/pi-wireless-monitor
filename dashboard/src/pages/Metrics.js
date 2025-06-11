@@ -42,6 +42,7 @@ function Metrics() {
   const [selectedServiceMonitor, setSelectedServiceMonitor] = useState('');
   const [serviceMonitors, setServiceMonitors] = useState([]);
   const [period, setPeriod] = useState('1h');
+  console.log('Current period state:', period);
   const [activeTab, setActiveTab] = useState(0);
   const [metricType, setMetricType] = useState('system'); // 'system' or 'service'
 
@@ -396,10 +397,14 @@ function Metrics() {
         {(() => {
           console.log('Chart render conditions:');
           console.log('- chartConfig exists:', !!chartConfig);
+          console.log('- chartData:', chartData);
           console.log('- chartData?.count:', chartData?.count);
           console.log('- chartConfig?.series exists:', !!chartConfig?.series);
           console.log('- chartConfig?.series?.length:', chartConfig?.series?.length);
-          return chartConfig && chartData?.count > 0 && chartConfig.series && chartConfig.series.length > 0;
+          console.log('- Full chartConfig:', chartConfig);
+          const shouldRenderChart = chartConfig && chartData?.count > 0 && chartConfig.series && chartConfig.series.length > 0;
+          console.log('- Should render chart:', shouldRenderChart);
+          return shouldRenderChart;
         })() ? (
           <Box>
             <LineChart

@@ -58,6 +58,31 @@ async function checkMonitors() {
         console.log(`Last Heartbeat: ${monitor.lastHeartbeat}`);
         console.log(`System Info: ${JSON.stringify(monitor.systemInfo, null, 2)}`);
       });
+      
+      // Check metrics for first monitor
+      if (response.monitors[0]) {
+        const monitorId = response.monitors[0].monitorId;
+        console.log(`\n=== CHECKING METRICS FOR MONITOR: ${monitorId} ===`);
+        
+        const periods = ['1h', '6h', '24h', '7d'];
+        for (const period of periods) {
+          try {
+            const metricsUrl = `http://47.128.13.65:3001/api/metrics/monitor/${monitorId}/history?period=${period}&metric=all`;
+            console.log(`\nFetching metrics for period ${period}...`);
+            const metrics = await makeRequest(metricsUrl);
+            
+            console.log(`Period ${period}: ${metrics.count || 0} data points`);
+            if (metrics.chartData && metrics.chartData.datasets) {
+              const datasets = metrics.chartData.datasets;
+              Object.keys(datasets).forEach(key => {
+                console.log(`  - ${key}: ${datasets[key].length} points`);
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching metrics for ${period}:`, err.message);
+          }
+        }
+      }
     } else {
       console.log('No monitors found');
     }
