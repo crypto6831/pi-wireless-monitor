@@ -24,6 +24,41 @@ router.get('/monitor/:monitorId', async (req, res) => {
   }
 });
 
+// Get all service monitors with their latest metrics
+router.get('/with-metrics', async (req, res) => {
+  try {
+    const { monitorId } = req.query;
+    
+    let query = {};
+    if (monitorId) {
+      query.monitorId = monitorId;
+    }
+    
+    const serviceMonitors = await ServiceMonitor.find(query)
+      .sort({ serviceName: 1 })
+      .lean();
+    
+    // Add latest metric info to each service monitor
+    const monitorsWithMetrics = await Promise.all(
+      serviceMonitors.map(async (sm) => {
+        const latestMetric = await ServiceMetric.findOne({ serviceMonitorId: sm._id })
+          .sort({ timestamp: -1 })
+          .lean();
+        
+        return {
+          ...sm,
+          latestMetric
+        };
+      })
+    );
+    
+    res.json(monitorsWithMetrics);
+  } catch (error) {
+    logger.error('Error fetching service monitors with metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch service monitors with metrics' });
+  }
+});
+
 // Get all service monitors (admin view)
 router.get('/', async (req, res) => {
   try {
@@ -343,41 +378,6 @@ router.get('/:id/history', async (req, res) => {
   } catch (error) {
     logger.error('Error fetching service monitor history:', error);
     res.status(500).json({ error: 'Failed to fetch service monitor history' });
-  }
-});
-
-// Get all service monitors with their latest metrics
-router.get('/with-metrics', async (req, res) => {
-  try {
-    const { monitorId } = req.query;
-    
-    let query = {};
-    if (monitorId) {
-      query.monitorId = monitorId;
-    }
-    
-    const serviceMonitors = await ServiceMonitor.find(query)
-      .sort({ serviceName: 1 })
-      .lean();
-    
-    // Add latest metric info to each service monitor
-    const monitorsWithMetrics = await Promise.all(
-      serviceMonitors.map(async (sm) => {
-        const latestMetric = await ServiceMetric.findOne({ serviceMonitorId: sm._id })
-          .sort({ timestamp: -1 })
-          .lean();
-        
-        return {
-          ...sm,
-          latestMetric
-        };
-      })
-    );
-    
-    res.json(monitorsWithMetrics);
-  } catch (error) {
-    logger.error('Error fetching service monitors with metrics:', error);
-    res.status(500).json({ error: 'Failed to fetch service monitors with metrics' });
   }
 });
 
