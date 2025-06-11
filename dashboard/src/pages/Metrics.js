@@ -130,6 +130,17 @@ function Metrics() {
       console.log('Fetching service metrics for:', selectedServiceMonitor, 'period:', period);
       const response = await apiService.getServiceMonitorHistory(selectedServiceMonitor, { period });
       console.log('Service metrics response:', response.data);
+      if (response.data?.chartData?.labels?.length > 0) {
+        const firstTime = new Date(response.data.chartData.labels[0]);
+        const lastTime = new Date(response.data.chartData.labels[response.data.chartData.labels.length - 1]);
+        const timeDiff = (lastTime - firstTime) / (1000 * 60); // minutes
+        console.log('Time range:', {
+          first: firstTime.toLocaleString(),
+          last: lastTime.toLocaleString(),
+          diffMinutes: timeDiff.toFixed(1),
+          diffHours: (timeDiff / 60).toFixed(1)
+        });
+      }
       setChartData(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch service metrics data');
@@ -421,7 +432,7 @@ function Metrics() {
               grid={{ vertical: true, horizontal: true }}
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Showing {chartData.count} data points from {new Date(chartData.startDate).toLocaleString()} to {new Date(chartData.endDate).toLocaleString()}
+              Period: <strong>{period.toUpperCase()}</strong> | Showing {chartData.count} data points from {new Date(chartData.startDate).toLocaleString()} to {new Date(chartData.endDate).toLocaleString()}
             </Typography>
           </Box>
         ) : (
