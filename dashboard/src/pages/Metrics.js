@@ -186,7 +186,10 @@ function Metrics() {
                 label: 'Temperature (°C)',
                 color: '#ed6c02',
               }
-            ].filter(serie => serie.data.length > 0), // Only include series with data
+            ].filter(serie => {
+              console.log(`Filtering series ${serie.label}: data length = ${serie.data?.length}`);
+              return serie.data && serie.data.length > 0;
+            }), // Only include series with data
             height: 400
           };
         
@@ -204,7 +207,10 @@ function Metrics() {
                 label: 'Packet Loss (%)',
                 color: '#d32f2f',
               }
-            ].filter(serie => serie.data.length > 0),
+            ].filter(serie => {
+              console.log(`Filtering network series ${serie.label}: data length = ${serie.data?.length}`);
+              return serie.data && serie.data.length > 0;
+            }),
             height: 400
           };
         
