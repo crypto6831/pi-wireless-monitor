@@ -24,33 +24,8 @@ import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
+import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import annotationPlugin from 'chartjs-plugin-annotation';
-
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  annotationPlugin
-);
 
 const ServiceMonitorChart = ({ service, onClose }) => {
   const [loading, setLoading] = useState(true);
@@ -128,16 +103,16 @@ const ServiceMonitorChart = ({ service, onClose }) => {
     }
   };
 
-  const getChartData = () => {
+  const getChartConfig = () => {
     if (!data || data.length === 0) return null;
 
-    const datasets = [];
+    const series = [];
     const colors = {
-      latency: { border: '#2196f3', background: 'rgba(33, 150, 243, 0.1)' },
-      packetLoss: { border: '#f44336', background: 'rgba(244, 67, 54, 0.1)' },
-      jitter: { border: '#ff9800', background: 'rgba(255, 152, 0, 0.1)' },
-      cusumUpper: { border: '#ff5722', background: 'rgba(255, 87, 34, 0.1)' },
-      cusumLower: { border: '#3f51b5', background: 'rgba(63, 81, 181, 0.1)' },
+      latency: '#2196f3',
+      packetLoss: '#f44336',
+      jitter: '#ff9800',
+      cusumUpper: '#ff5722',
+      cusumLower: '#3f51b5',
     };
 
     const metricLabels = {
@@ -151,128 +126,37 @@ const ServiceMonitorChart = ({ service, onClose }) => {
     selectedMetrics.forEach(metric => {
       if (metric === 'cusum') {
         // Add both upper and lower CUSUM
-        datasets.push({
+        series.push({
           label: metricLabels.cusumUpper,
           data: data.map(d => d.cusumUpper),
-          borderColor: colors.cusumUpper.border,
-          backgroundColor: colors.cusumUpper.background,
-          tension: 0.4,
-          fill: true,
-          yAxisID: 'y1',
+          color: colors.cusumUpper,
         });
-        datasets.push({
+        series.push({
           label: metricLabels.cusumLower,
           data: data.map(d => d.cusumLower),
-          borderColor: colors.cusumLower.border,
-          backgroundColor: colors.cusumLower.background,
-          tension: 0.4,
-          fill: true,
-          yAxisID: 'y1',
+          color: colors.cusumLower,
         });
       } else {
-        datasets.push({
+        series.push({
           label: metricLabels[metric],
           data: data.map(d => d[metric]),
-          borderColor: colors[metric].border,
-          backgroundColor: colors[metric].background,
-          tension: 0.4,
-          fill: true,
-          yAxisID: metric === 'packetLoss' ? 'y1' : 'y',
+          color: colors[metric],
         });
       }
     });
 
     return {
-      labels: data.map(d => d.time),
-      datasets,
+      xAxis: [{ 
+        scaleType: 'point', 
+        data: data.map(d => d.time),
+        label: 'Time'
+      }],
+      series: series,
+      height: 400
     };
   };
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        callbacks: {
-          label: function(context) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.parsed.y !== null) {
-              if (label.includes('Latency') || label.includes('Jitter')) {
-                label += context.parsed.y.toFixed(2) + 'ms';
-              } else if (label.includes('Packet Loss')) {
-                label += context.parsed.y.toFixed(2) + '%';
-              } else {
-                label += context.parsed.y.toFixed(2);
-              }
-            }
-            return label;
-          }
-        }
-      },
-      annotation: selectedMetrics.includes('cusum') ? {
-        annotations: {
-          decisionLine: {
-            type: 'line',
-            yMin: service.cusumConfig.decisionInterval,
-            yMax: service.cusumConfig.decisionInterval,
-            borderColor: 'rgb(255, 99, 132)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            label: {
-              content: 'Decision Interval',
-              enabled: true,
-              position: 'end',
-            },
-            yScaleID: 'y1',
-          },
-        },
-      } : {},
-    },
-    scales: {
-      x: {
-        display: true,
-        title: {
-          display: true,
-          text: 'Time',
-        },
-      },
-      y: {
-        display: true,
-        position: 'left',
-        title: {
-          display: true,
-          text: selectedMetrics.includes('latency') || selectedMetrics.includes('jitter') ? 'Milliseconds' : 'Value',
-        },
-        beginAtZero: true,
-      },
-      y1: {
-        display: selectedMetrics.includes('packetLoss') || selectedMetrics.includes('cusum'),
-        position: 'right',
-        title: {
-          display: true,
-          text: selectedMetrics.includes('packetLoss') ? 'Percentage' : 'CUSUM Value',
-        },
-        beginAtZero: true,
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-    },
-  };
-
-  const chartData = getChartData();
+  const chartConfig = getChartConfig();
 
   // Calculate current values for summary cards
   const currentValues = data.length > 0 ? {
@@ -337,13 +221,24 @@ const ServiceMonitorChart = ({ service, onClose }) => {
           </Paper>
 
           {/* Chart */}
-          <Paper sx={{ p: 2, mb: 3, height: 400 }}>
+          <Paper sx={{ p: 2, mb: 3 }}>
             {loading && <LinearProgress />}
-            {chartData && !loading ? (
-              <Line data={chartData} options={chartOptions} />
+            {chartConfig && !loading ? (
+              <Box>
+                <LineChart
+                  {...chartConfig}
+                  margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                  grid={{ vertical: true, horizontal: true }}
+                />
+                {selectedMetrics.includes('cusum') && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Note: Decision Interval at {service.cusumConfig.decisionInterval} is shown for reference
+                  </Typography>
+                )}
+              </Box>
             ) : (
               !loading && (
-                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                <Box display="flex" alignItems="center" justifyContent="center" height={400}>
                   <Typography color="text.secondary">
                     No data available for the selected period
                   </Typography>
