@@ -35,28 +35,31 @@ const ServiceMonitorChart = ({ service, onClose }) => {
 
   useEffect(() => {
     fetchMetricsHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service._id, period]);
 
   const fetchMetricsHistory = async () => {
     try {
       setLoading(true);
       // Note: This endpoint would need to be implemented in the backend
-      const response = await axios.get(`/api/metrics/service/${service._id}/history`, {
+      const response = await axios.get(`/api/service-monitors/${service._id}/history`, {
         params: { period },
       });
       
-      // Transform data for chart
-      const chartData = response.data.map(item => ({
-        timestamp: item.timestamp,
-        time: new Date(item.timestamp).toLocaleTimeString(),
-        latency: item.latency,
-        packetLoss: item.packetLoss,
-        jitter: item.jitter,
-        cusumUpper: item.cusumState?.upperSum,
-        cusumLower: item.cusumState?.lowerSum,
-      }));
-      
-      setData(chartData);
+      // Use the chartData from the API response
+      if (response.data.success && response.data.chartData) {
+        // Transform the labels to time format and prepare data
+        const transformedData = {
+          labels: response.data.chartData.labels.map(label => 
+            new Date(label).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          ),
+          datasets: response.data.chartData.datasets
+        };
+        setData(transformedData);
+      } else {
+        console.error('Invalid response format:', response.data);
+        generateSampleData();
+      }
     } catch (error) {
       console.error('Error fetching metrics history:', error);
       // For now, generate sample data
@@ -69,26 +72,28 @@ const ServiceMonitorChart = ({ service, onClose }) => {
   const generateSampleData = () => {
     // Generate sample data for demonstration
     const now = new Date();
-    const sampleData = [];
+    const labels = [];
+    const datasets = {
+      latency: [],
+      packetLoss: [],
+      jitter: [],
+      successRate: []
+    };
     
     for (let i = 60; i >= 0; i--) {
       const timestamp = new Date(now.getTime() - i * 60000); // 1 minute intervals
-      const baseLatency = service.cusumConfig.targetMean || 50;
+      const baseLatency = 50;
       const variation = Math.random() * 20 - 10;
       const latency = Math.max(10, baseLatency + variation + (i < 20 ? 30 : 0)); // Spike in recent data
       
-      sampleData.push({
-        timestamp: timestamp.toISOString(),
-        time: timestamp.toLocaleTimeString(),
-        latency: latency,
-        packetLoss: Math.random() * 5,
-        jitter: Math.random() * 10 + 5,
-        cusumUpper: Math.max(0, (i < 20 ? (20 - i) * 0.5 : 0)),
-        cusumLower: 0,
-      });
+      labels.push(timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      datasets.latency.push(latency);
+      datasets.packetLoss.push(Math.random() * 5);
+      datasets.jitter.push(Math.random() * 10 + 5);
+      datasets.successRate.push(95 + Math.random() * 5);
     }
     
-    setData(sampleData);
+    setData({ labels, datasets });
   };
 
   const handlePeriodChange = (event, newPeriod) => {
@@ -104,42 +109,28 @@ const ServiceMonitorChart = ({ service, onClose }) => {
   };
 
   const getChartConfig = () => {
-    if (!data || data.length === 0) return null;
+    if (!data || !data.labels || !data.datasets) return null;
 
     const series = [];
     const colors = {
       latency: '#2196f3',
       packetLoss: '#f44336',
       jitter: '#ff9800',
-      cusumUpper: '#ff5722',
-      cusumLower: '#3f51b5',
+      successRate: '#4caf50',
     };
 
     const metricLabels = {
       latency: 'Latency (ms)',
       packetLoss: 'Packet Loss (%)',
       jitter: 'Jitter (ms)',
-      cusumUpper: 'Upper CUSUM',
-      cusumLower: 'Lower CUSUM',
+      successRate: 'Success Rate (%)',
     };
 
     selectedMetrics.forEach(metric => {
-      if (metric === 'cusum') {
-        // Add both upper and lower CUSUM
-        series.push({
-          label: metricLabels.cusumUpper,
-          data: data.map(d => d.cusumUpper),
-          color: colors.cusumUpper,
-        });
-        series.push({
-          label: metricLabels.cusumLower,
-          data: data.map(d => d.cusumLower),
-          color: colors.cusumLower,
-        });
-      } else {
+      if (data.datasets[metric]) {
         series.push({
           label: metricLabels[metric],
-          data: data.map(d => d[metric]),
+          data: data.datasets[metric],
           color: colors[metric],
         });
       }
@@ -148,7 +139,7 @@ const ServiceMonitorChart = ({ service, onClose }) => {
     return {
       xAxis: [{ 
         scaleType: 'point', 
-        data: data.map(d => d.time),
+        data: data.labels,
         label: 'Time'
       }],
       series: series,
@@ -159,12 +150,11 @@ const ServiceMonitorChart = ({ service, onClose }) => {
   const chartConfig = getChartConfig();
 
   // Calculate current values for summary cards
-  const currentValues = data.length > 0 ? {
-    latency: data[data.length - 1].latency,
-    packetLoss: data[data.length - 1].packetLoss,
-    jitter: data[data.length - 1].jitter,
-    cusumStatus: data[data.length - 1].cusumUpper > service.cusumConfig.decisionInterval || 
-                 data[data.length - 1].cusumLower > service.cusumConfig.decisionInterval,
+  const currentValues = data.labels && data.datasets && data.labels.length > 0 ? {
+    latency: data.datasets.latency?.[data.datasets.latency.length - 1] || 0,
+    packetLoss: data.datasets.packetLoss?.[data.datasets.packetLoss.length - 1] || 0,
+    jitter: data.datasets.jitter?.[data.datasets.jitter.length - 1] || 0,
+    successRate: data.datasets.successRate?.[data.datasets.successRate.length - 1] || 0,
   } : {};
 
   return (
@@ -197,9 +187,9 @@ const ServiceMonitorChart = ({ service, onClose }) => {
                     <TimelineIcon fontSize="small" sx={{ mr: 0.5 }} />
                     Jitter
                   </ToggleButton>
-                  <ToggleButton value="cusum" size="small">
-                    <ChartIcon fontSize="small" sx={{ mr: 0.5 }} />
-                    CUSUM
+                  <ToggleButton value="successRate" size="small">
+                    <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Success Rate
                   </ToggleButton>
                 </ToggleButtonGroup>
               </Grid>
@@ -260,7 +250,7 @@ const ServiceMonitorChart = ({ service, onClose }) => {
                     {currentValues.latency?.toFixed(1) || 0}ms
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Target: {service.cusumConfig.targetMean}ms
+                    Target: {service.thresholds?.latency?.warning || 100}ms
                   </Typography>
                 </CardContent>
               </Card>
@@ -304,30 +294,20 @@ const ServiceMonitorChart = ({ service, onClose }) => {
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    {currentValues.cusumStatus ? (
-                      <TrendingUpIcon color="warning" />
-                    ) : (
-                      <TrendingDownIcon color="success" />
-                    )}
-                    <Typography variant="h6">CUSUM Status</Typography>
+                    <TrendingUpIcon color={currentValues.successRate >= 95 ? 'success' : 'warning'} />
+                    <Typography variant="h6">Success Rate</Typography>
                   </Box>
-                  <Typography variant="h4" color={currentValues.cusumStatus ? 'warning.main' : 'success.main'}>
-                    {currentValues.cusumStatus ? 'Anomaly' : 'Normal'}
+                  <Typography variant="h4" color={currentValues.successRate >= 95 ? 'success.main' : 'warning.main'}>
+                    {currentValues.successRate?.toFixed(1) || 0}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Decision Interval: {service.cusumConfig.decisionInterval}
+                    Target: ≥95%
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
 
-          {selectedMetrics.includes('cusum') && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              CUSUM (Cumulative Sum) chart shows the accumulated deviations from the target mean.
-              When either sum exceeds the decision interval (red line), an anomaly is detected.
-            </Alert>
-          )}
         </Box>
       </DialogContent>
       <DialogActions>
