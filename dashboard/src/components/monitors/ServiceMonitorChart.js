@@ -263,7 +263,6 @@ const ServiceMonitorChart = ({ service, onClose }) => {
       default: return 12;
     }
   };
-  };
 
   const getPeriodDescription = (period) => {
     switch (period) {
