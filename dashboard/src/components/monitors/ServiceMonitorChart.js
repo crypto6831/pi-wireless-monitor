@@ -48,12 +48,20 @@ const ServiceMonitorChart = ({ service, onClose }) => {
       
       // Use the chartData from the API response
       if (response.data.success && response.data.chartData) {
-        // Transform the labels to time format and prepare data
+        // Transform the labels with smart formatting and aggregation
+        const rawLabels = response.data.chartData.labels;
+        const rawDatasets = response.data.chartData.datasets;
+        
+        // Apply smart aggregation for longer periods
+        const { aggregatedLabels, aggregatedDatasets } = aggregateDataForPeriod(
+          rawLabels, 
+          rawDatasets, 
+          period
+        );
+        
         const transformedData = {
-          labels: response.data.chartData.labels.map(label => 
-            new Date(label).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-          ),
-          datasets: response.data.chartData.datasets
+          labels: aggregatedLabels.map(label => formatTimeLabel(new Date(label), period)),
+          datasets: aggregatedDatasets
         };
         setData(transformedData);
       } else {
@@ -70,7 +78,7 @@ const ServiceMonitorChart = ({ service, onClose }) => {
   };
 
   const generateSampleData = () => {
-    // Generate sample data for demonstration
+    // Generate sample data based on period
     const now = new Date();
     const labels = [];
     const datasets = {
@@ -80,13 +88,23 @@ const ServiceMonitorChart = ({ service, onClose }) => {
       successRate: []
     };
     
-    for (let i = 60; i >= 0; i--) {
-      const timestamp = new Date(now.getTime() - i * 60000); // 1 minute intervals
+    // Dynamic data points and intervals based on period
+    const periodConfig = {
+      '1h': { points: 60, interval: 1 * 60 * 1000 }, // 1 minute intervals
+      '6h': { points: 72, interval: 5 * 60 * 1000 }, // 5 minute intervals  
+      '24h': { points: 96, interval: 15 * 60 * 1000 }, // 15 minute intervals
+      '7d': { points: 168, interval: 60 * 60 * 1000 } // 1 hour intervals
+    };
+    
+    const config = periodConfig[period] || periodConfig['1h'];
+    
+    for (let i = config.points - 1; i >= 0; i--) {
+      const timestamp = new Date(now.getTime() - i * config.interval);
       const baseLatency = 50;
       const variation = Math.random() * 20 - 10;
       const latency = Math.max(10, baseLatency + variation + (i < 20 ? 30 : 0)); // Spike in recent data
       
-      labels.push(timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      labels.push(formatTimeLabel(timestamp, period));
       datasets.latency.push(latency);
       datasets.packetLoss.push(Math.random() * 5);
       datasets.jitter.push(Math.random() * 10 + 5);
@@ -94,6 +112,76 @@ const ServiceMonitorChart = ({ service, onClose }) => {
     }
     
     setData({ labels, datasets });
+  };
+
+  const aggregateDataForPeriod = (labels, datasets, period) => {
+    // For shorter periods, no aggregation needed
+    if (period === '1h' || period === '6h') {
+      return { aggregatedLabels: labels, aggregatedDatasets: datasets };
+    }
+    
+    // For longer periods, aggregate data points
+    const aggregationFactor = period === '24h' ? 4 : period === '7d' ? 12 : 1;
+    
+    if (aggregationFactor === 1) {
+      return { aggregatedLabels: labels, aggregatedDatasets: datasets };
+    }
+    
+    const aggregatedLabels = [];
+    const aggregatedDatasets = {};
+    
+    // Initialize aggregated datasets
+    Object.keys(datasets).forEach(key => {
+      aggregatedDatasets[key] = [];
+    });
+    
+    // Aggregate data points by averaging groups
+    for (let i = 0; i < labels.length; i += aggregationFactor) {
+      const endIndex = Math.min(i + aggregationFactor, labels.length);
+      
+      // Use the middle timestamp for the group
+      aggregatedLabels.push(labels[Math.floor((i + endIndex - 1) / 2)]);
+      
+      // Average the values in each group
+      Object.keys(datasets).forEach(key => {
+        const group = datasets[key].slice(i, endIndex);
+        const average = group.reduce((sum, val) => sum + (val || 0), 0) / group.length;
+        aggregatedDatasets[key].push(Number(average.toFixed(2)));
+      });
+    }
+    
+    return { aggregatedLabels, aggregatedDatasets };
+  };
+
+  const formatTimeLabel = (timestamp, period) => {
+    switch (period) {
+      case '1h':
+      case '6h':
+        return timestamp.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+      case '24h':
+        return timestamp.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+      case '7d':
+        return timestamp.toLocaleDateString('en-US', { 
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          hour12: false
+        }).replace(',', '');
+      default:
+        return timestamp.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+    }
   };
 
   const handlePeriodChange = (event, newPeriod) => {
@@ -136,15 +224,55 @@ const ServiceMonitorChart = ({ service, onClose }) => {
       }
     });
 
+    // Smart label sampling for better readability
+    const maxLabels = getMaxLabelsForPeriod(period);
+    const labelStep = Math.max(1, Math.ceil(data.labels.length / maxLabels));
+    const sampledLabels = data.labels.filter((_, index) => index % labelStep === 0);
+    const sampledSeries = series.map(serie => ({
+      ...serie,
+      data: serie.data.filter((_, index) => index % labelStep === 0)
+    }));
+
     return {
       xAxis: [{ 
         scaleType: 'point', 
-        data: data.labels,
-        label: 'Time'
+        data: sampledLabels,
+        label: 'Time',
+        labelStyle: {
+          fontSize: period === '7d' ? 10 : 12,
+          angle: period === '24h' || period === '7d' ? -45 : 0
+        }
       }],
-      series: series,
-      height: 400
+      series: sampledSeries,
+      height: 450,
+      margin: { 
+        left: 60, 
+        right: 20, 
+        top: 20, 
+        bottom: period === '24h' || period === '7d' ? 80 : 60 
+      }
     };
+  };
+
+  const getMaxLabelsForPeriod = (period) => {
+    switch (period) {
+      case '1h': return 12; // Show every 5 minutes
+      case '6h': return 18; // Show every 20 minutes
+      case '24h': return 24; // Show every hour
+      case '7d': return 14; // Show every 12 hours
+      default: return 12;
+    }
+  };
+  };
+
+  const getPeriodDescription = (period) => {
+    switch (period) {
+      case '1h': return '1 minute';
+      case '6h': return '5 minutes';
+      case '24h': return '15 minutes';
+      case '7d': return '1 hour';
+      default: return '1 minute';
+    }
   };
 
   const chartConfig = getChartConfig();
@@ -217,18 +345,24 @@ const ServiceMonitorChart = ({ service, onClose }) => {
               <Box>
                 <LineChart
                   {...chartConfig}
-                  margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
                   grid={{ vertical: true, horizontal: true }}
+                  tooltip={{ trigger: 'axis' }}
+                  slotProps={{
+                    legend: {
+                      direction: 'row',
+                      position: { vertical: 'top', horizontal: 'center' },
+                    },
+                  }}
                 />
-                {selectedMetrics.includes('cusum') && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Note: Decision Interval at {service.cusumConfig.decisionInterval} is shown for reference
-                  </Typography>
-                )}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Period: <strong>{period.toUpperCase()}</strong> | 
+                  Data points: <strong>{data.labels?.length || 0}</strong> | 
+                  Showing every {getPeriodDescription(period)}
+                </Typography>
               </Box>
             ) : (
               !loading && (
-                <Box display="flex" alignItems="center" justifyContent="center" height={400}>
+                <Box display="flex" alignItems="center" justifyContent="center" height={450}>
                   <Typography color="text.secondary">
                     No data available for the selected period
                   </Typography>
