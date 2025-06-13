@@ -149,13 +149,95 @@ function Metrics() {
     }
   };
 
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp, period) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
+    switch (period) {
+      case '1h':
+      case '6h':
+        return date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+      case '24h':
+        return date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+      case '7d':
+        return date.toLocaleDateString('en-US', { 
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          hour12: false
+        }).replace(',', '');
+      default:
+        return date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+    }
+  };
+
+  const aggregateDataForPeriod = (labels, datasets, period) => {
+    // For shorter periods, no aggregation needed
+    if (period === '1h' || period === '6h') {
+      return { aggregatedLabels: labels, aggregatedDatasets: datasets };
+    }
+    
+    // For longer periods, aggregate data points
+    const aggregationFactor = period === '24h' ? 4 : period === '7d' ? 12 : 1;
+    
+    if (aggregationFactor === 1) {
+      return { aggregatedLabels: labels, aggregatedDatasets: datasets };
+    }
+    
+    const aggregatedLabels = [];
+    const aggregatedDatasets = {};
+    
+    // Initialize aggregated datasets
+    Object.keys(datasets).forEach(key => {
+      aggregatedDatasets[key] = [];
     });
+    
+    // Aggregate data points by averaging groups
+    for (let i = 0; i < labels.length; i += aggregationFactor) {
+      const endIndex = Math.min(i + aggregationFactor, labels.length);
+      
+      // Use the middle timestamp for the group
+      aggregatedLabels.push(labels[Math.floor((i + endIndex - 1) / 2)]);
+      
+      // Average the values in each group
+      Object.keys(datasets).forEach(key => {
+        const group = datasets[key].slice(i, endIndex);
+        const average = group.reduce((sum, val) => sum + (val || 0), 0) / group.length;
+        aggregatedDatasets[key].push(Number(average.toFixed(2)));
+      });
+    }
+    
+    return { aggregatedLabels, aggregatedDatasets };
+  };
+
+  const getMaxLabelsForPeriod = (period) => {
+    switch (period) {
+      case '1h': return 12; // Show every 5 minutes
+      case '6h': return 18; // Show every 20 minutes
+      case '24h': return 24; // Show every hour
+      case '7d': return 14; // Show every 12 hours
+      default: return 12;
+    }
+  };
+
+  const getPeriodDescription = (period) => {
+    switch (period) {
+      case '1h': return '1 minute';
+      case '6h': return '5 minutes';
+      case '24h': return '15 minutes';
+      case '7d': return '1 hour';
+      default: return '1 minute';
+    }
   };
 
   const getChartConfig = () => {
@@ -175,26 +257,50 @@ function Metrics() {
       return null;
     }
     
-    const timeLabels = labels.map(formatTime);
+    // Apply smart aggregation for longer periods
+    const { aggregatedLabels, aggregatedDatasets } = aggregateDataForPeriod(
+      labels, 
+      datasets, 
+      period
+    );
+    
+    // Smart label sampling for better readability
+    const maxLabels = getMaxLabelsForPeriod(period);
+    const labelStep = Math.max(1, Math.ceil(aggregatedLabels.length / maxLabels));
+    const sampledLabels = aggregatedLabels.filter((_, index) => index % labelStep === 0);
+    const timeLabels = sampledLabels.map(label => formatTime(label, period));
+    
+    // Sample the datasets to match the labels
+    const sampledDatasets = {};
+    Object.keys(aggregatedDatasets).forEach(key => {
+      sampledDatasets[key] = aggregatedDatasets[key].filter((_, index) => index % labelStep === 0);
+    });
 
     if (metricType === 'system') {
       switch (activeTab) {
         case 0: // System Performance
           return {
-            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            xAxis: [{ 
+              scaleType: 'point', 
+              data: timeLabels,
+              labelStyle: {
+                fontSize: period === '7d' ? 10 : 12,
+                angle: period === '24h' || period === '7d' ? -45 : 0
+              }
+            }],
             series: [
               {
-                data: datasets.cpu || [],
+                data: sampledDatasets.cpu || [],
                 label: 'CPU (%)',
                 color: '#1976d2',
               },
               {
-                data: datasets.memory || [],
+                data: sampledDatasets.memory || [],
                 label: 'Memory (%)',
                 color: '#dc004e',
               },
               {
-                data: datasets.temperature || [],
+                data: sampledDatasets.temperature || [],
                 label: 'Temperature (°C)',
                 color: '#ed6c02',
               }
@@ -202,20 +308,33 @@ function Metrics() {
               console.log(`Filtering series ${serie.label}: data length = ${serie.data?.length}`);
               return serie.data && serie.data.length > 0;
             }), // Only include series with data
-            height: 400
+            height: 450,
+            margin: { 
+              left: 60, 
+              right: 20, 
+              top: 20, 
+              bottom: period === '24h' || period === '7d' ? 80 : 60 
+            }
           };
         
         case 1: // Network Performance
           return {
-            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            xAxis: [{ 
+              scaleType: 'point', 
+              data: timeLabels,
+              labelStyle: {
+                fontSize: period === '7d' ? 10 : 12,
+                angle: period === '24h' || period === '7d' ? -45 : 0
+              }
+            }],
             series: [
               {
-                data: datasets.latency || [],
+                data: sampledDatasets.latency || [],
                 label: 'Latency (ms)',
                 color: '#2e7d32',
               },
               {
-                data: datasets.packetLoss || [],
+                data: sampledDatasets.packetLoss || [],
                 label: 'Packet Loss (%)',
                 color: '#d32f2f',
               }
@@ -223,7 +342,13 @@ function Metrics() {
               console.log(`Filtering network series ${serie.label}: data length = ${serie.data?.length}`);
               return serie.data && serie.data.length > 0;
             }),
-            height: 400
+            height: 450,
+            margin: { 
+              left: 60, 
+              right: 20, 
+              top: 20, 
+              bottom: period === '24h' || period === '7d' ? 80 : 60 
+            }
           };
         
         default:
@@ -235,12 +360,12 @@ function Metrics() {
         case 0: // Service Performance
           const perfSeries = [
             {
-              data: datasets.latency || [],
+              data: sampledDatasets.latency || [],
               label: 'Response Time (ms)',
               color: '#1976d2',
             },
             {
-              data: datasets.jitter || [],
+              data: sampledDatasets.jitter || [],
               label: 'Jitter (ms)',
               color: '#ed6c02',
             }
@@ -250,20 +375,33 @@ function Metrics() {
           if (perfSeries.length === 0) return null;
           
           return {
-            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            xAxis: [{ 
+              scaleType: 'point', 
+              data: timeLabels,
+              labelStyle: {
+                fontSize: period === '7d' ? 10 : 12,
+                angle: period === '24h' || period === '7d' ? -45 : 0
+              }
+            }],
             series: perfSeries,
-            height: 400
+            height: 450,
+            margin: { 
+              left: 60, 
+              right: 20, 
+              top: 20, 
+              bottom: period === '24h' || period === '7d' ? 80 : 60 
+            }
           };
         
         case 1: // Service Availability
           const availSeries = [
             {
-              data: datasets.successRate || [],
+              data: sampledDatasets.successRate || [],
               label: 'Success Rate (%)',
               color: '#2e7d32',
             },
             {
-              data: datasets.packetLoss || [],
+              data: sampledDatasets.packetLoss || [],
               label: 'Packet Loss (%)',
               color: '#d32f2f',
             }
@@ -272,9 +410,22 @@ function Metrics() {
           if (availSeries.length === 0) return null;
           
           return {
-            xAxis: [{ scaleType: 'point', data: timeLabels }],
+            xAxis: [{ 
+              scaleType: 'point', 
+              data: timeLabels,
+              labelStyle: {
+                fontSize: period === '7d' ? 10 : 12,
+                angle: period === '24h' || period === '7d' ? -45 : 0
+              }
+            }],
             series: availSeries,
-            height: 400
+            height: 450,
+            margin: { 
+              left: 60, 
+              right: 20, 
+              top: 20, 
+              bottom: period === '24h' || period === '7d' ? 80 : 60 
+            }
           };
         
         default:
@@ -428,11 +579,19 @@ function Metrics() {
           <Box>
             <LineChart
               {...chartConfig}
-              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
               grid={{ vertical: true, horizontal: true }}
+              tooltip={{ trigger: 'axis' }}
+              slotProps={{
+                legend: {
+                  direction: 'row',
+                  position: { vertical: 'top', horizontal: 'center' },
+                },
+              }}
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Period: <strong>{period.toUpperCase()}</strong> | Showing {chartData.count} data points from {new Date(chartData.startDate).toLocaleString()} to {new Date(chartData.endDate).toLocaleString()}
+              Period: <strong>{period.toUpperCase()}</strong> | 
+              Data points: <strong>{chartData.count}</strong> | 
+              Showing every {getPeriodDescription(period)}
             </Typography>
           </Box>
         ) : (
