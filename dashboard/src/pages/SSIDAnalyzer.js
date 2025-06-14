@@ -1087,13 +1087,13 @@ const SSIDAnalyzer = () => {
                               ]}
                               width={undefined}
                               height={350}
-                              margin={{ left: 80, right: 40, top: 40, bottom: 80 }}
-                              grid={{ horizontal: true, vertical: true }}
+                              margin={{ left: 80, right: 40, top: 50, bottom: 90 }}
+                              grid={{ horizontal: true, vertical: false }}
                               slotProps={{
                                 legend: {
                                   direction: 'row',
                                   position: { vertical: 'top', horizontal: 'middle' },
-                                  padding: 0,
+                                  padding: 10,
                                 },
                               }}
                             />
