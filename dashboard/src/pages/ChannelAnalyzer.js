@@ -24,6 +24,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Button,
 } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
@@ -44,8 +45,21 @@ const ChannelAnalyzer = () => {
   const [timelineData, setTimelineData] = useState([]);
   const [interferenceData, setInterferenceData] = useState([]);
   const [stats, setStats] = useState({});
+  const [selectedChannels, setSelectedChannels] = useState([]);
 
   const monitors = useSelector((state) => state.monitors.list);
+
+  // Helper functions for channel filtering
+  const getAvailableChannels = () => {
+    return [...new Set(channelData.map(ch => ch.channel))].sort((a, b) => a - b);
+  };
+
+  const getTopChannels = () => {
+    return channelData
+      .sort((a, b) => b.utilization - a.utilization)
+      .slice(0, 3)
+      .map(ch => ch.channel);
+  };
 
   // Fetch channel utilization data
   const fetchChannelData = async () => {
@@ -192,23 +206,40 @@ const ChannelAnalyzer = () => {
   const formatTimelineDataForChart = () => {
     if (!timelineData.length) return { xAxis: [], series: [], height: 400 };
     
+    // Filter data by selected channels
+    const filteredData = selectedChannels.length > 0 
+      ? timelineData.filter(point => selectedChannels.includes(point.channel))
+      : timelineData;
+    
+    if (!filteredData.length) return { xAxis: [], series: [], height: 400 };
+    
+    // Sample data to reduce density - take every 5th point for better performance
+    const sampledData = filteredData.filter((_, index) => index % 5 === 0);
+    
     // Get unique timestamps and sort them
-    const timestamps = [...new Set(timelineData.map(point => point.timestamp))].sort();
+    const timestamps = [...new Set(sampledData.map(point => point.timestamp))].sort();
     
     // Group data by channel
     const channelGroups = {};
-    timelineData.forEach(point => {
+    sampledData.forEach(point => {
       if (!channelGroups[point.channel]) {
         channelGroups[point.channel] = {};
       }
       channelGroups[point.channel][point.timestamp] = point.signalStrength;
     });
 
+    // Define colors for channels
+    const channelColors = {
+      1: '#1f77b4', 2: '#ff7f0e', 3: '#2ca02c', 5: '#d62728', 6: '#9467bd',
+      10: '#8c564b', 11: '#e377c2', 36: '#7f7f7f', 48: '#bcbd22', 52: '#17becf'
+    };
+
     // Create series data with proper null handling for missing timestamps
     const series = Object.keys(channelGroups).map(channel => ({
       data: timestamps.map(timestamp => channelGroups[channel][timestamp] || null),
       label: `Channel ${channel}`,
       connectNulls: false,
+      color: channelColors[channel] || '#1976d2',
     }));
 
     return {
@@ -222,7 +253,7 @@ const ChannelAnalyzer = () => {
       }],
       series,
       height: 400,
-      margin: { top: 20, right: 30, left: 70, bottom: 80 },
+      margin: { top: 50, right: 30, left: 70, bottom: 80 },
     };
   };
 
@@ -410,25 +441,83 @@ const ChannelAnalyzer = () => {
               <Typography variant="h6" gutterBottom>
                 Signal Strength Timeline
               </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Shows signal strength trends over time. Select channels for clearer visualization.
+              </Typography>
+              
+              {/* Channel Filter for Timeline */}
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Channel Filter (select up to 5 channels):
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <FormControl sx={{ minWidth: 200 }}>
+                    <InputLabel size="small">Select Channels</InputLabel>
+                    <Select
+                      multiple
+                      size="small"
+                      value={selectedChannels}
+                      onChange={(e) => setSelectedChannels(e.target.value.slice(0, 5))}
+                      label="Select Channels"
+                      renderValue={(selected) => `${selected.length} selected`}
+                    >
+                      {getAvailableChannels().map((channel) => (
+                        <MenuItem key={channel} value={channel}>
+                          Channel {channel}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button 
+                    size="small" 
+                    variant="outlined"
+                    onClick={() => setSelectedChannels([])}
+                    disabled={selectedChannels.length === 0}
+                  >
+                    Clear
+                  </Button>
+                  <Button 
+                    size="small" 
+                    variant="contained"
+                    onClick={() => setSelectedChannels(getTopChannels())}
+                  >
+                    Top 3 Channels
+                  </Button>
+                </Box>
+                {selectedChannels.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Selected: {selectedChannels.map(ch => `Ch ${ch}`).join(', ')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
               {timelineData.length > 0 ? (
-                <LineChart
-                  {...formatTimelineDataForChart()}
-                  yAxis={[{ 
-                    min: -100, 
-                    max: -20,
-                    label: 'Signal Strength (dBm)',
-                    valueFormatter: (value) => `${value} dBm`,
-                    tickMinStep: 10,
-                  }]}
-                  grid={{ horizontal: true, vertical: true }}
-                  slotProps={{
-                    legend: {
-                      direction: 'row',
-                      position: { vertical: 'top', horizontal: 'middle' },
-                      padding: 0,
-                    },
-                  }}
-                />
+                selectedChannels.length > 0 ? (
+                  <LineChart
+                    {...formatTimelineDataForChart()}
+                    yAxis={[{ 
+                      min: -100, 
+                      max: -20,
+                      label: 'Signal Strength (dBm)',
+                      valueFormatter: (value) => `${value} dBm`,
+                      tickMinStep: 10,
+                    }]}
+                    grid={{ horizontal: true, vertical: true }}
+                    slotProps={{
+                      legend: {
+                        direction: 'row',
+                        position: { vertical: 'top', horizontal: 'middle' },
+                        padding: 0,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Alert severity="info">
+                    Please select channels from the filter above to view the timeline.
+                  </Alert>
+                )
               ) : (
                 <Alert severity="info">No timeline data available for the selected criteria.</Alert>
               )}
