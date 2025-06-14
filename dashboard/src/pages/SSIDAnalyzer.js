@@ -63,7 +63,7 @@ const SSIDAnalyzer = () => {
   const [performanceLoading, setPerformanceLoading] = useState(false);
 
   // Phase 3.3: Timeline and comparison state
-  const [timelineData, setTimelineData] = useState([]);
+  const [detailedTimelineData, setDetailedTimelineData] = useState([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelineTimeRange, setTimelineTimeRange] = useState('24h');
   const [timelineFilters, setTimelineFilters] = useState({
@@ -203,17 +203,17 @@ const SSIDAnalyzer = () => {
 
   // Prepare chart data for incident timeline
   const getTimelineChartData = () => {
-    if (!timelineData || timelineData.length === 0) {
+    if (!oldTimelineData || oldTimelineData.length === 0) {
       return { labels: [], datasets: { disconnections: [], signalDrops: [] } };
     }
 
-    const labels = timelineData.map(item => {
+    const labels = oldTimelineData.map(item => {
       const date = new Date(item._id);
       return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
     });
 
-    const disconnections = timelineData.map(item => item.disconnections || 0);
-    const signalDrops = timelineData.map(item => item.signalDrops || 0);
+    const disconnections = oldTimelineData.map(item => item.disconnections || 0);
+    const signalDrops = oldTimelineData.map(item => item.signalDrops || 0);
 
     return {
       labels,
@@ -282,7 +282,7 @@ const SSIDAnalyzer = () => {
       }
 
       if (timelineResponse.data.success) {
-        setTimelineData(timelineResponse.data.data);
+        setOldTimelineData(timelineResponse.data.data);
       }
 
     } catch (err) {
@@ -335,7 +335,7 @@ const SSIDAnalyzer = () => {
       const response = await apiService.getDetailedIncidentTimeline(monitorId, params);
       
       if (response.data.success) {
-        setTimelineData(response.data.data);
+        setDetailedTimelineData(response.data.data);
       }
 
     } catch (err) {
@@ -462,9 +462,10 @@ const SSIDAnalyzer = () => {
       setIncidentData([]);
       setIncidentStats(null);
       setActiveIncidents([]);
-      setTimelineData([]);
+      setOldTimelineData([]);
       setPerformanceData(null);
       setPerformanceHistory([]);
+      setDetailedTimelineData([]);
     }
   }, [selectedMonitor, timeRange]);
 
@@ -1388,7 +1389,7 @@ const SSIDAnalyzer = () => {
             </Box>
           )}
 
-          {!timelineLoading && !comparisonMode && timelineData && (
+          {!timelineLoading && !comparisonMode && detailedTimelineData && (
             <Grid container spacing={3}>
               {/* Timeline Metrics Cards */}
               <Grid item xs={12} sm={6} md={3}>
@@ -1401,7 +1402,7 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h5">
-                      {timelineData.metrics?.totalIncidents || 0}
+                      {detailedTimelineData.metrics?.totalIncidents || 0}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1417,7 +1418,7 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h5">
-                      {formatDuration(timelineData.metrics?.totalDowntime || 0)}
+                      {formatDuration(detailedTimelineData.metrics?.totalDowntime || 0)}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1433,7 +1434,7 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h5">
-                      {formatDuration(timelineData.metrics?.avgDuration || 0)}
+                      {formatDuration(detailedTimelineData.metrics?.avgDuration || 0)}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1449,7 +1450,7 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h5">
-                      {timelineData.metrics?.incidentsByType?.disconnection || 0}
+                      {detailedTimelineData.metrics?.incidentsByType?.disconnection || 0}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1462,9 +1463,9 @@ const SSIDAnalyzer = () => {
                     <Typography variant="h6" gutterBottom>
                       Incident Timeline ({timelineTimeRange})
                     </Typography>
-                    {timelineData.incidents && timelineData.incidents.length > 0 ? (
+                    {detailedTimelineData.incidents && detailedTimelineData.incidents.length > 0 ? (
                       <Box sx={{ position: 'relative', height: 200, overflow: 'auto' }}>
-                        {timelineData.incidents.map((incident, index) => (
+                        {detailedTimelineData.incidents.map((incident, index) => (
                           <Box
                             key={incident._id}
                             sx={{
@@ -1523,9 +1524,9 @@ const SSIDAnalyzer = () => {
                     <Typography variant="h6" gutterBottom>
                       Incidents by Type
                     </Typography>
-                    {timelineData.metrics?.incidentsByType && Object.keys(timelineData.metrics.incidentsByType).length > 0 ? (
+                    {detailedTimelineData.metrics?.incidentsByType && Object.keys(detailedTimelineData.metrics.incidentsByType).length > 0 ? (
                       <Box>
-                        {Object.entries(timelineData.metrics.incidentsByType).map(([type, count]) => (
+                        {Object.entries(detailedTimelineData.metrics.incidentsByType).map(([type, count]) => (
                           <Box key={type} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
                               {formatIncidentType(type)}
@@ -1549,9 +1550,9 @@ const SSIDAnalyzer = () => {
                     <Typography variant="h6" gutterBottom>
                       Incidents by Severity
                     </Typography>
-                    {timelineData.metrics?.incidentsBySeverity && Object.keys(timelineData.metrics.incidentsBySeverity).length > 0 ? (
+                    {detailedTimelineData.metrics?.incidentsBySeverity && Object.keys(detailedTimelineData.metrics.incidentsBySeverity).length > 0 ? (
                       <Box>
-                        {Object.entries(timelineData.metrics.incidentsBySeverity).map(([severity, count]) => (
+                        {Object.entries(detailedTimelineData.metrics.incidentsBySeverity).map(([severity, count]) => (
                           <Box key={severity} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                             <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
                               {severity}
@@ -1807,7 +1808,7 @@ const SSIDAnalyzer = () => {
             </>
           )}
 
-          {!timelineLoading && !comparisonMode && (!timelineData || !timelineData.incidents) && (
+          {!timelineLoading && !comparisonMode && (!detailedTimelineData || !detailedTimelineData.incidents) && (
             <Alert severity="info">
               No timeline data available for this monitor. 
               Make sure the monitor is online and has incident tracking enabled.
