@@ -50,6 +50,8 @@ ssh -i ~/.ssh/docker-dashboard.pem ubuntu@47.128.13.65 "cd /home/ubuntu/pi-wirel
 ssh -i ~/.ssh/docker-dashboard.pem ubuntu@47.128.13.65 "cd /home/ubuntu/pi-wireless-monitor && git pull origin main"
 ssh -i ~/.ssh/docker-dashboard.pem ubuntu@47.128.13.65 "cd /home/ubuntu/pi-wireless-monitor && docker-compose down"
 ssh -i ~/.ssh/docker-dashboard.pem ubuntu@47.128.13.65 "cd /home/ubuntu/pi-wireless-monitor && docker-compose up -d --build"
+
+# Note: SSH key is now at ~/.ssh/docker-dashboard.pem with permissions 600
 ```
 
 ### Raspberry Pi Monitor

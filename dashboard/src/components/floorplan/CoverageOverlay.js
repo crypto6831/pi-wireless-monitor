@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCoverageSettings, selectSignalThresholds, selectHeatmapSettings, selectDefaultCoverageArea } from '../../store/slices/coverageSettingsSlice';
+import SignalHeatmapOptimized from './SignalHeatmapOptimized';
 
 const CoverageArea = ({ area, viewSettings, canvasRef }) => {
   const canvasOverlayRef = useRef(null);
@@ -123,8 +124,8 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
 
-    // Generate heatmap with improved resolution
-    const gridSize = Math.max(5, Math.min(20, 10 / zoom)); // Adaptive grid size based on zoom
+    // Generate heatmap with fixed world-space resolution
+    const gridSize = 10; // Fixed grid size in world coordinates (pixels)
     const width = canvas.width / zoom;
     const height = canvas.height / zoom;
 
@@ -171,6 +172,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
     const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.save();
     tempCtx.translate(panX, panY);
     tempCtx.scale(zoom, zoom);
 
@@ -197,73 +199,15 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
       );
     });
     
+    tempCtx.restore();
+    
     // Composite the gradient canvas onto main canvas
     ctx.globalCompositeOperation = 'screen'; // Additive blending for overlapping signals
-    ctx.drawImage(tempCanvas, -panX, -panY, canvas.width, canvas.height);
+    ctx.drawImage(tempCanvas, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
 
-    // Overlay grid-based calculation for more accurate representation
-    for (let x = 0; x < width; x += gridSize) {
-      for (let y = 0; y < height; y += gridSize) {
-        let maxSignal = -100;
-        let dominantMonitor = null;
-
-        // Calculate signal strength at this point using ITU-R model
-        monitors.forEach(monitor => {
-          if (!monitor.position || monitor.status !== 'active') return;
-          
-          const distance = Math.sqrt(
-            Math.pow(x - monitor.position.x, 2) + 
-            Math.pow(y - monitor.position.y, 2)
-          );
-
-          // Use actual monitor data or defaults
-          const txPower = monitor.wifiConnection?.rssi ? 
-            monitor.wifiConnection.rssi + 30 : -30;
-          const frequency = monitor.wifiConnection?.frequency || 2437;
-          
-          // ITU-R P.1238 Indoor Path Loss
-          const L0 = 20 * Math.log10(frequency) - 28; // Base loss at 1m
-          const Ld = 10 * pathLossExponent * Math.log10(Math.max(distance, 1));
-          const pathLoss = L0 + Ld;
-          
-          const signal = txPower - pathLoss;
-          
-          if (signal > maxSignal) {
-            maxSignal = signal;
-            dominantMonitor = monitor;
-          }
-        });
-        
-        // Only draw if we have detailed calculation needed
-        if (maxSignal > -100 && gridSize < 10) {
-          let alpha = 0;
-          let color = '';
-
-          if (maxSignal > signalThresholds.excellent) {
-            color = '76, 175, 80';
-            alpha = effectiveIntensity * 0.8;
-          } else if (maxSignal > signalThresholds.good) {
-            color = '139, 195, 74';
-            alpha = effectiveIntensity * 0.7;
-          } else if (maxSignal > signalThresholds.fair) {
-            color = '255, 235, 59';
-            alpha = effectiveIntensity * 0.6;
-          } else if (maxSignal > signalThresholds.poor) {
-            color = '255, 152, 0';
-            alpha = effectiveIntensity * 0.5;
-          } else if (maxSignal > -90) {
-            color = '244, 67, 54';
-            alpha = effectiveIntensity * 0.4;
-          }
-
-          if (alpha > 0) {
-            ctx.fillStyle = `rgba(${color}, ${alpha * 0.3})`; // Subtle overlay
-            ctx.fillRect(x - gridSize/2, y - gridSize/2, gridSize, gridSize);
-          }
-        }
-      }
-    }
+    // Don't overlay grid-based calculation when using gradients
+    // The gradient rendering is sufficient for visualization
 
     ctx.restore();
     console.log('SignalHeatmap: Render completed');
@@ -508,7 +452,7 @@ const CoverageOverlay = ({
     <>
       {/* Signal Heatmap */}
       {shouldShowHeatmap && (
-        <SignalHeatmap
+        <SignalHeatmapOptimized
           monitors={monitors}
           viewSettings={viewSettings}
           canvasRef={canvasRef}
