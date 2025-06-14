@@ -190,27 +190,39 @@ const ChannelAnalyzer = () => {
   };
 
   const formatTimelineDataForChart = () => {
-    const groupedData = {};
+    if (!timelineData.length) return { xAxis: [], series: [], height: 400 };
+    
+    // Get unique timestamps and sort them
+    const timestamps = [...new Set(timelineData.map(point => point.timestamp))].sort();
+    
+    // Group data by channel
+    const channelGroups = {};
     timelineData.forEach(point => {
-      if (!groupedData[point.channel]) {
-        groupedData[point.channel] = [];
+      if (!channelGroups[point.channel]) {
+        channelGroups[point.channel] = {};
       }
-      groupedData[point.channel].push({
-        x: new Date(point.timestamp).getTime(),
-        y: point.signalStrength,
-      });
+      channelGroups[point.channel][point.timestamp] = point.signalStrength;
     });
+
+    // Create series data with proper null handling for missing timestamps
+    const series = Object.keys(channelGroups).map(channel => ({
+      data: timestamps.map(timestamp => channelGroups[channel][timestamp] || null),
+      label: `Channel ${channel}`,
+      connectNulls: false,
+    }));
 
     return {
       xAxis: [{ 
         scaleType: 'time',
-        data: timelineData.map(point => new Date(point.timestamp))
+        data: timestamps.map(ts => new Date(ts)),
+        valueFormatter: (value) => new Date(value).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
       }],
-      series: Object.keys(groupedData).map(channel => ({
-        data: groupedData[channel].map(point => point.y),
-        label: `Channel ${channel}`,
-      })),
+      series,
       height: 400,
+      margin: { top: 20, right: 30, left: 70, bottom: 80 },
     };
   };
 
@@ -401,12 +413,21 @@ const ChannelAnalyzer = () => {
               {timelineData.length > 0 ? (
                 <LineChart
                   {...formatTimelineDataForChart()}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                   yAxis={[{ 
                     min: -100, 
                     max: -20,
-                    label: 'Signal Strength (dBm)'
+                    label: 'Signal Strength (dBm)',
+                    valueFormatter: (value) => `${value} dBm`,
+                    tickMinStep: 10,
                   }]}
+                  grid={{ horizontal: true, vertical: true }}
+                  slotProps={{
+                    legend: {
+                      direction: 'row',
+                      position: { vertical: 'top', horizontal: 'middle' },
+                      padding: 0,
+                    },
+                  }}
                 />
               ) : (
                 <Alert severity="info">No timeline data available for the selected criteria.</Alert>
