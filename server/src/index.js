@@ -26,6 +26,7 @@ const coverageSettingsRouter = require('./routes/coverageSettings');
 const heatmapRouter = require('./routes/heatmap');
 const channelsRouter = require('./routes/channels');
 const ssidAnalyzerRouter = require('./routes/ssidAnalyzer');
+const ssidIncidentsRouter = require('./routes/ssidIncidents');
 
 // Create Express app
 const app = express();
@@ -47,6 +48,12 @@ app.use((req, res, next) => {
     ip: req.ip,
     userAgent: req.get('user-agent'),
   });
+  next();
+});
+
+// Add Socket.IO instance to requests
+app.use((req, res, next) => {
+  req.io = socketService.getIO();
   next();
 });
 
@@ -86,6 +93,7 @@ app.use('/api/settings/coverage', coverageSettingsRouter);
 app.use('/api/heatmap', heatmapRouter);
 app.use('/api/channels', channelsRouter);
 app.use('/api/ssid-analyzer', ssidAnalyzerRouter);
+app.use('/api/ssid-incidents', ssidIncidentsRouter);
 
 // Socket.IO status endpoint
 app.get('/api/socket/status', (req, res) => {
