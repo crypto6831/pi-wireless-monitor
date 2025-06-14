@@ -287,6 +287,10 @@ class SocketService {
   getConnectedDashboards() {
     return this.getConnectedClients().filter(client => client.type === 'dashboard');
   }
+
+  getIO() {
+    return this.io;
+  }
 }
 
 module.exports = new SocketService(); 
