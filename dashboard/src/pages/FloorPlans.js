@@ -262,11 +262,25 @@ const FloorPlans = () => {
   const filteredMonitors = (monitors || []).filter(monitor => {
     if (!selectedFloor) return true;
     // Only include monitors that are positioned on the current floor
-    return monitor.floorId === selectedFloor._id && 
+    const isPositioned = monitor.floorId === selectedFloor._id && 
            monitor.locationId === selectedLocation._id &&
            monitor.position && 
            (monitor.position.x !== 0 || monitor.position.y !== 0);
+    
+    console.log('FloorPlans: Filtering monitor', monitor.name, {
+      floorId: monitor.floorId,
+      expectedFloorId: selectedFloor._id,
+      locationId: monitor.locationId,
+      expectedLocationId: selectedLocation._id,
+      position: monitor.position,
+      isPositioned
+    });
+    
+    return isPositioned;
   });
+
+  console.log('FloorPlans: Filtered monitors count:', filteredMonitors.length);
+  console.log('FloorPlans: Filtered monitors:', filteredMonitors.map(m => ({ name: m.name, position: m.position, locationId: m.locationId, floorId: m.floorId })));
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
