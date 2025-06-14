@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import store from '../store';
+import store from '../store/store';
 import { addNotification } from '../store/slices/uiSlice';
 import { fetchAlerts } from '../store/slices/alertsSlice';
 
