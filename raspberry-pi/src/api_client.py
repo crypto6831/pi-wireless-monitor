@@ -364,6 +364,106 @@ class APIClient:
             logger.error(f"API request failed: {e}")
             return None
 
+    def _patch(self, endpoint: str, data: Dict) -> Optional[Dict]:
+        """Make PATCH request to API endpoint"""
+        # For direct endpoint paths like 'ssid-incidents/id/resolve'
+        if '/' in endpoint:
+            url = f"{config.SERVER_URL}/api/{endpoint}"
+        else:
+            url = config.API_ENDPOINTS.get(endpoint)
+            if not url:
+                logger.error(f"Unknown endpoint: {endpoint}")
+                return None
+        
+        try:
+            response = self.session.patch(
+                url,
+                json=data,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code in [200, 201]:
+                return response.json()
+            elif response.status_code == 401:
+                logger.error("Authentication failed - check API key")
+                return None
+            elif response.status_code == 404:
+                logger.error(f"Endpoint not found: {url}")
+                return None
+            else:
+                logger.error(f"API error: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.error("API request timeout")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {e}")
+            return None
+
+    def _get_direct(self, endpoint: str, params: Dict = None) -> Optional[Dict]:
+        """Make GET request to direct API endpoint path"""
+        url = f"{config.SERVER_URL}/api/{endpoint}"
+        
+        try:
+            response = self.session.get(
+                url,
+                params=params,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 401:
+                logger.error("Authentication failed - check API key")
+                return None
+            elif response.status_code == 404:
+                logger.error(f"Endpoint not found: {url}")
+                return None
+            else:
+                logger.error(f"API error: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.error("API request timeout")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {e}")
+            return None
+
+    def _post_direct(self, endpoint: str, data: Dict) -> Optional[Dict]:
+        """Make POST request to direct API endpoint path"""
+        url = f"{config.SERVER_URL}/api/{endpoint}"
+        
+        try:
+            response = self.session.post(
+                url,
+                json=data,
+                headers=self.headers,
+                timeout=config.API_TIMEOUT
+            )
+            
+            if response.status_code in [200, 201]:
+                return response.json()
+            elif response.status_code == 401:
+                logger.error("Authentication failed - check API key")
+                return None
+            elif response.status_code == 404:
+                logger.error(f"Endpoint not found: {url}")
+                return None
+            else:
+                logger.error(f"API error: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.error("API request timeout")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {e}")
+            return None
+
     def send_wifi_connection_data(self, wifi_info: Dict) -> bool:
         """Send WiFi connection information to server"""
         try:
@@ -445,6 +545,66 @@ class APIClient:
                 
         except Exception as e:
             logger.error(f"Error sending SSID connection status: {e}")
+            return False
+    
+    def report_incident(self, incident_data: Dict) -> bool:
+        """Report a new incident to the server"""
+        try:
+            logger.debug(f"Reporting incident: {incident_data}")
+            
+            response = self._post_direct('ssid-incidents', incident_data)
+            
+            if response:
+                logger.debug("Incident reported successfully")
+                return True
+            else:
+                logger.warning("Failed to report incident")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error reporting incident: {e}")
+            return False
+    
+    def resolve_incident(self, incident_type: str, ssid: str, resolution_data: Dict) -> bool:
+        """Resolve an active incident"""
+        try:
+            logger.debug(f"Resolving {incident_type} incident for SSID {ssid}")
+            
+            # First, get the incident ID by querying active incidents
+            active_incidents = self._get_direct(f'ssid-incidents/active/{config.MONITOR_ID}')
+            
+            if not active_incidents or not active_incidents.get('data'):
+                logger.warning(f"No active incidents found for monitor {config.MONITOR_ID}")
+                return False
+            
+            # Find the specific incident
+            target_incident = None
+            for incident in active_incidents['data']:
+                if (incident.get('incidentType') == incident_type and 
+                    incident.get('ssid') == ssid and 
+                    not incident.get('resolved')):
+                    target_incident = incident
+                    break
+            
+            if not target_incident:
+                logger.warning(f"Could not find active {incident_type} incident for SSID {ssid}")
+                return False
+            
+            # Resolve the incident
+            incident_id = target_incident['_id']
+            endpoint = f'ssid-incidents/{incident_id}/resolve'
+            
+            response = self._patch(endpoint, {'metadata': resolution_data})
+            
+            if response:
+                logger.debug(f"Incident {incident_id} resolved successfully")
+                return True
+            else:
+                logger.warning(f"Failed to resolve incident {incident_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error resolving incident: {e}")
             return False
     
     def _get_monitor_id(self) -> str:

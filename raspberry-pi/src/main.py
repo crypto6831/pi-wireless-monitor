@@ -37,6 +37,11 @@ class PiWirelessMonitor:
         self.service_monitor_task = None
         self.loop = None
         
+        # Connection state tracking for incident detection
+        self.last_connection_status = None
+        self.connection_lost_time = None
+        self.active_incidents = {}  # Track active incidents by type
+        
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -190,6 +195,9 @@ class PiWirelessMonitor:
             logger.info(f"SSID connection data collected: {connection_status}")
             
             if connection_status:
+                # Detect incidents based on connection state changes
+                self._detect_connection_incidents(connection_status)
+                
                 # Send to server
                 success = self.api_client.send_ssid_connection_status(connection_status)
                 
@@ -200,11 +208,143 @@ class PiWirelessMonitor:
                     logger.info(f"SSID status sent: {status} to '{ssid}' ({signal} dBm)")
                 else:
                     logger.warning("Failed to send SSID connection status")
+                    
+                # Update last known state
+                self.last_connection_status = connection_status
             else:
+                # No connection data - this could be a disconnection
+                self._handle_connection_loss()
                 logger.warning("No SSID connection status available")
                 
         except Exception as e:
             logger.error(f"SSID connection monitoring failed: {e}")
+    
+    def _detect_connection_incidents(self, current_status):
+        """Detect and report connection incidents"""
+        try:
+            current_ssid = current_status.get('ssid')
+            current_state = current_status.get('connection_status')
+            current_signal = current_status.get('signal_strength', 0)
+            
+            # If we have previous state, compare for incidents
+            if self.last_connection_status:
+                last_ssid = self.last_connection_status.get('ssid')
+                last_state = self.last_connection_status.get('connection_status')
+                last_signal = self.last_connection_status.get('signal_strength', 0)
+                
+                # Detect disconnection
+                if last_state == 'connected' and current_state in ['disconnected', 'connecting']:
+                    self._report_incident('disconnection', current_ssid, {
+                        'previousSignalStrength': last_signal,
+                        'signalStrength': current_signal,
+                        'threshold': 'connection_lost'
+                    })
+                
+                # Detect reconnection (resolve disconnection incident)
+                elif last_state in ['disconnected', 'connecting'] and current_state == 'connected':
+                    self._resolve_incident('disconnection', current_ssid)
+                
+                # Detect significant signal drop
+                elif (current_state == 'connected' and last_state == 'connected' and 
+                      current_signal < last_signal - 15):  # 15 dBm threshold
+                    self._report_incident('signal_drop', current_ssid, {
+                        'previousSignalStrength': last_signal,
+                        'signalStrength': current_signal,
+                        'threshold': 'signal_degradation_15db'
+                    })
+                
+                # Detect signal recovery
+                elif (current_signal > last_signal + 10 and 
+                      'signal_drop' in self.active_incidents):
+                    self._resolve_incident('signal_drop', current_ssid)
+            
+            # Check for critical signal levels
+            if current_state == 'connected' and current_signal < -80:
+                if 'signal_drop' not in self.active_incidents:
+                    self._report_incident('signal_drop', current_ssid, {
+                        'signalStrength': current_signal,
+                        'threshold': 'critical_signal_level'
+                    })
+                    
+        except Exception as e:
+            logger.error(f"Error detecting incidents: {e}")
+    
+    def _handle_connection_loss(self):
+        """Handle complete connection loss"""
+        try:
+            if self.last_connection_status:
+                last_ssid = self.last_connection_status.get('ssid', 'Unknown')
+                
+                # Report disconnection if not already reported
+                if 'disconnection' not in self.active_incidents:
+                    self._report_incident('disconnection', last_ssid, {
+                        'threshold': 'complete_connection_loss',
+                        'previousSignalStrength': self.last_connection_status.get('signal_strength', 0)
+                    })
+                    
+        except Exception as e:
+            logger.error(f"Error handling connection loss: {e}")
+    
+    def _report_incident(self, incident_type, ssid, trigger_condition):
+        """Report a new incident to the server"""
+        try:
+            if incident_type in self.active_incidents:
+                logger.debug(f"Incident {incident_type} already active for SSID {ssid}")
+                return
+            
+            incident_data = {
+                'ssid': ssid,
+                'incidentType': incident_type,
+                'triggerCondition': trigger_condition,
+                'metadata': {
+                    'detectionTime': datetime.utcnow().isoformat(),
+                    'monitorLocation': config.MONITOR_LOCATION,
+                    'previousConnection': self.last_connection_status
+                }
+            }
+            
+            # Send to server
+            success = self.api_client.report_incident(incident_data)
+            
+            if success:
+                self.active_incidents[incident_type] = {
+                    'ssid': ssid,
+                    'start_time': datetime.utcnow(),
+                    'trigger': trigger_condition
+                }
+                logger.warning(f"Reported {incident_type} incident for SSID '{ssid}': {trigger_condition.get('threshold', 'unknown')}")
+            else:
+                logger.error(f"Failed to report {incident_type} incident")
+                
+        except Exception as e:
+            logger.error(f"Error reporting incident: {e}")
+    
+    def _resolve_incident(self, incident_type, ssid):
+        """Resolve an active incident"""
+        try:
+            if incident_type not in self.active_incidents:
+                return
+            
+            incident = self.active_incidents[incident_type]
+            duration = (datetime.utcnow() - incident['start_time']).total_seconds()
+            
+            resolution_data = {
+                'duration': duration,
+                'resolvedAt': datetime.utcnow().isoformat(),
+                'finalStatus': 'resolved'
+            }
+            
+            # Send resolution to server
+            success = self.api_client.resolve_incident(incident_type, ssid, resolution_data)
+            
+            if success:
+                logger.info(f"Resolved {incident_type} incident for SSID '{ssid}' after {duration:.1f} seconds")
+                del self.active_incidents[incident_type]
+            else:
+                logger.error(f"Failed to resolve {incident_type} incident")
+                
+        except Exception as e:
+            logger.error(f"Error resolving incident: {e}")
     
     def run_deep_scan(self):
         """Run a comprehensive scan (less frequent)"""
