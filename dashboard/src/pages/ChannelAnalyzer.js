@@ -254,7 +254,7 @@ const ChannelAnalyzer = () => {
       }],
       series,
       height: 400,
-      margin: { top: 50, right: 30, left: 70, bottom: 80 },
+      margin: { top: 50, right: 30, left: 120, bottom: 80 },
     };
   };
 
