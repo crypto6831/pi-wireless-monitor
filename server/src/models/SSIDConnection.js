@@ -231,12 +231,14 @@ ssidConnectionSchema.statics.getPerformanceMetrics = function(monitorId, timeRan
         maxPacketLoss: { $max: '$packetLoss' },
         maxDownloadThroughput: { $max: '$downloadThroughput' },
         maxUploadThroughput: { $max: '$uploadThroughput' },
+        maxStabilityScore: { $max: '$stabilityScore' },
         minNetworkLatency: { $min: '$networkLatency' },
         minInternetLatency: { $min: '$internetLatency' },
         minDnsLatency: { $min: '$dnsLatency' },
         minPacketLoss: { $min: '$packetLoss' },
         minDownloadThroughput: { $min: '$downloadThroughput' },
         minUploadThroughput: { $min: '$uploadThroughput' },
+        minStabilityScore: { $min: '$stabilityScore' },
         totalRetransmissions: { $sum: '$retransmissions' },
         totalConnectionErrors: { $sum: '$connectionErrors' }
       }

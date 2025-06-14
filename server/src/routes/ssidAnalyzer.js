@@ -381,7 +381,9 @@ router.get('/performance/:monitorId', async (req, res) => {
               avg: metrics.avgJitter
             },
             stabilityScore: {
-              avg: metrics.avgStabilityScore
+              avg: metrics.avgStabilityScore,
+              min: metrics.minStabilityScore,
+              max: metrics.maxStabilityScore
             }
           },
           reliability: {

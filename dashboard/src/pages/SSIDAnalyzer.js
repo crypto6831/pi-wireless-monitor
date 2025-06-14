@@ -1290,8 +1290,8 @@ const SSIDAnalyzer = () => {
                           <TableRow>
                             <TableCell><strong>Stability Score</strong></TableCell>
                             <TableCell>{formatPercentage(performanceData.metrics?.quality?.stabilityScore?.avg)}</TableCell>
-                            <TableCell>N/A</TableCell>
-                            <TableCell>N/A</TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.stabilityScore?.min)}</TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.stabilityScore?.max)}</TableCell>
                             <TableCell>{performanceData.count || 0}</TableCell>
                           </TableRow>
                         </TableBody>
