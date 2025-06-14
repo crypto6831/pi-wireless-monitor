@@ -24,7 +24,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   LocationOn as FloorPlanIcon,
   TuneOutlined as ChannelIcon,
-  WifiIcon as SSIDIcon,
+  Wifi as SSIDIcon,
 } from '@mui/icons-material';
 import { setSidebarOpen } from '../../store/slices/uiSlice';
 
