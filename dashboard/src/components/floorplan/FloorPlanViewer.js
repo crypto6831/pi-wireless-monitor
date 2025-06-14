@@ -351,6 +351,7 @@ const FloorPlanViewer = ({
         // Update monitor position via API
         const response = await apiService.updateMonitorPosition(data.monitor._id, position);
         console.log('FloorPlanViewer: Position update response:', response);
+        console.log('FloorPlanViewer: Updated monitor data:', response.data);
         
         // Refresh monitors list
         console.log('FloorPlanViewer: Refreshing monitors list');

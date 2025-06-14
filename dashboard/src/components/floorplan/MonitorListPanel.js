@@ -63,20 +63,43 @@ const MonitorListPanel = ({ selectedLocation, selectedFloor, onMonitorDragStart 
     const hasValidPosition = monitor.position && 
                            (monitor.position.x !== 0 || monitor.position.y !== 0);
     
+    console.log(`MonitorListPanel: Filtering monitor ${monitor.name}:`, {
+      hasNoLocation,
+      isOnCurrentFloor,
+      hasValidPosition,
+      locationId: monitor.locationId,
+      floorId: monitor.floorId,
+      selectedLocationId: selectedLocation?._id,
+      selectedFloorId: selectedFloor?._id,
+      position: monitor.position
+    });
+    
     if (hasNoLocation) {
       // Monitor has no location assignment - truly unpositioned
+      console.log(`MonitorListPanel: ${monitor.name} -> unpositioned (no location)`);
       acc.unpositionedMonitors.push(monitor);
     } else if (isOnCurrentFloor && hasValidPosition) {
       // Monitor is positioned on the current floor
+      console.log(`MonitorListPanel: ${monitor.name} -> positioned on current floor`);
       acc.positionedMonitors.push(monitor);
     } else if (isOnCurrentFloor && !hasValidPosition) {
       // Monitor is assigned to current floor but at invalid position (0,0)
+      console.log(`MonitorListPanel: ${monitor.name} -> unpositioned (invalid position)`);
       acc.unpositionedMonitors.push(monitor);
+    } else {
+      console.log(`MonitorListPanel: ${monitor.name} -> skipped (on other floor)`);
     }
     // Skip monitors that are positioned on other floors - don't show them at all
     
     return acc;
   }, { positionedMonitors: [], unpositionedMonitors: [] });
+
+  console.log('MonitorListPanel: Final results:', {
+    positionedCount: positionedMonitors.length,
+    unpositionedCount: unpositionedMonitors.length,
+    positionedNames: positionedMonitors.map(m => m.name),
+    unpositionedNames: unpositionedMonitors.map(m => m.name)
+  });
 
 
   const handleDragStart = useCallback((e, monitor) => {
