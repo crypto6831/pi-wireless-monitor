@@ -21,9 +21,15 @@ const SimpleHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     // Get effective intensity
     const effectiveIntensity = intensity || heatmapSettings.intensity || 0.5;
     
-    // Filter active monitors with positions
+    // Filter active monitors with valid positions on current floor
     const activeMonitors = monitors.filter(m => {
-      return m.position && m.position.x !== undefined && m.position.y !== undefined;
+      return m.position && 
+             m.position.x !== undefined && 
+             m.position.y !== undefined &&
+             m.position.x !== 0 && 
+             m.position.y !== 0 &&
+             m.locationId && 
+             m.floorId;
     });
     
     if (activeMonitors.length === 0) {

@@ -138,8 +138,17 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     // Get path loss parameters from settings or use defaults
     const pathLossExponent = coverageSettings?.pathLossExponent || 3.0;
     
-    // Active monitors only
-    const activeMonitors = monitors.filter(m => m.position && m.status === 'active');
+    // Active monitors with valid positions on current floor only
+    const activeMonitors = monitors.filter(m => {
+      return m.position && 
+             m.position.x !== undefined && 
+             m.position.y !== undefined &&
+             m.position.x !== 0 && 
+             m.position.y !== 0 &&
+             m.locationId && 
+             m.floorId &&
+             m.status === 'active';
+    });
     
     console.log('SignalHeatmap: Active monitors:', activeMonitors.length);
     console.log('SignalHeatmap: Monitor details:', activeMonitors.map(m => ({

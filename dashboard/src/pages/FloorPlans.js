@@ -261,7 +261,11 @@ const FloorPlans = () => {
 
   const filteredMonitors = (monitors || []).filter(monitor => {
     if (!selectedFloor) return true;
-    return monitor.floorId === selectedFloor._id;
+    // Only include monitors that are positioned on the current floor
+    return monitor.floorId === selectedFloor._id && 
+           monitor.locationId === selectedLocation._id &&
+           monitor.position && 
+           (monitor.position.x !== 0 || monitor.position.y !== 0);
   });
 
   return (
