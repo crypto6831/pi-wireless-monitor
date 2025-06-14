@@ -200,7 +200,7 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Chip
-                      label={connectionStatus.connectionStatus.toUpperCase()}
+                      label={connectionStatus.connectionStatus ? connectionStatus.connectionStatus.toUpperCase() : 'UNKNOWN'}
                       color={getConnectionStatusColor(connectionStatus.connectionStatus)}
                       variant="filled"
                     />
@@ -218,11 +218,11 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h6">
-                      {connectionStatus.signalStrength} dBm
+                      {connectionStatus.signalStrength || 0} dBm
                     </Typography>
                     <Chip
-                      label={getSignalQuality(connectionStatus.signalStrength).label}
-                      color={getSignalQuality(connectionStatus.signalStrength).color}
+                      label={getSignalQuality(connectionStatus.signalStrength || 0).label}
+                      color={getSignalQuality(connectionStatus.signalStrength || 0).color}
                       size="small"
                     />
                   </CardContent>
@@ -255,14 +255,14 @@ const SSIDAnalyzer = () => {
                       </Typography>
                     </Box>
                     <Typography variant="h6">
-                      {connectionStatus.stabilityScore}%
+                      {connectionStatus.stabilityScore || 0}%
                     </Typography>
                     <LinearProgress
                       variant="determinate"
                       value={connectionStatus.stabilityScore || 0}
                       sx={{ mt: 1 }}
-                      color={connectionStatus.stabilityScore >= 95 ? 'success' : 
-                             connectionStatus.stabilityScore >= 80 ? 'warning' : 'error'}
+                      color={(connectionStatus.stabilityScore || 0) >= 95 ? 'success' : 
+                             (connectionStatus.stabilityScore || 0) >= 80 ? 'warning' : 'error'}
                     />
                   </CardContent>
                 </Card>
@@ -369,10 +369,10 @@ const SSIDAnalyzer = () => {
                         {monitor.monitorId}
                       </Typography>
                     </TableCell>
-                    <TableCell>{monitor.ssid}</TableCell>
+                    <TableCell>{monitor.ssid || 'Unknown'}</TableCell>
                     <TableCell>
                       <Chip
-                        label={monitor.connectionStatus}
+                        label={monitor.connectionStatus || 'unknown'}
                         color={getConnectionStatusColor(monitor.connectionStatus)}
                         size="small"
                       />
@@ -380,11 +380,11 @@ const SSIDAnalyzer = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Typography variant="body2" sx={{ mr: 1 }}>
-                          {monitor.signalStrength} dBm
+                          {monitor.signalStrength || 0} dBm
                         </Typography>
                         <Chip
-                          label={getSignalQuality(monitor.signalStrength).label}
-                          color={getSignalQuality(monitor.signalStrength).color}
+                          label={getSignalQuality(monitor.signalStrength || 0).label}
+                          color={getSignalQuality(monitor.signalStrength || 0).color}
                           size="small"
                         />
                       </Box>
@@ -392,14 +392,14 @@ const SSIDAnalyzer = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Typography variant="body2" sx={{ mr: 1 }}>
-                          {monitor.stabilityScore}%
+                          {monitor.stabilityScore || 0}%
                         </Typography>
                         <LinearProgress
                           variant="determinate"
                           value={monitor.stabilityScore || 0}
                           sx={{ width: 60 }}
-                          color={monitor.stabilityScore >= 95 ? 'success' : 
-                                 monitor.stabilityScore >= 80 ? 'warning' : 'error'}
+                          color={(monitor.stabilityScore || 0) >= 95 ? 'success' : 
+                                 (monitor.stabilityScore || 0) >= 80 ? 'warning' : 'error'}
                         />
                       </Box>
                     </TableCell>
