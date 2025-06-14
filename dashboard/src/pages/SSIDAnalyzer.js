@@ -301,7 +301,7 @@ const SSIDAnalyzer = () => {
                           }
                         </TableCell>
                         <TableCell><strong>Frequency</strong></TableCell>
-                        <TableCell>{connectionStatus.frequency ? formatFrequency(connectionStatus.frequency) : 'Unknown'}</TableCell>
+                        <TableCell>{connectionStatus.frequency ? `${connectionStatus.frequency} MHz` : 'Unknown'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>RX Rate</strong></TableCell>
