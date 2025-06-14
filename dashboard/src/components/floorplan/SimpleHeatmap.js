@@ -8,9 +8,20 @@ const SimpleHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   const heatmapSettings = useSelector(selectHeatmapSettings);
 
   useEffect(() => {
-    if (!canvasRef_local.current || !monitors.length) {
+    if (!canvasRef_local.current) {
+      console.log('SimpleHeatmap: No canvas ref, skipping');
       return;
     }
+    
+    if (!monitors.length) {
+      console.log('SimpleHeatmap: No monitors, clearing canvas');
+      const canvas = canvasRef_local.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    
+    console.log('SimpleHeatmap: Rendering with', monitors.length, 'monitors');
 
     const canvas = canvasRef_local.current;
     const ctx = canvas.getContext('2d');
@@ -33,6 +44,8 @@ const SimpleHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     });
     
     if (activeMonitors.length === 0) {
+      console.log('SimpleHeatmap: No active monitors, clearing canvas');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
     

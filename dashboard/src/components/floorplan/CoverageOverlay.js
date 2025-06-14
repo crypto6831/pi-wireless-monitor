@@ -103,12 +103,16 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   const coverageSettings = useSelector(state => state.coverageSettings);
 
   useEffect(() => {
-    if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) {
-      console.log('SignalHeatmap: Not rendering -', {
-        hasLocalCanvas: !!canvasRef_local.current,
-        hasMainCanvas: !!canvasRef?.current,
-        monitorsLength: monitors.length
-      });
+    if (!canvasRef_local.current || !canvasRef?.current) {
+      console.log('SignalHeatmap: No canvas refs, skipping');
+      return;
+    }
+    
+    if (!monitors.length) {
+      console.log('SignalHeatmap: No monitors, clearing canvas');
+      const canvas = canvasRef_local.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
 
@@ -159,8 +163,8 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     })));
     
     if (activeMonitors.length === 0) {
-      console.log('SignalHeatmap: No active monitors with positions, skipping render');
-      ctx.restore();
+      console.log('SignalHeatmap: No active monitors with positions, clearing canvas');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
 
