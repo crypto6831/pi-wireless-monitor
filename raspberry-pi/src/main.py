@@ -179,6 +179,30 @@ class PiWirelessMonitor:
                 
         except Exception as e:
             logger.error(f"WiFi connection info update failed: {e}")
+    
+    def monitor_ssid_connection(self):
+        """Monitor current SSID connection status"""
+        try:
+            # Get current SSID connection status
+            connection_status = self.scanner.get_current_ssid_connection_status()
+            
+            if connection_status:
+                # Send to server
+                success = self.api_client.send_ssid_connection_status(connection_status)
+                
+                if success:
+                    status = connection_status.get('connection_status', 'unknown')
+                    ssid = connection_status.get('ssid', 'Unknown')
+                    signal = connection_status.get('signal_strength', 0)
+                    logger.debug(f"SSID status sent: {status} to '{ssid}' ({signal} dBm)")
+                else:
+                    logger.warning("Failed to send SSID connection status")
+            else:
+                logger.warning("No SSID connection status available")
+                
+        except Exception as e:
+            logger.error(f"SSID connection monitoring failed: {e}")
+    
     def run_deep_scan(self):
         """Run a comprehensive scan (less frequent)"""
         try:
@@ -214,6 +238,9 @@ class PiWirelessMonitor:
         schedule.every(30).seconds.do(self.send_heartbeat)
         # WiFi connection info
         schedule.every(60).seconds.do(self.send_wifi_connection_info)
+        
+        # SSID connection monitoring (more frequent for stability tracking)
+        schedule.every(30).seconds.do(self.monitor_ssid_connection)
         
         # Deep scan
         schedule.every(config.DEEP_SCAN_INTERVAL).seconds.do(self.run_deep_scan)

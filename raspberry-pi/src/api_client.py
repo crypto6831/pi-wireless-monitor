@@ -409,6 +409,30 @@ class APIClient:
             logger.error(f"Error sending WiFi connection data: {e}")
             return False
     
+    def send_ssid_connection_status(self, connection_data: Dict) -> bool:
+        """Send SSID connection status to server"""
+        try:
+            logger.debug(f"Sending SSID connection status: {connection_data}")
+            
+            # Add monitor identification
+            payload = {
+                'monitorId': config.MONITOR_ID,
+                **connection_data
+            }
+            
+            response = self._post('ssid-analyzer/connection', payload)
+            
+            if response:
+                logger.debug("SSID connection status sent successfully")
+                return True
+            else:
+                logger.warning("Failed to send SSID connection status")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error sending SSID connection status: {e}")
+            return False
+    
     def _get_monitor_id(self) -> str:
         """Get the MongoDB ObjectId for this monitor"""
         try:

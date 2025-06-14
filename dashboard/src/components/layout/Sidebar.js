@@ -24,6 +24,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   LocationOn as FloorPlanIcon,
   TuneOutlined as ChannelIcon,
+  WifiIcon as SSIDIcon,
 } from '@mui/icons-material';
 import { setSidebarOpen } from '../../store/slices/uiSlice';
 
@@ -37,6 +38,7 @@ const menuItems = [
   { text: 'Alerts', icon: <AlertIcon />, path: '/alerts' },
   { text: 'Floor Plans', icon: <FloorPlanIcon />, path: '/floor-plans' },
   { text: 'Channel Analyzer', icon: <ChannelIcon />, path: '/channel-analyzer' },
+  { text: 'SSID Monitor', icon: <SSIDIcon />, path: '/ssid-analyzer' },
 ];
 
 function Sidebar() {

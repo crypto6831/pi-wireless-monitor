@@ -166,6 +166,12 @@ export const apiService = {
   getChannelUtilization: (params = {}) => api.get('/channels/utilization', { params }),
   getChannelTimeline: (params = {}) => api.get('/channels/timeline', { params }),
   getChannelInterference: (params = {}) => api.get('/channels/interference', { params }),
+
+  // SSID Connection Analyzer
+  getSSIDStatus: (monitorId) => api.get(`/ssid-analyzer/status/${monitorId}`),
+  getSSIDHistory: (monitorId, params = {}) => api.get(`/ssid-analyzer/history/${monitorId}`, { params }),
+  getSSIDStability: (monitorId, params = {}) => api.get(`/ssid-analyzer/stability/${monitorId}`, { params }),
+  getSSIDOverview: () => api.get('/ssid-analyzer/overview'),
 };
 
 export default apiService; 

@@ -402,4 +402,270 @@ class WiFiScanner:
                 }
                 devices.append(device)
         
-        return devices 
+        return devices
+    
+    def get_current_ssid_connection_status(self) -> Dict:
+        """Get detailed status of current SSID connection"""
+        connection_info = {}
+        
+        try:
+            # Get currently connected SSID using nmcli
+            result = subprocess.run(
+                ['nmcli', '-t', '-f', 'ACTIVE,SSID,BSSID,SIGNAL,CHAN,FREQ,RATE,MODE', 'dev', 'wifi'],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    if line.startswith('yes:'):  # Active connection
+                        parts = line.split(':')
+                        if len(parts) >= 8:
+                            connection_info = {
+                                'ssid': parts[1] if parts[1] else 'Hidden',
+                                'bssid': self._clean_bssid(parts[2]) if parts[2] else None,
+                                'signal_strength': self._parse_signal_strength(parts[3]),
+                                'channel': self._parse_int(parts[4]),
+                                'frequency': self._parse_int(parts[5]),
+                                'link_speed': self._parse_rate(parts[6]),
+                                'rx_rate': self._parse_rate(parts[6]),
+                                'tx_rate': self._parse_rate(parts[6]),
+                                'connection_status': 'connected',
+                                'timestamp': datetime.utcnow().isoformat()
+                            }
+                        break
+            
+            # If no active connection found via nmcli, check iwconfig
+            if not connection_info:
+                connection_info = self._get_iwconfig_connection_status()
+            
+            # Get additional connection metrics
+            if connection_info:
+                # Get connection quality and uptime
+                quality_info = self._get_connection_quality()
+                connection_info.update(quality_info)
+                
+                # Get network latency
+                latency_info = self._get_network_latency()
+                connection_info.update(latency_info)
+                
+                # Get connection uptime
+                uptime_info = self._get_connection_uptime()
+                connection_info.update(uptime_info)
+            else:
+                connection_info = {
+                    'connection_status': 'disconnected',
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting SSID connection status: {e}")
+            connection_info = {
+                'connection_status': 'error',
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        
+        return connection_info
+    
+    def _get_iwconfig_connection_status(self) -> Dict:
+        """Fallback method using iwconfig for connection status"""
+        try:
+            result = subprocess.run(['iwconfig', self.interface], capture_output=True, text=True)
+            if result.returncode == 0:
+                output = result.stdout
+                
+                # Parse SSID
+                ssid_match = re.search(r'ESSID:"([^"]*)"', output)
+                if not ssid_match or ssid_match.group(1) == 'off/any':
+                    return {}
+                
+                ssid = ssid_match.group(1)
+                
+                # Parse other details
+                connection_info = {'ssid': ssid, 'connection_status': 'connected'}
+                
+                # Parse Access Point MAC
+                ap_match = re.search(r'Access Point: ([A-Fa-f0-9:]{17})', output)
+                if ap_match:
+                    connection_info['bssid'] = ap_match.group(1)
+                
+                # Parse frequency
+                freq_match = re.search(r'Frequency:([0-9.]+) GHz', output)
+                if freq_match:
+                    connection_info['frequency'] = int(float(freq_match.group(1)) * 1000)
+                
+                # Parse signal strength
+                signal_match = re.search(r'Signal level=(-?\d+) dBm', output)
+                if signal_match:
+                    connection_info['signal_strength'] = int(signal_match.group(1))
+                
+                # Parse bit rate
+                rate_match = re.search(r'Bit Rate=([0-9.]+) Mb/s', output)
+                if rate_match:
+                    rate = float(rate_match.group(1))
+                    connection_info['link_speed'] = rate
+                    connection_info['rx_rate'] = rate
+                    connection_info['tx_rate'] = rate
+                
+                return connection_info
+                
+        except Exception as e:
+            logger.error(f"Error getting iwconfig status: {e}")
+        
+        return {}
+    
+    def _get_connection_quality(self) -> Dict:
+        """Get connection quality metrics"""
+        quality_info = {}
+        
+        try:
+            # Get quality from /proc/net/wireless
+            with open('/proc/net/wireless', 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if self.interface in line:
+                        parts = line.split()
+                        if len(parts) >= 3:
+                            # Quality is typically in format "xx/70" or just "xx"
+                            quality_str = parts[2].rstrip('.')
+                            if '/' in quality_str:
+                                quality_parts = quality_str.split('/')
+                                if len(quality_parts) == 2:
+                                    current = int(quality_parts[0])
+                                    maximum = int(quality_parts[1])
+                                    quality_info['quality'] = int((current / maximum) * 100)
+                            else:
+                                quality_info['quality'] = int(quality_str)
+                        break
+        except (FileNotFoundError, PermissionError, ValueError):
+            pass
+        
+        return quality_info
+    
+    def _get_network_latency(self) -> Dict:
+        """Get network latency to gateway and internet"""
+        latency_info = {}
+        
+        try:
+            # Get gateway IP
+            result = subprocess.run(['ip', 'route', 'show', 'default'], capture_output=True, text=True)
+            if result.returncode == 0:
+                gateway_match = re.search(r'default via ([0-9.]+)', result.stdout)
+                if gateway_match:
+                    gateway_ip = gateway_match.group(1)
+                    
+                    # Ping gateway (network latency)
+                    ping_result = subprocess.run(
+                        ['ping', '-c', '3', '-W', '2', gateway_ip],
+                        capture_output=True,
+                        text=True
+                    )
+                    if ping_result.returncode == 0:
+                        # Parse average latency from ping output
+                        avg_match = re.search(r'min/avg/max/mdev = [0-9.]+/([0-9.]+)/[0-9.]+/[0-9.]+ ms', ping_result.stdout)
+                        if avg_match:
+                            latency_info['network_latency'] = float(avg_match.group(1))
+            
+            # Ping internet (8.8.8.8 for internet latency)
+            ping_result = subprocess.run(
+                ['ping', '-c', '3', '-W', '3', '8.8.8.8'],
+                capture_output=True,
+                text=True
+            )
+            if ping_result.returncode == 0:
+                avg_match = re.search(r'min/avg/max/mdev = [0-9.]+/([0-9.]+)/[0-9.]+/[0-9.]+ ms', ping_result.stdout)
+                if avg_match:
+                    latency_info['internet_latency'] = float(avg_match.group(1))
+                    
+                # Calculate packet loss
+                loss_match = re.search(r'(\d+)% packet loss', ping_result.stdout)
+                if loss_match:
+                    latency_info['packet_loss'] = int(loss_match.group(1))
+                    
+        except Exception as e:
+            logger.debug(f"Error getting network latency: {e}")
+        
+        return latency_info
+    
+    def _get_connection_uptime(self) -> Dict:
+        """Get connection uptime information"""
+        uptime_info = {}
+        
+        try:
+            # Try to get uptime from NetworkManager
+            result = subprocess.run(
+                ['nmcli', '-t', '-f', 'DEVICE,TYPE,STATE,CONNECTION', 'dev'],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    parts = line.split(':')
+                    if len(parts) >= 4 and parts[0] == self.interface and parts[2] == 'connected':
+                        # Get connection start time (simplified - would need more complex logic for actual uptime)
+                        uptime_info['uptime'] = 0  # Placeholder - implement actual uptime calculation
+                        break
+                        
+        except Exception as e:
+            logger.debug(f"Error getting connection uptime: {e}")
+        
+        return uptime_info
+    
+    def _clean_bssid(self, bssid: str) -> str:
+        """Clean BSSID by removing escape characters"""
+        if not bssid:
+            return None
+        # Remove escape characters like \: that appear in nmcli output
+        return bssid.replace('\\:', ':')
+    
+    def _parse_signal_strength(self, signal_str: str) -> int:
+        """Parse signal strength from nmcli output"""
+        try:
+            if not signal_str or signal_str == '--':
+                return -100
+            # nmcli returns signal as percentage, convert to approximate dBm
+            signal_percent = int(signal_str)
+            # Formula: dBm ≈ (percentage / 2) - 100
+            return int((signal_percent / 2) - 100)
+        except (ValueError, TypeError):
+            return -100
+    
+    def _parse_int(self, value_str: str) -> Optional[int]:
+        """Parse integer value from string"""
+        try:
+            if not value_str or value_str == '--':
+                return None
+            return int(value_str)
+        except (ValueError, TypeError):
+            return None
+    
+    def _parse_rate(self, rate_str: str) -> Optional[float]:
+        """Parse data rate from string"""
+        try:
+            if not rate_str or rate_str == '--':
+                return None
+            # Remove units and parse (e.g., "540 Mbit/s" -> 540.0)
+            rate_clean = rate_str.replace(' Mbit/s', '').replace(' Mbps', '')
+            return float(rate_clean)
+        except (ValueError, TypeError):
+            return None
+    
+    def monitor_connection_stability(self, duration_minutes: int = 60) -> Dict:
+        """Monitor connection stability over time"""
+        stability_info = {
+            'duration_minutes': duration_minutes,
+            'disconnection_events': [],
+            'signal_variations': [],
+            'connection_quality_history': [],
+            'start_time': datetime.utcnow().isoformat()
+        }
+        
+        # This would be implemented as a background monitoring task
+        # For now, return basic structure
+        logger.info(f"Starting connection stability monitoring for {duration_minutes} minutes")
+        
+        return stability_info 
