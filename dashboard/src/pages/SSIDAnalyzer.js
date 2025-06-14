@@ -73,6 +73,10 @@ const SSIDAnalyzer = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonPeriods, setComparisonPeriods] = useState({
+    baseline: { label: 'Previous Week', days: 7, offset: 7 },
+    comparison: { label: 'Current Week', days: 7, offset: 0 }
+  });
 
   const monitors = useSelector((state) => state.monitors.list);
 
@@ -364,6 +368,23 @@ const SSIDAnalyzer = () => {
     } finally {
       setComparisonLoading(false);
     }
+  };
+
+  // Helper function to run comparison analysis
+  const runComparisonAnalysis = () => {
+    if (!selectedMonitor) return;
+    
+    const now = new Date();
+    
+    // Calculate baseline period (e.g., previous week)
+    const baselineEnd = new Date(now.getTime() - comparisonPeriods.baseline.offset * 24 * 60 * 60 * 1000);
+    const baselineStart = new Date(baselineEnd.getTime() - comparisonPeriods.baseline.days * 24 * 60 * 60 * 1000);
+    
+    // Calculate comparison period (e.g., current week)
+    const comparisonEnd = new Date(now.getTime() - comparisonPeriods.comparison.offset * 24 * 60 * 60 * 1000);
+    const comparisonStart = new Date(comparisonEnd.getTime() - comparisonPeriods.comparison.days * 24 * 60 * 60 * 1000);
+    
+    fetchIncidentComparison(selectedMonitor, baselineStart, baselineEnd, comparisonStart, comparisonEnd);
   };
 
   // Prepare chart data for performance metrics
@@ -1341,6 +1362,23 @@ const SSIDAnalyzer = () => {
                 <ToggleButton value="24h">24H</ToggleButton>
                 <ToggleButton value="7d">7D</ToggleButton>
               </ToggleButtonGroup>
+
+              <Divider orientation="vertical" flexItem />
+
+              <ToggleButtonGroup
+                value={comparisonMode}
+                exclusive
+                onChange={(e, newValue) => {
+                  setComparisonMode(newValue);
+                  if (newValue && selectedMonitor) {
+                    runComparisonAnalysis();
+                  }
+                }}
+                size="small"
+              >
+                <ToggleButton value={false}>Timeline</ToggleButton>
+                <ToggleButton value={true}>Compare</ToggleButton>
+              </ToggleButtonGroup>
             </Box>
           </Box>
 
@@ -1350,7 +1388,7 @@ const SSIDAnalyzer = () => {
             </Box>
           )}
 
-          {!timelineLoading && timelineData && (
+          {!timelineLoading && !comparisonMode && timelineData && (
             <Grid container spacing={3}>
               {/* Timeline Metrics Cards */}
               <Grid item xs={12} sm={6} md={3}>
@@ -1537,7 +1575,239 @@ const SSIDAnalyzer = () => {
             </Grid>
           )}
 
-          {!timelineLoading && (!timelineData || !timelineData.incidents) && (
+          {/* Phase 3.3c: Comparison Analysis View */}
+          {comparisonMode && (
+            <>
+              {comparisonLoading && (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress />
+                </Box>
+              )}
+              
+              {!comparisonLoading && comparisonData && (
+                <Grid container spacing={3}>
+                  {/* Comparison Summary Cards */}
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          Period Comparison: {comparisonPeriods.baseline.label} vs {comparisonPeriods.comparison.label}
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={4}>
+                            <Box p={2} border={1} borderColor="grey.300" borderRadius={1}>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Total Incidents Change
+                              </Typography>
+                              <Box display="flex" alignItems="center">
+                                <Typography variant="h4" sx={{ mr: 1 }}>
+                                  {comparisonData.analysis.changes.totalIncidents.absolute > 0 ? '+' : ''}
+                                  {comparisonData.analysis.changes.totalIncidents.absolute}
+                                </Typography>
+                                <Chip
+                                  label={`${comparisonData.analysis.changes.totalIncidents.percentage > 0 ? '+' : ''}${comparisonData.analysis.changes.totalIncidents.percentage.toFixed(1)}%`}
+                                  color={comparisonData.analysis.changes.totalIncidents.percentage > 0 ? 'error' : 'success'}
+                                  size="small"
+                                />
+                              </Box>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} md={4}>
+                            <Box p={2} border={1} borderColor="grey.300" borderRadius={1}>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Downtime Change
+                              </Typography>
+                              <Box display="flex" alignItems="center">
+                                <Typography variant="h4" sx={{ mr: 1 }}>
+                                  {comparisonData.analysis.changes.totalDowntime.absolute > 0 ? '+' : ''}
+                                  {formatDuration(Math.abs(comparisonData.analysis.changes.totalDowntime.absolute))}
+                                </Typography>
+                                <Chip
+                                  label={`${comparisonData.analysis.changes.totalDowntime.percentage > 0 ? '+' : ''}${comparisonData.analysis.changes.totalDowntime.percentage.toFixed(1)}%`}
+                                  color={comparisonData.analysis.changes.totalDowntime.percentage > 0 ? 'error' : 'success'}
+                                  size="small"
+                                />
+                              </Box>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} md={4}>
+                            <Box p={2} border={1} borderColor="grey.300" borderRadius={1}>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Average Duration Change
+                              </Typography>
+                              <Box display="flex" alignItems="center">
+                                <Typography variant="h4" sx={{ mr: 1 }}>
+                                  {comparisonData.analysis.changes.avgDuration.absolute > 0 ? '+' : ''}
+                                  {formatDuration(Math.abs(comparisonData.analysis.changes.avgDuration.absolute))}
+                                </Typography>
+                                <Chip
+                                  label={`${comparisonData.analysis.changes.avgDuration.percentage > 0 ? '+' : ''}${comparisonData.analysis.changes.avgDuration.percentage.toFixed(1)}%`}
+                                  color={comparisonData.analysis.changes.avgDuration.percentage > 0 ? 'error' : 'success'}
+                                  size="small"
+                                />
+                              </Box>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Period Details Comparison */}
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {comparisonPeriods.baseline.label}
+                        </Typography>
+                        <Box mb={2}>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(comparisonData.baseline.period.start).toLocaleDateString()} - {new Date(comparisonData.baseline.period.end).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Total Incidents</Typography>
+                            <Typography variant="h6">{comparisonData.baseline.metrics.totalIncidents}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Total Downtime</Typography>
+                            <Typography variant="h6">{formatDuration(comparisonData.baseline.metrics.totalDowntime)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Avg Duration</Typography>
+                            <Typography variant="h6">{formatDuration(comparisonData.baseline.metrics.avgDuration)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Disconnections</Typography>
+                            <Typography variant="h6">{comparisonData.baseline.metrics.disconnectionRate}</Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {comparisonPeriods.comparison.label}
+                        </Typography>
+                        <Box mb={2}>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(comparisonData.comparison.period.start).toLocaleDateString()} - {new Date(comparisonData.comparison.period.end).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Total Incidents</Typography>
+                            <Typography variant="h6">{comparisonData.comparison.metrics.totalIncidents}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Total Downtime</Typography>
+                            <Typography variant="h6">{formatDuration(comparisonData.comparison.metrics.totalDowntime)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Avg Duration</Typography>
+                            <Typography variant="h6">{formatDuration(comparisonData.comparison.metrics.avgDuration)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">Disconnections</Typography>
+                            <Typography variant="h6">{comparisonData.comparison.metrics.disconnectionRate}</Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Trend Analysis */}
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          Trend Analysis & Insights
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Overall Trend: 
+                              <Chip 
+                                label={comparisonData.analysis.summary.overallTrend} 
+                                size="small" 
+                                color={comparisonData.analysis.summary.overallTrend === 'increasing' ? 'error' : 
+                                       comparisonData.analysis.summary.overallTrend === 'decreasing' ? 'success' : 'default'}
+                                sx={{ ml: 1 }}
+                              />
+                            </Typography>
+                            
+                            {comparisonData.analysis.summary.significantChanges.length > 0 && (
+                              <Box>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Significant Changes (>10%):
+                                </Typography>
+                                {comparisonData.analysis.summary.significantChanges.map((change, index) => (
+                                  <Box key={index} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                    <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                                      {change.metric.replace(/([A-Z])/g, ' $1').trim()}
+                                    </Typography>
+                                    <Chip 
+                                      label={`${change.change > 0 ? '+' : ''}${change.change.toFixed(1)}%`}
+                                      size="small"
+                                      color={change.trend === 'worse' ? 'error' : 'success'}
+                                    />
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
+                          </Grid>
+                          
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Recommendations
+                            </Typography>
+                            <Box>
+                              {comparisonData.analysis.changes.totalIncidents.percentage > 10 && (
+                                <Alert severity="warning" sx={{ mb: 1 }}>
+                                  Incident rate increased significantly. Consider reviewing network configuration.
+                                </Alert>
+                              )}
+                              {comparisonData.analysis.changes.totalDowntime.percentage > 20 && (
+                                <Alert severity="error" sx={{ mb: 1 }}>
+                                  Downtime increased substantially. Immediate attention required.
+                                </Alert>
+                              )}
+                              {comparisonData.analysis.changes.totalIncidents.percentage < -10 && (
+                                <Alert severity="success" sx={{ mb: 1 }}>
+                                  Great improvement! Incident rate decreased significantly.
+                                </Alert>
+                              )}
+                              {Math.abs(comparisonData.analysis.changes.totalIncidents.percentage) < 5 && (
+                                <Alert severity="info" sx={{ mb: 1 }}>
+                                  Network stability is consistent between periods.
+                                </Alert>
+                              )}
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+              
+              {!comparisonLoading && !comparisonData && (
+                <Alert severity="info">
+                  Click "Compare" to analyze incident trends between different time periods.
+                </Alert>
+              )}
+            </>
+          )}
+
+          {!timelineLoading && !comparisonMode && (!timelineData || !timelineData.incidents) && (
             <Alert severity="info">
               No timeline data available for this monitor. 
               Make sure the monitor is online and has incident tracking enabled.
