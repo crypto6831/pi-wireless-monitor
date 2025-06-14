@@ -254,7 +254,7 @@ const ChannelAnalyzer = () => {
       }],
       series,
       height: 400,
-      margin: { top: 50, right: 30, left: 120, bottom: 80 },
+      margin: { top: 50, right: 30, left: 150, bottom: 80 },
     };
   };
 
@@ -513,6 +513,9 @@ const ChannelAnalyzer = () => {
                         direction: 'row',
                         position: { vertical: 'top', horizontal: 'middle' },
                         padding: 0,
+                      },
+                      axisLabel: {
+                        style: { fill: '#ffffff', fontSize: '14px' },
                       },
                     }}
                   />
