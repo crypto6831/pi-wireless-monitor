@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCoverageSettings, selectSignalThresholds, selectHeatmapSettings, selectDefaultCoverageArea } from '../../store/slices/coverageSettingsSlice';
-import SignalHeatmapOptimized from './SignalHeatmapOptimized';
+// import SignalHeatmapOptimized from './SignalHeatmapOptimized';
 
 const CoverageArea = ({ area, viewSettings, canvasRef }) => {
   const canvasOverlayRef = useRef(null);
@@ -124,90 +124,88 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
 
-    // Generate heatmap with fixed world-space resolution
-    const gridSize = 10; // Fixed grid size in world coordinates (pixels)
+    // Generate heatmap with fixed grid size
+    const gridSize = 20; // Fixed grid size for consistent rendering
     const width = canvas.width / zoom;
     const height = canvas.height / zoom;
 
     // Use global heatmap intensity if not overridden
     const effectiveIntensity = (heatmapSettings.enabled !== false) ? (intensity || heatmapSettings.intensity) : intensity;
 
-    // ITU-R Indoor Path Loss Model parameters
-    const pathLossExponent = 3.0; // Office environment
-    const floorLoss = 15.0; // dB per floor
-    const wallLoss = 3.0; // dB per wall (simplified)
+    // Get path loss parameters from settings or use defaults
+    const pathLossExponent = coverageSettings?.pathLossExponent || 3.0;
     
-    // Create gradient for smooth transitions
-    const createGradient = (ctx, x, y, radius, signal) => {
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      
-      // Map signal to gradient based on thresholds
-      if (signal > signalThresholds.excellent) {
-        gradient.addColorStop(0, `rgba(76, 175, 80, ${effectiveIntensity})`);
-        gradient.addColorStop(0.5, `rgba(76, 175, 80, ${effectiveIntensity * 0.7})`);
-        gradient.addColorStop(1, `rgba(76, 175, 80, 0)`);
-      } else if (signal > signalThresholds.good) {
-        gradient.addColorStop(0, `rgba(139, 195, 74, ${effectiveIntensity})`);
-        gradient.addColorStop(0.5, `rgba(139, 195, 74, ${effectiveIntensity * 0.7})`);
-        gradient.addColorStop(1, `rgba(139, 195, 74, 0)`);
-      } else if (signal > signalThresholds.fair) {
-        gradient.addColorStop(0, `rgba(255, 235, 59, ${effectiveIntensity})`);
-        gradient.addColorStop(0.5, `rgba(255, 235, 59, ${effectiveIntensity * 0.6})`);
-        gradient.addColorStop(1, `rgba(255, 235, 59, 0)`);
-      } else if (signal > signalThresholds.poor) {
-        gradient.addColorStop(0, `rgba(255, 152, 0, ${effectiveIntensity})`);
-        gradient.addColorStop(0.5, `rgba(255, 152, 0, ${effectiveIntensity * 0.5})`);
-        gradient.addColorStop(1, `rgba(255, 152, 0, 0)`);
-      } else {
-        gradient.addColorStop(0, `rgba(244, 67, 54, ${effectiveIntensity})`);
-        gradient.addColorStop(0.5, `rgba(244, 67, 54, ${effectiveIntensity * 0.4})`);
-        gradient.addColorStop(1, `rgba(244, 67, 54, 0)`);
+    // Active monitors only
+    const activeMonitors = monitors.filter(m => m.position && m.status === 'active');
+    
+    if (activeMonitors.length === 0) {
+      ctx.restore();
+      return;
+    }
+
+    // Calculate signal strength for each grid point
+    for (let x = 0; x < width; x += gridSize) {
+      for (let y = 0; y < height; y += gridSize) {
+        let maxSignal = -100;
+
+        // Calculate signal from all monitors
+        activeMonitors.forEach(monitor => {
+          const distance = Math.sqrt(
+            Math.pow(x - monitor.position.x, 2) + 
+            Math.pow(y - monitor.position.y, 2)
+          );
+
+          // Use actual monitor data or defaults
+          const txPower = monitor.wifiConnection?.rssi ? 
+            monitor.wifiConnection.rssi + 30 : -30;
+          const frequency = monitor.wifiConnection?.frequency || 2437;
+          
+          // ITU-R P.1238 Indoor Path Loss
+          const L0 = 20 * Math.log10(frequency) - 28;
+          const Ld = 10 * pathLossExponent * Math.log10(Math.max(distance, 1));
+          const pathLoss = L0 + Ld;
+          
+          const signal = txPower - pathLoss;
+          maxSignal = Math.max(maxSignal, signal);
+        });
+        
+        // Draw heatmap cell
+        if (maxSignal > -100) {
+          let color = '';
+          let alpha = 0;
+          
+          if (maxSignal > signalThresholds.excellent) {
+            color = '76, 175, 80'; // Green
+            alpha = 0.7;
+          } else if (maxSignal > signalThresholds.good) {
+            color = '139, 195, 74'; // Light green
+            alpha = 0.6;
+          } else if (maxSignal > signalThresholds.fair) {
+            color = '255, 235, 59'; // Yellow
+            alpha = 0.5;
+          } else if (maxSignal > signalThresholds.poor) {
+            color = '255, 152, 0'; // Orange
+            alpha = 0.4;
+          } else if (maxSignal > -90) {
+            color = '244, 67, 54'; // Red
+            alpha = 0.3;
+          }
+          
+          if (alpha > 0) {
+            // Create gradient for smooth cell
+            const gradient = ctx.createRadialGradient(
+              x + gridSize/2, y + gridSize/2, 0,
+              x + gridSize/2, y + gridSize/2, gridSize
+            );
+            gradient.addColorStop(0, `rgba(${color}, ${alpha * effectiveIntensity})`);
+            gradient.addColorStop(1, `rgba(${color}, 0)`);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, gridSize, gridSize);
+          }
+        }
       }
-      
-      return gradient;
-    };
-
-    // Use gradient-based rendering for each monitor
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.save();
-    tempCtx.translate(panX, panY);
-    tempCtx.scale(zoom, zoom);
-
-    monitors.forEach(monitor => {
-      if (!monitor.position || monitor.status !== 'active') return;
-      
-      // Use actual monitor WiFi data if available
-      const txPower = monitor.wifiConnection?.rssi ? 
-        monitor.wifiConnection.rssi + 30 : -30; // Estimate TX power
-      const frequency = monitor.wifiConnection?.frequency || 2437; // Default 2.4GHz
-      
-      // Calculate coverage radius based on minimum threshold
-      const minSignal = signalThresholds.poor - 10; // -90 dBm typically
-      const maxDistance = Math.pow(10, (txPower - minSignal) / (10 * pathLossExponent));
-      
-      // Draw radial gradient for this monitor
-      const gradient = createGradient(tempCtx, monitor.position.x, monitor.position.y, maxDistance, txPower);
-      tempCtx.fillStyle = gradient;
-      tempCtx.fillRect(
-        monitor.position.x - maxDistance,
-        monitor.position.y - maxDistance,
-        maxDistance * 2,
-        maxDistance * 2
-      );
-    });
-    
-    tempCtx.restore();
-    
-    // Composite the gradient canvas onto main canvas
-    ctx.globalCompositeOperation = 'screen'; // Additive blending for overlapping signals
-    ctx.drawImage(tempCanvas, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
-
-    // Don't overlay grid-based calculation when using gradients
-    // The gradient rendering is sufficient for visualization
+    }
 
     ctx.restore();
     console.log('SignalHeatmap: Render completed');
@@ -452,7 +450,7 @@ const CoverageOverlay = ({
     <>
       {/* Signal Heatmap */}
       {shouldShowHeatmap && (
-        <SignalHeatmapOptimized
+        <SignalHeatmap
           monitors={monitors}
           viewSettings={viewSettings}
           canvasRef={canvasRef}
