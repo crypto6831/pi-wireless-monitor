@@ -20,7 +20,7 @@ import {
   Close,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMonitors } from '../../store/slices/monitorsSlice';
+import { fetchMonitors, updateMonitorPosition } from '../../store/slices/monitorsSlice';
 import { apiService } from '../../services/api';
 import MonitorTooltip from './MonitorTooltip';
 
@@ -137,14 +137,22 @@ const MonitorOverlayNew = ({
 
   const handleRemoveFromFloor = async (monitor) => {
     try {
-      await apiService.updateMonitorPosition(monitor._id, {
-        x: 0,
-        y: 0,
-        locationId: null,
-        floorId: null,
-      });
+      console.log('MonitorOverlayNew: Removing monitor from floor:', monitor.name);
       
-      dispatch(fetchMonitors());
+      // Use Redux thunk instead of direct API call for consistency
+      await dispatch(updateMonitorPosition({
+        monitorId: monitor._id,
+        position: {
+          x: 0,
+          y: 0,
+          locationId: null,
+          floorId: null,
+        }
+      })).unwrap();
+      
+      console.log('MonitorOverlayNew: Monitor removed from floor successfully');
+      
+      // No need to call fetchMonitors() - Redux thunk handles state update
       setInfoDialogOpen(false);
       setSelectedMonitor(null);
     } catch (err) {

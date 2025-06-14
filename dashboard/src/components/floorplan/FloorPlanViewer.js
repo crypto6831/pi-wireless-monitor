@@ -350,6 +350,10 @@ const FloorPlanViewer = ({
         
         // Update monitor position via Redux thunk (which handles both API call and state update)
         console.log('FloorPlanViewer: Dispatching updateMonitorPosition Redux action');
+        
+        // Add a small delay to prevent duplicate calls
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const response = await dispatch(updateMonitorPosition({
           monitorId: data.monitor._id,
           position
