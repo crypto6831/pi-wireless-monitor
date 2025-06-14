@@ -501,7 +501,7 @@ const FloorPlanViewer = ({
 
         {/* Render children (monitors, coverage areas, etc.) */}
         {React.Children.map(children, child =>
-          React.cloneElement(child, { canvasRef })
+          child ? React.cloneElement(child, { canvasRef }) : null
         )}
       </Box>
 

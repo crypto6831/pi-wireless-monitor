@@ -458,8 +458,9 @@ const CoverageOverlay = ({
   // Use global heatmap intensity if local not specified
   const effectiveIntensity = heatmapIntensity !== 0.5 ? heatmapIntensity : heatmapSettings.intensity;
 
+  // Always return a valid element, even if nothing to render
   return (
-    <>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
       {/* Signal Heatmap */}
       {shouldShowHeatmap && (
         <SimpleHeatmap
@@ -488,8 +489,7 @@ const CoverageOverlay = ({
           canvasRef={canvasRef}
         />
       )}
-
-    </>
+    </div>
   );
 };
 
