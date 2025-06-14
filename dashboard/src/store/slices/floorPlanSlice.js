@@ -54,11 +54,19 @@ export const fetchFloorPlanImage = createAsyncThunk(
   'floorPlan/fetchFloorPlanImage',
   async ({ locationId, floorId }, { rejectWithValue }) => {
     try {
+      console.log('fetchFloorPlanImage: Calling API with', { locationId, floorId });
       const response = await apiService.getFloorPlanImage(locationId, floorId);
+      console.log('fetchFloorPlanImage: API response received', {
+        status: response.status,
+        dataType: response.data?.constructor?.name,
+        dataSize: response.data?.size
+      });
       const blob = response.data;
       const imageUrl = URL.createObjectURL(blob);
+      console.log('fetchFloorPlanImage: Created image URL:', imageUrl);
       return imageUrl;
     } catch (error) {
+      console.error('fetchFloorPlanImage: Error:', error);
       return rejectWithValue(error.response?.data?.error || 'Failed to fetch floor plan image');
     }
   }
