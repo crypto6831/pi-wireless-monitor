@@ -23,12 +23,12 @@ import {
   TableRow,
 } from '@mui/material';
 import {
-  WifiIcon,
-  SignalWifiIcon,
-  RouterIcon,
-  SpeedIcon,
-  AccessTimeIcon,
-  NetworkCheckIcon,
+  Wifi as WifiIcon,
+  SignalWifi4Bar as SignalWifiIcon,
+  Router as RouterIcon,
+  Speed as SpeedIcon,
+  AccessTime as AccessTimeIcon,
+  NetworkCheck as NetworkCheckIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import apiService from '../services/api';
