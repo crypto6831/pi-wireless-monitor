@@ -161,6 +161,11 @@ export const apiService = {
   calculateSignalAtPoint: (data) => api.post('/heatmap/point', data),
   exportHeatmap: (locationId, floorId, params = {}) => 
     api.get(`/heatmap/export/${locationId}/${floorId}`, { params }),
+
+  // Channel Analysis
+  getChannelUtilization: (params = {}) => api.get('/channels/utilization', { params }),
+  getChannelTimeline: (params = {}) => api.get('/channels/timeline', { params }),
+  getChannelInterference: (params = {}) => api.get('/channels/interference', { params }),
 };
 
 export default apiService; 

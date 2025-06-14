@@ -11,6 +11,7 @@ import Metrics from './pages/Metrics';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import FloorPlans from './pages/FloorPlans';
+import ChannelAnalyzer from './pages/ChannelAnalyzer';
 import NotificationPanel from './components/common/NotificationPanel';
 import socketService from './services/socket';
 import { fetchMonitors } from './store/slices/monitorsSlice';
@@ -48,6 +49,7 @@ function App() {
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/floor-plans" element={<FloorPlans />} />
+            <Route path="/channel-analyzer" element={<ChannelAnalyzer />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Box>

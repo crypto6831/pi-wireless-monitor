@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   ChevronLeft as ChevronLeftIcon,
   LocationOn as FloorPlanIcon,
+  TuneOutlined as ChannelIcon,
 } from '@mui/icons-material';
 import { setSidebarOpen } from '../../store/slices/uiSlice';
 
@@ -35,6 +36,7 @@ const menuItems = [
   { text: 'Metrics', icon: <AnalyticsIcon />, path: '/metrics' },
   { text: 'Alerts', icon: <AlertIcon />, path: '/alerts' },
   { text: 'Floor Plans', icon: <FloorPlanIcon />, path: '/floor-plans' },
+  { text: 'Channel Analyzer', icon: <ChannelIcon />, path: '/channel-analyzer' },
 ];
 
 function Sidebar() {
