@@ -249,7 +249,8 @@ const ChannelAnalyzer = () => {
         valueFormatter: (value) => new Date(value).toLocaleTimeString('en-US', { 
           hour: '2-digit', 
           minute: '2-digit' 
-        })
+        }),
+        tickLabelStyle: { fill: '#ffffff' },
       }],
       series,
       height: 400,
@@ -503,6 +504,8 @@ const ChannelAnalyzer = () => {
                       label: 'Signal Strength (dBm)',
                       valueFormatter: (value) => `${value} dBm`,
                       tickMinStep: 10,
+                      labelStyle: { fill: '#ffffff' },
+                      tickLabelStyle: { fill: '#ffffff' },
                     }]}
                     grid={{ horizontal: true, vertical: true }}
                     slotProps={{
