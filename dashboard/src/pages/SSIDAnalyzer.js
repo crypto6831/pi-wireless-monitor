@@ -313,10 +313,14 @@ const SSIDAnalyzer = () => {
 
     const { labels, datasets } = performanceHistory.chartData;
     
-    // Format timestamps for display
-    const formattedLabels = labels.map(timestamp => {
+    // Format timestamps for display - show fewer labels to avoid overcrowding
+    const formattedLabels = labels.map((timestamp, index) => {
       const date = new Date(timestamp);
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      // Only show every 3rd label to reduce clutter
+      if (index % 3 === 0 || index === labels.length - 1) {
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      }
+      return '';
     });
 
     return {
@@ -923,27 +927,43 @@ const SSIDAnalyzer = () => {
                       {(() => {
                         const chartData = getPerformanceChartData();
                         return chartData.labels.length > 0 && chartData.datasets.downloadThroughput ? (
-                          <Box sx={{ width: '100%', height: 300 }}>
+                          <Box sx={{ width: '100%', height: 350 }}>
                             <LineChart
                               xAxis={[{
                                 scaleType: 'point',
                                 data: chartData.labels,
+                                tickLabelStyle: { fontSize: 12 },
+                                label: 'Time',
+                              }]}
+                              yAxis={[{
+                                label: 'Throughput (Mbps)',
+                                tickLabelStyle: { fontSize: 12 },
                               }]}
                               series={[
                                 {
                                   data: chartData.datasets.downloadThroughput,
-                                  label: 'Download (Mbps)',
+                                  label: 'Download',
                                   color: '#1976d2',
+                                  curve: 'linear',
                                 },
                                 {
                                   data: chartData.datasets.uploadThroughput,
-                                  label: 'Upload (Mbps)',
+                                  label: 'Upload',
                                   color: '#2e7d32',
+                                  curve: 'linear',
                                 },
                               ]}
                               width={undefined}
-                              height={300}
-                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                              height={350}
+                              margin={{ left: 80, right: 40, top: 40, bottom: 80 }}
+                              grid={{ horizontal: true, vertical: true }}
+                              slotProps={{
+                                legend: {
+                                  direction: 'row',
+                                  position: { vertical: 'top', horizontal: 'middle' },
+                                  padding: 0,
+                                },
+                              }}
                             />
                           </Box>
                         ) : (
@@ -967,32 +987,49 @@ const SSIDAnalyzer = () => {
                       {(() => {
                         const chartData = getPerformanceChartData();
                         return chartData.labels.length > 0 && chartData.datasets.networkLatency ? (
-                          <Box sx={{ width: '100%', height: 300 }}>
+                          <Box sx={{ width: '100%', height: 350 }}>
                             <LineChart
                               xAxis={[{
                                 scaleType: 'point',
                                 data: chartData.labels,
+                                tickLabelStyle: { fontSize: 12 },
+                                label: 'Time',
+                              }]}
+                              yAxis={[{
+                                label: 'Latency (ms)',
+                                tickLabelStyle: { fontSize: 12 },
                               }]}
                               series={[
                                 {
                                   data: chartData.datasets.networkLatency,
-                                  label: 'Network Latency (ms)',
+                                  label: 'Network',
                                   color: '#1976d2',
+                                  curve: 'linear',
                                 },
                                 {
                                   data: chartData.datasets.internetLatency,
-                                  label: 'Internet Latency (ms)',
+                                  label: 'Internet',
                                   color: '#dc004e',
+                                  curve: 'linear',
                                 },
                                 {
                                   data: chartData.datasets.dnsLatency,
-                                  label: 'DNS Latency (ms)',
+                                  label: 'DNS',
                                   color: '#ed6c02',
+                                  curve: 'linear',
                                 },
                               ]}
                               width={undefined}
-                              height={300}
-                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                              height={350}
+                              margin={{ left: 80, right: 40, top: 40, bottom: 80 }}
+                              grid={{ horizontal: true, vertical: true }}
+                              slotProps={{
+                                legend: {
+                                  direction: 'row',
+                                  position: { vertical: 'top', horizontal: 'middle' },
+                                  padding: 0,
+                                },
+                              }}
                             />
                           </Box>
                         ) : (
@@ -1016,32 +1053,49 @@ const SSIDAnalyzer = () => {
                       {(() => {
                         const chartData = getPerformanceChartData();
                         return chartData.labels.length > 0 && (chartData.datasets.packetLoss || chartData.datasets.jitter || chartData.datasets.stabilityScore) ? (
-                          <Box sx={{ width: '100%', height: 300 }}>
+                          <Box sx={{ width: '100%', height: 350 }}>
                             <LineChart
                               xAxis={[{
                                 scaleType: 'point',
                                 data: chartData.labels,
+                                tickLabelStyle: { fontSize: 12 },
+                                label: 'Time',
+                              }]}
+                              yAxis={[{
+                                label: 'Quality Metrics',
+                                tickLabelStyle: { fontSize: 12 },
                               }]}
                               series={[
                                 ...(chartData.datasets.packetLoss ? [{
                                   data: chartData.datasets.packetLoss,
                                   label: 'Packet Loss (%)',
                                   color: '#dc004e',
+                                  curve: 'linear',
                                 }] : []),
                                 ...(chartData.datasets.jitter ? [{
                                   data: chartData.datasets.jitter,
                                   label: 'Jitter (ms)',
                                   color: '#ed6c02',
+                                  curve: 'linear',
                                 }] : []),
                                 ...(chartData.datasets.stabilityScore ? [{
                                   data: chartData.datasets.stabilityScore,
                                   label: 'Stability Score',
                                   color: '#2e7d32',
+                                  curve: 'linear',
                                 }] : []),
                               ]}
                               width={undefined}
-                              height={300}
-                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                              height={350}
+                              margin={{ left: 80, right: 40, top: 40, bottom: 80 }}
+                              grid={{ horizontal: true, vertical: true }}
+                              slotProps={{
+                                legend: {
+                                  direction: 'row',
+                                  position: { vertical: 'top', horizontal: 'middle' },
+                                  padding: 0,
+                                },
+                              }}
                             />
                           </Box>
                         ) : (
