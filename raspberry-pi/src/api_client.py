@@ -531,7 +531,15 @@ class APIClient:
                 'internetLatency': connection_data.get('internet_latency'),
                 'packetLoss': connection_data.get('packet_loss'),
                 'uptime': connection_data.get('uptime'),
-                'timestamp': connection_data.get('timestamp')
+                'timestamp': connection_data.get('timestamp'),
+                # Phase 3: New performance metrics
+                'downloadThroughput': connection_data.get('download_throughput'),
+                'uploadThroughput': connection_data.get('upload_throughput'),
+                'jitter': connection_data.get('jitter'),
+                'dnsLatency': connection_data.get('dns_latency'),
+                'retransmissions': connection_data.get('retransmissions', 0),
+                'connectionErrors': connection_data.get('connection_errors', 0),
+                'stabilityScore': connection_data.get('stability_score')
             }
             
             response = self._post('ssid-analyzer/connection', payload)

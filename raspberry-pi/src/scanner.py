@@ -454,6 +454,14 @@ class WiFiScanner:
                 # Get connection uptime
                 uptime_info = self._get_connection_uptime()
                 connection_info.update(uptime_info)
+                
+                # Phase 3: Get performance metrics
+                throughput_info = self._measure_throughput()
+                connection_info.update(throughput_info)
+                
+                # Calculate stability score
+                stability_score = self._calculate_stability_score(connection_info)
+                connection_info['stability_score'] = stability_score
             else:
                 connection_info = {
                     'connection_status': 'disconnected',
@@ -729,3 +737,218 @@ class WiFiScanner:
             return None
         except (ValueError, TypeError):
             return None 
+    
+    # Phase 3: Performance measurement methods
+    def _get_network_latency(self) -> Dict:
+        """Get network latency measurements"""
+        latency_info = {}
+        
+        try:
+            # Test network latency to local gateway
+            gateway_result = subprocess.run(
+                ['ping', '-c', '3', '-W', '2', '8.8.8.8'],
+                capture_output=True, text=True
+            )
+            
+            if gateway_result.returncode == 0:
+                # Parse ping output for average latency
+                avg_match = re.search(r'rtt min/avg/max/mdev = [0-9.]+/([0-9.]+)/[0-9.]+/[0-9.]+ ms', gateway_result.stdout)
+                if avg_match:
+                    latency_info['internet_latency'] = float(avg_match.group(1))
+            
+            # Test local network latency to gateway
+            gateway_ip_result = subprocess.run(['ip', 'route', 'get', '1.1.1.1'], capture_output=True, text=True)
+            if gateway_ip_result.returncode == 0:
+                gateway_match = re.search(r'via ([0-9.]+)', gateway_ip_result.stdout)
+                if gateway_match:
+                    gateway_ip = gateway_match.group(1)
+                    local_result = subprocess.run(
+                        ['ping', '-c', '3', '-W', '1', gateway_ip],
+                        capture_output=True, text=True
+                    )
+                    if local_result.returncode == 0:
+                        avg_match = re.search(r'rtt min/avg/max/mdev = [0-9.]+/([0-9.]+)/[0-9.]+/[0-9.]+ ms', local_result.stdout)
+                        if avg_match:
+                            latency_info['network_latency'] = float(avg_match.group(1))
+                            
+            # Test DNS latency
+            dns_result = subprocess.run(
+                ['dig', '+time=2', '@8.8.8.8', 'google.com'],
+                capture_output=True, text=True
+            )
+            if dns_result.returncode == 0:
+                time_match = re.search(r'Query time: ([0-9]+) msec', dns_result.stdout)
+                if time_match:
+                    latency_info['dns_latency'] = float(time_match.group(1))
+                    
+        except Exception as e:
+            logger.error(f"Error measuring network latency: {e}")
+            
+        return latency_info
+    
+    def _get_connection_quality(self) -> Dict:
+        """Get WiFi connection quality metrics"""
+        quality_info = {}
+        
+        try:
+            # Get link quality from /proc/net/wireless
+            with open('/proc/net/wireless', 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if self.interface in line:
+                        parts = line.split()
+                        if len(parts) >= 3:
+                            # Quality is typically in format like "60/100"
+                            quality_str = parts[2].replace('.', '')
+                            quality_info['quality'] = int(quality_str) if quality_str.isdigit() else None
+                        break
+                        
+            # Get packet loss using ping
+            ping_result = subprocess.run(
+                ['ping', '-c', '10', '-W', '2', '8.8.8.8'],
+                capture_output=True, text=True
+            )
+            if ping_result.returncode == 0:
+                loss_match = re.search(r'([0-9]+)% packet loss', ping_result.stdout)
+                if loss_match:
+                    quality_info['packet_loss'] = float(loss_match.group(1))
+                    
+                # Extract jitter (mdev) if available
+                jitter_match = re.search(r'rtt min/avg/max/mdev = [0-9.]+/[0-9.]+/[0-9.]+/([0-9.]+) ms', ping_result.stdout)
+                if jitter_match:
+                    quality_info['jitter'] = float(jitter_match.group(1))
+                    
+        except Exception as e:
+            logger.error(f"Error measuring connection quality: {e}")
+            
+        return quality_info
+    
+    def _get_connection_uptime(self) -> Dict:
+        """Get connection uptime information"""
+        uptime_info = {}
+        
+        try:
+            # Get network interface uptime from /proc/net/dev
+            with open('/proc/net/dev', 'r') as f:
+                content = f.read()
+                if self.interface in content:
+                    # Interface is up - use system uptime as approximation
+                    with open('/proc/uptime', 'r') as uptime_file:
+                        uptime_seconds = float(uptime_file.read().split()[0])
+                        uptime_info['uptime'] = int(uptime_seconds)
+                        
+        except Exception as e:
+            logger.error(f"Error getting connection uptime: {e}")
+            
+        return uptime_info
+    
+    def _measure_throughput(self) -> Dict:
+        """Measure network throughput using iperf3 or basic methods"""
+        throughput_info = {}
+        
+        try:
+            # Try using speedtest-cli if available
+            speedtest_result = subprocess.run(
+                ['speedtest-cli', '--simple'],
+                capture_output=True, text=True, timeout=60
+            )
+            
+            if speedtest_result.returncode == 0:
+                # Parse speedtest output
+                for line in speedtest_result.stdout.split('\n'):
+                    if 'Download:' in line:
+                        download_match = re.search(r'Download: ([0-9.]+) Mbit/s', line)
+                        if download_match:
+                            throughput_info['download_throughput'] = float(download_match.group(1))
+                    elif 'Upload:' in line:
+                        upload_match = re.search(r'Upload: ([0-9.]+) Mbit/s', line)
+                        if upload_match:
+                            throughput_info['upload_throughput'] = float(upload_match.group(1))
+            else:
+                # Fallback: basic throughput estimate using wget
+                download_result = subprocess.run(
+                    ['wget', '--progress=dot', '--tries=1', '--timeout=10', 
+                     'http://speedtest.ftp.otenet.gr/files/test1Mb.db', '-O', '/dev/null'],
+                    capture_output=True, text=True, timeout=30
+                )
+                
+                if download_result.returncode == 0:
+                    # Parse wget speed output
+                    speed_match = re.search(r'\(([0-9.]+) [KMG]B/s\)', download_result.stderr)
+                    if speed_match:
+                        speed_str = speed_match.group(1)
+                        # Convert to Mbps (rough estimate)
+                        speed_val = float(speed_str)
+                        if 'MB/s' in download_result.stderr:
+                            throughput_info['download_throughput'] = speed_val * 8  # MB/s to Mbps
+                        elif 'KB/s' in download_result.stderr:
+                            throughput_info['download_throughput'] = speed_val * 8 / 1000  # KB/s to Mbps
+                            
+        except Exception as e:
+            logger.error(f"Error measuring throughput: {e}")
+            
+        return throughput_info
+    
+    def _calculate_stability_score(self, connection_data: Dict) -> float:
+        """Calculate a stability score based on connection metrics"""
+        try:
+            score = 100.0  # Start with perfect score
+            
+            # Signal strength impact (0-40 points)
+            signal = connection_data.get('signal_strength', -100)
+            if signal >= -50:
+                signal_score = 40
+            elif signal >= -60:
+                signal_score = 30
+            elif signal >= -70:
+                signal_score = 20
+            elif signal >= -80:
+                signal_score = 10
+            else:
+                signal_score = 0
+            
+            # Latency impact (0-20 points)
+            latency = connection_data.get('network_latency', 0)
+            if latency <= 10:
+                latency_score = 20
+            elif latency <= 20:
+                latency_score = 15
+            elif latency <= 50:
+                latency_score = 10
+            elif latency <= 100:
+                latency_score = 5
+            else:
+                latency_score = 0
+                
+            # Packet loss impact (0-20 points)  
+            packet_loss = connection_data.get('packet_loss', 0)
+            if packet_loss == 0:
+                loss_score = 20
+            elif packet_loss <= 1:
+                loss_score = 15
+            elif packet_loss <= 5:
+                loss_score = 10
+            elif packet_loss <= 10:
+                loss_score = 5
+            else:
+                loss_score = 0
+                
+            # Quality impact (0-20 points)
+            quality = connection_data.get('quality', 0)
+            if quality >= 80:
+                quality_score = 20
+            elif quality >= 60:
+                quality_score = 15
+            elif quality >= 40:
+                quality_score = 10
+            elif quality >= 20:
+                quality_score = 5
+            else:
+                quality_score = 0
+                
+            total_score = signal_score + latency_score + loss_score + quality_score
+            return min(100.0, max(0.0, total_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating stability score: {e}")
+            return 50.0  # Default middle score

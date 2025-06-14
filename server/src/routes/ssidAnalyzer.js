@@ -234,7 +234,15 @@ router.post('/connection', authenticateMonitor, async (req, res) => {
       disconnectionReason,
       networkLatency,
       internetLatency,
-      packetLoss
+      packetLoss,
+      // Phase 3: New performance metrics
+      downloadThroughput,
+      uploadThroughput,
+      jitter,
+      dnsLatency,
+      retransmissions,
+      connectionErrors,
+      stabilityScore
     } = req.body;
 
     // Validate required fields
@@ -264,7 +272,15 @@ router.post('/connection', authenticateMonitor, async (req, res) => {
       disconnectionReason,
       networkLatency,
       internetLatency,
-      packetLoss
+      packetLoss,
+      // Phase 3: New performance metrics
+      downloadThroughput,
+      uploadThroughput,
+      jitter,
+      dnsLatency,
+      retransmissions,
+      connectionErrors,
+      stabilityScore
     });
 
     await connectionData.save();
@@ -293,6 +309,159 @@ router.post('/connection', authenticateMonitor, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to record connection status'
+    });
+  }
+});
+
+// Phase 3: Get performance metrics for a monitor
+router.get('/performance/:monitorId', async (req, res) => {
+  try {
+    const { monitorId } = req.params;
+    const { period = '24h' } = req.query;
+    
+    const performanceData = await SSIDConnection.getPerformanceMetrics(monitorId, period);
+    
+    if (!performanceData || performanceData.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          monitorId,
+          period,
+          message: 'No performance data available',
+          metrics: {}
+        }
+      });
+    }
+
+    const metrics = performanceData[0];
+    
+    res.json({
+      success: true,
+      data: {
+        monitorId,
+        period,
+        count: metrics.count,
+        metrics: {
+          latency: {
+            network: {
+              avg: metrics.avgNetworkLatency,
+              min: metrics.minNetworkLatency,
+              max: metrics.maxNetworkLatency
+            },
+            internet: {
+              avg: metrics.avgInternetLatency,
+              min: metrics.minInternetLatency,
+              max: metrics.maxInternetLatency
+            },
+            dns: {
+              avg: metrics.avgDnsLatency
+            }
+          },
+          throughput: {
+            download: {
+              avg: metrics.avgDownloadThroughput,
+              min: metrics.minDownloadThroughput,
+              max: metrics.maxDownloadThroughput
+            },
+            upload: {
+              avg: metrics.avgUploadThroughput,
+              min: metrics.minUploadThroughput,
+              max: metrics.maxUploadThroughput
+            }
+          },
+          quality: {
+            packetLoss: {
+              avg: metrics.avgPacketLoss,
+              min: metrics.minPacketLoss,
+              max: metrics.maxPacketLoss
+            },
+            jitter: {
+              avg: metrics.avgJitter
+            },
+            stabilityScore: {
+              avg: metrics.avgStabilityScore
+            }
+          },
+          reliability: {
+            retransmissions: metrics.totalRetransmissions,
+            connectionErrors: metrics.totalConnectionErrors
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error getting performance metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get performance metrics'
+    });
+  }
+});
+
+// Phase 3: Get performance history for charts
+router.get('/performance/:monitorId/history', async (req, res) => {
+  try {
+    const { monitorId } = req.params;
+    const { period = '24h', metric = 'all' } = req.query;
+    
+    const historyData = await SSIDConnection.getPerformanceHistory(monitorId, period, metric);
+    
+    if (!historyData || historyData.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          monitorId,
+          period,
+          metric,
+          count: 0,
+          chartData: {
+            labels: [],
+            datasets: {}
+          }
+        }
+      });
+    }
+
+    // Format data for charts
+    const labels = historyData.map(item => item.timestamp);
+    const datasets = {};
+    
+    if (metric === 'all' || metric === 'latency') {
+      datasets.networkLatency = historyData.map(item => item.networkLatency);
+      datasets.internetLatency = historyData.map(item => item.internetLatency);
+      datasets.dnsLatency = historyData.map(item => item.dnsLatency);
+    }
+    
+    if (metric === 'all' || metric === 'throughput') {
+      datasets.downloadThroughput = historyData.map(item => item.downloadThroughput);
+      datasets.uploadThroughput = historyData.map(item => item.uploadThroughput);
+    }
+    
+    if (metric === 'all' || metric === 'quality') {
+      datasets.packetLoss = historyData.map(item => item.packetLoss);
+      datasets.jitter = historyData.map(item => item.jitter);
+      datasets.stabilityScore = historyData.map(item => item.stabilityScore);
+      datasets.signalStrength = historyData.map(item => item.signalStrength);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        monitorId,
+        period,
+        metric,
+        count: historyData.length,
+        chartData: {
+          labels,
+          datasets
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error getting performance history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get performance history'
     });
   }
 });
