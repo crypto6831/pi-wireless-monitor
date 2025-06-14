@@ -23,14 +23,14 @@ export const updateMonitorPosition = createAsyncThunk(
   async ({ monitorId, position }) => {
     const response = await apiService.updateMonitorPosition(monitorId, position);
     console.log('Redux updateMonitorPosition: API response:', response.data);
+    
+    // Extract data from API response structure
+    const { monitor } = response.data;
     return { 
       monitorId, 
-      position: {
-        x: position.x,
-        y: position.y
-      },
-      locationId: position.locationId,
-      floorId: position.floorId
+      position: monitor.position,
+      locationId: monitor.locationId,
+      floorId: monitor.floorId
     };
   }
 );

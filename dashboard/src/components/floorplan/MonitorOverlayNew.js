@@ -92,16 +92,18 @@ const MonitorOverlayNew = ({
       const x = (e.clientX - rect.left - dragOffset.x - viewSettings.panX) / viewSettings.zoom;
       const y = (e.clientY - rect.top - dragOffset.y - viewSettings.panY) / viewSettings.zoom;
       
-      // Update position via API
-      await apiService.updateMonitorPosition(draggedMonitor._id, {
-        x: Math.round(x),
-        y: Math.round(y),
-        locationId: selectedLocation._id,
-        floorId: selectedFloor._id,
-      });
+      // Update position via Redux thunk (handles both API call and state update)
+      await dispatch(updateMonitorPosition({
+        monitorId: draggedMonitor._id,
+        position: {
+          x: Math.round(x),
+          y: Math.round(y),
+          locationId: selectedLocation._id,
+          floorId: selectedFloor._id,
+        }
+      })).unwrap();
       
-      // Refresh monitors list
-      dispatch(fetchMonitors());
+      // No need to call fetchMonitors() - Redux thunk handles state update
       
       if (onMonitorPositionChange) {
         onMonitorPositionChange(draggedMonitor, { x: Math.round(x), y: Math.round(y) });
