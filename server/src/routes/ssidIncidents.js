@@ -1,7 +1,96 @@
 const express = require('express');
 const router = express.Router();
 const SSIDIncident = require('../models/SSIDIncident');
+const Alert = require('../models/Alert');
 const { authenticateMonitor } = require('../middleware/auth');
+
+// Helper function to create alert from incident
+const createIncidentAlert = async (incident, monitorId) => {
+  try {
+    // Map incident types to alert types
+    const alertTypeMap = {
+      'disconnection': 'ssid_disconnection',
+      'reconnection': 'ssid_reconnection',
+      'signal_drop': 'ssid_signal_drop',
+      'timeout': 'ssid_timeout'
+    };
+
+    // Determine alert severity based on incident severity and type
+    let alertSeverity = incident.severity || 'medium';
+    if (incident.incidentType === 'disconnection') {
+      alertSeverity = 'high'; // Disconnections are always high priority
+    }
+
+    // Create alert message
+    const alertMessages = {
+      'disconnection': `WiFi disconnection detected on SSID "${incident.ssid}"`,
+      'reconnection': `WiFi reconnected to SSID "${incident.ssid}"`,
+      'signal_drop': `Signal strength dropped significantly on SSID "${incident.ssid}"`,
+      'timeout': `Connection timeout detected on SSID "${incident.ssid}"`
+    };
+
+    // Create alert details
+    const details = {
+      incidentId: incident._id,
+      ssid: incident.ssid,
+      incidentType: incident.incidentType,
+      threshold: incident.triggerCondition?.threshold,
+      value: incident.triggerCondition?.signalStrength,
+      previousValue: incident.triggerCondition?.previousSignalStrength,
+      startTime: incident.startTime,
+      metadata: incident.metadata
+    };
+
+    // Create the alert
+    const alert = new Alert({
+      monitorId,
+      type: alertTypeMap[incident.incidentType] || 'custom',
+      severity: alertSeverity,
+      message: alertMessages[incident.incidentType] || `SSID incident: ${incident.incidentType}`,
+      details,
+      status: 'active',
+      timestamp: new Date(),
+      source: 'ssid_monitor'
+    });
+
+    await alert.save();
+    return alert;
+
+  } catch (error) {
+    console.error('Error creating incident alert:', error);
+    return null;
+  }
+};
+
+// Helper function to resolve incident alert
+const resolveIncidentAlert = async (incident, monitorId) => {
+  try {
+    // Find the related alert
+    const alert = await Alert.findOne({
+      monitorId,
+      'details.incidentId': incident._id,
+      status: 'active'
+    });
+
+    if (alert) {
+      alert.status = 'resolved';
+      alert.resolvedAt = new Date();
+      alert.resolution = {
+        duration: incident.duration,
+        resolvedBy: 'auto_resolution',
+        finalStatus: 'incident_resolved'
+      };
+      
+      await alert.save();
+      return alert;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error resolving incident alert:', error);
+    return null;
+  }
+};
 
 // Get incidents for a specific monitor
 router.get('/monitor/:monitorId', async (req, res) => {
@@ -152,12 +241,23 @@ router.post('/', authenticateMonitor, async (req, res) => {
 
     await incident.save();
 
-    // Emit real-time update
+    // Create corresponding alert
+    const alert = await createIncidentAlert(incident, req.monitor.monitorId);
+
+    // Emit real-time updates
     if (req.io) {
       req.io.emit('incident:new', {
         monitorId: req.monitor.monitorId,
         incident: incident.toObject()
       });
+
+      // Emit alert notification if alert was created
+      if (alert) {
+        req.io.emit('alert:new', {
+          monitorId: req.monitor.monitorId,
+          alert: alert.toObject()
+        });
+      }
     }
 
     res.status(201).json({
@@ -217,12 +317,23 @@ router.patch('/:incidentId/resolve', authenticateMonitor, async (req, res) => {
     incident.severity = incident.calculateSeverity();
     await incident.save();
 
-    // Emit real-time update
+    // Resolve corresponding alert
+    const resolvedAlert = await resolveIncidentAlert(incident, req.monitor.monitorId);
+
+    // Emit real-time updates
     if (req.io) {
       req.io.emit('incident:resolved', {
         monitorId: req.monitor.monitorId,
         incident: incident.toObject()
       });
+
+      // Emit alert resolution if alert was resolved
+      if (resolvedAlert) {
+        req.io.emit('alert:resolved', {
+          monitorId: req.monitor.monitorId,
+          alert: resolvedAlert.toObject()
+        });
+      }
     }
 
     res.json({

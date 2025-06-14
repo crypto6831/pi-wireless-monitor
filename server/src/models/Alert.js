@@ -23,6 +23,10 @@ const alertSchema = new mongoose.Schema({
       'new_network',
       'security_change',
       'bandwidth_low',
+      'ssid_disconnection',
+      'ssid_signal_drop',
+      'ssid_reconnection',
+      'ssid_timeout',
       'custom'
     ],
     index: true,

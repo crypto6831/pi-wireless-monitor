@@ -15,6 +15,7 @@ import ChannelAnalyzer from './pages/ChannelAnalyzer';
 import SSIDAnalyzer from './pages/SSIDAnalyzer';
 import NotificationPanel from './components/common/NotificationPanel';
 import socketService from './services/socket';
+import alertService from './services/alertService';
 import { fetchMonitors } from './store/slices/monitorsSlice';
 import { fetchActiveAlerts } from './store/slices/alertsSlice';
 import './App.css';
@@ -25,6 +26,9 @@ function App() {
   useEffect(() => {
     // Connect to socket
     socketService.connect();
+    
+    // Connect to alert service for real-time notifications
+    alertService.connect();
 
     // Load initial data
     dispatch(fetchMonitors());
@@ -33,6 +37,7 @@ function App() {
     // Cleanup on unmount
     return () => {
       socketService.disconnect();
+      alertService.disconnect();
     };
   }, [dispatch]);
 

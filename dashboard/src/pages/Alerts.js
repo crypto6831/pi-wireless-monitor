@@ -98,7 +98,13 @@ function Alerts() {
       'monitor_offline': 'Monitor Offline',
       'network_change': 'Network Change',
       'device_new': 'New Device',
-      'device_offline': 'Device Offline'
+      'device_offline': 'Device Offline',
+      'ssid_disconnection': 'WiFi Disconnection',
+      'ssid_signal_drop': 'Signal Drop',
+      'ssid_reconnection': 'WiFi Reconnection',
+      'ssid_timeout': 'Connection Timeout',
+      'weak_signal': 'Weak Signal',
+      'network_lost': 'Network Lost'
     };
     return labels[type] || type;
   };
@@ -453,7 +459,19 @@ function Alerts() {
                       {locationInfo.floor}
                     </Typography>
                   </TableCell>
-                  <TableCell>{alert.message}</TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2">
+                        {alert.message}
+                      </Typography>
+                      {alert.details?.ssid && (
+                        <Typography variant="caption" color="text.secondary">
+                          SSID: {alert.details.ssid}
+                          {alert.details.value && ` | Signal: ${alert.details.value} dBm`}
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <Typography variant="body2">
                       {new Date(alert.createdAt).toLocaleString()}
