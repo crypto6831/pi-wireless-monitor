@@ -354,7 +354,9 @@ router.get('/performance/:monitorId', async (req, res) => {
               max: metrics.maxInternetLatency
             },
             dns: {
-              avg: metrics.avgDnsLatency
+              avg: metrics.avgDnsLatency,
+              min: metrics.minDnsLatency,
+              max: metrics.maxDnsLatency
             }
           },
           throughput: {
