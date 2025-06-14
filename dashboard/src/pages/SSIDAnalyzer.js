@@ -55,6 +55,13 @@ const SSIDAnalyzer = () => {
   const [timeRange, setTimeRange] = useState('24h');
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
+  // Phase 3.2: Performance analytics state
+  const [performanceData, setPerformanceData] = useState(null);
+  const [performanceHistory, setPerformanceHistory] = useState([]);
+  const [performanceTimeRange, setPerformanceTimeRange] = useState('24h');
+  const [performanceMetric, setPerformanceMetric] = useState('all');
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+
   const monitors = useSelector((state) => state.monitors.list);
 
   // Helper functions
@@ -98,6 +105,53 @@ const SSIDAnalyzer = () => {
     if (hours > 0) return `${hours}h ${minutes}m`;
     if (minutes > 0) return `${minutes}m ${secs}s`;
     return `${secs}s`;
+  };
+
+  // Phase 3.2: Performance formatting helpers
+  const formatThroughput = (value) => {
+    if (!value) return 'N/A';
+    if (value >= 1000) return `${(value / 1000).toFixed(2)} Gbps`;
+    return `${value.toFixed(1)} Mbps`;
+  };
+
+  const formatLatency = (value) => {
+    if (!value) return 'N/A';
+    return `${value.toFixed(1)} ms`;
+  };
+
+  const formatPercentage = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value.toFixed(1)}%`;
+  };
+
+  const getPerformanceQuality = (metric, value) => {
+    if (!value) return { label: 'Unknown', color: 'default' };
+    
+    switch (metric) {
+      case 'latency':
+        if (value <= 10) return { label: 'Excellent', color: 'success' };
+        if (value <= 20) return { label: 'Good', color: 'success' };
+        if (value <= 50) return { label: 'Fair', color: 'warning' };
+        if (value <= 100) return { label: 'Poor', color: 'error' };
+        return { label: 'Very Poor', color: 'error' };
+      
+      case 'throughput':
+        if (value >= 100) return { label: 'Excellent', color: 'success' };
+        if (value >= 50) return { label: 'Good', color: 'success' };
+        if (value >= 20) return { label: 'Fair', color: 'warning' };
+        if (value >= 5) return { label: 'Poor', color: 'error' };
+        return { label: 'Very Poor', color: 'error' };
+      
+      case 'packetLoss':
+        if (value === 0) return { label: 'Perfect', color: 'success' };
+        if (value <= 0.5) return { label: 'Excellent', color: 'success' };
+        if (value <= 2) return { label: 'Good', color: 'warning' };
+        if (value <= 5) return { label: 'Fair', color: 'warning' };
+        return { label: 'Poor', color: 'error' };
+      
+      default:
+        return { label: 'Unknown', color: 'default' };
+    }
   };
 
   const getIncidentSeverityColor = (severity) => {
@@ -222,6 +276,55 @@ const SSIDAnalyzer = () => {
     }
   };
 
+  // Phase 3.2: Fetch performance analytics data
+  const fetchPerformanceAnalytics = async (monitorId) => {
+    try {
+      setPerformanceLoading(true);
+      
+      // Fetch performance metrics and history in parallel
+      const [metricsResponse, historyResponse] = await Promise.all([
+        apiService.getSSIDPerformance(monitorId, { period: performanceTimeRange }),
+        apiService.getSSIDPerformanceHistory(monitorId, { 
+          period: performanceTimeRange, 
+          metric: performanceMetric 
+        })
+      ]);
+
+      if (metricsResponse.data.success) {
+        setPerformanceData(metricsResponse.data.data);
+      }
+
+      if (historyResponse.data.success) {
+        setPerformanceHistory(historyResponse.data.data);
+      }
+
+    } catch (err) {
+      console.error('Error fetching performance analytics:', err);
+    } finally {
+      setPerformanceLoading(false);
+    }
+  };
+
+  // Prepare chart data for performance metrics
+  const getPerformanceChartData = () => {
+    if (!performanceHistory || !performanceHistory.chartData || performanceHistory.chartData.labels.length === 0) {
+      return { labels: [], datasets: {} };
+    }
+
+    const { labels, datasets } = performanceHistory.chartData;
+    
+    // Format timestamps for display
+    const formattedLabels = labels.map(timestamp => {
+      const date = new Date(timestamp);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    });
+
+    return {
+      labels: formattedLabels,
+      datasets
+    };
+  };
+
   useEffect(() => {
     fetchOverview();
     
@@ -240,14 +343,24 @@ const SSIDAnalyzer = () => {
     if (selectedMonitor) {
       fetchConnectionStatus(selectedMonitor);
       fetchIncidentAnalysis(selectedMonitor);
+      fetchPerformanceAnalytics(selectedMonitor);
     } else {
       setConnectionStatus(null);
       setIncidentData([]);
       setIncidentStats(null);
       setActiveIncidents([]);
       setTimelineData([]);
+      setPerformanceData(null);
+      setPerformanceHistory([]);
     }
   }, [selectedMonitor, timeRange]);
+
+  // Phase 3.2: Performance analytics effect
+  useEffect(() => {
+    if (selectedMonitor) {
+      fetchPerformanceAnalytics(selectedMonitor);
+    }
+  }, [selectedMonitor, performanceTimeRange, performanceMetric]);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 2 }}>
@@ -667,6 +780,363 @@ const SSIDAnalyzer = () => {
                 </Card>
               </Grid>
             </Grid>
+          )}
+        </Paper>
+      )}
+
+      {/* Phase 3.2: Performance Analytics Section */}
+      {selectedMonitor && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">
+              Performance Analytics - {monitors.find(m => m.monitorId === selectedMonitor)?.name}
+            </Typography>
+            <Box display="flex" gap={2}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Metric</InputLabel>
+                <Select
+                  value={performanceMetric}
+                  onChange={(e) => setPerformanceMetric(e.target.value)}
+                  label="Metric"
+                >
+                  <MenuItem value="all">All Metrics</MenuItem>
+                  <MenuItem value="latency">Latency</MenuItem>
+                  <MenuItem value="throughput">Throughput</MenuItem>
+                  <MenuItem value="quality">Quality</MenuItem>
+                </Select>
+              </FormControl>
+              <ToggleButtonGroup
+                value={performanceTimeRange}
+                exclusive
+                onChange={(e, newValue) => newValue && setPerformanceTimeRange(newValue)}
+                size="small"
+              >
+                <ToggleButton value="1h">1H</ToggleButton>
+                <ToggleButton value="6h">6H</ToggleButton>
+                <ToggleButton value="24h">24H</ToggleButton>
+                <ToggleButton value="7d">7D</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </Box>
+
+          {performanceLoading && (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!performanceLoading && performanceData && (
+            <Grid container spacing={3}>
+              {/* Performance Summary Cards */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SpeedIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Download Speed
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6">
+                      {formatThroughput(performanceData.metrics?.throughput?.download?.avg)}
+                    </Typography>
+                    <Chip
+                      label={getPerformanceQuality('throughput', performanceData.metrics?.throughput?.download?.avg).label}
+                      color={getPerformanceQuality('throughput', performanceData.metrics?.throughput?.download?.avg).color}
+                      size="small"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SpeedIcon sx={{ mr: 1, color: 'success.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Upload Speed
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6">
+                      {formatThroughput(performanceData.metrics?.throughput?.upload?.avg)}
+                    </Typography>
+                    <Chip
+                      label={getPerformanceQuality('throughput', performanceData.metrics?.throughput?.upload?.avg).label}
+                      color={getPerformanceQuality('throughput', performanceData.metrics?.throughput?.upload?.avg).color}
+                      size="small"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <NetworkCheckIcon sx={{ mr: 1, color: 'info.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Latency
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6">
+                      {formatLatency(performanceData.metrics?.latency?.network?.avg)}
+                    </Typography>
+                    <Chip
+                      label={getPerformanceQuality('latency', performanceData.metrics?.latency?.network?.avg).label}
+                      color={getPerformanceQuality('latency', performanceData.metrics?.latency?.network?.avg).color}
+                      size="small"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Packet Loss
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6">
+                      {formatPercentage(performanceData.metrics?.quality?.packetLoss?.avg)}
+                    </Typography>
+                    <Chip
+                      label={getPerformanceQuality('packetLoss', performanceData.metrics?.quality?.packetLoss?.avg).label}
+                      color={getPerformanceQuality('packetLoss', performanceData.metrics?.quality?.packetLoss?.avg).color}
+                      size="small"
+                    />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Performance Charts */}
+              {(performanceMetric === 'all' || performanceMetric === 'throughput') && (
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Throughput ({performanceTimeRange})
+                      </Typography>
+                      {(() => {
+                        const chartData = getPerformanceChartData();
+                        return chartData.labels.length > 0 && chartData.datasets.downloadThroughput ? (
+                          <Box sx={{ width: '100%', height: 300 }}>
+                            <LineChart
+                              xAxis={[{
+                                scaleType: 'point',
+                                data: chartData.labels,
+                              }]}
+                              series={[
+                                {
+                                  data: chartData.datasets.downloadThroughput,
+                                  label: 'Download (Mbps)',
+                                  color: '#1976d2',
+                                },
+                                {
+                                  data: chartData.datasets.uploadThroughput,
+                                  label: 'Upload (Mbps)',
+                                  color: '#2e7d32',
+                                },
+                              ]}
+                              width={undefined}
+                              height={300}
+                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                            />
+                          </Box>
+                        ) : (
+                          <Alert severity="info">
+                            No throughput data available for the selected time range.
+                          </Alert>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {(performanceMetric === 'all' || performanceMetric === 'latency') && (
+                <Grid item xs={12} md={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Latency ({performanceTimeRange})
+                      </Typography>
+                      {(() => {
+                        const chartData = getPerformanceChartData();
+                        return chartData.labels.length > 0 && chartData.datasets.networkLatency ? (
+                          <Box sx={{ width: '100%', height: 300 }}>
+                            <LineChart
+                              xAxis={[{
+                                scaleType: 'point',
+                                data: chartData.labels,
+                              }]}
+                              series={[
+                                {
+                                  data: chartData.datasets.networkLatency,
+                                  label: 'Network Latency (ms)',
+                                  color: '#1976d2',
+                                },
+                                {
+                                  data: chartData.datasets.internetLatency,
+                                  label: 'Internet Latency (ms)',
+                                  color: '#dc004e',
+                                },
+                                {
+                                  data: chartData.datasets.dnsLatency,
+                                  label: 'DNS Latency (ms)',
+                                  color: '#ed6c02',
+                                },
+                              ]}
+                              width={undefined}
+                              height={300}
+                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                            />
+                          </Box>
+                        ) : (
+                          <Alert severity="info">
+                            No latency data available for the selected time range.
+                          </Alert>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {(performanceMetric === 'all' || performanceMetric === 'quality') && (
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Quality Metrics ({performanceTimeRange})
+                      </Typography>
+                      {(() => {
+                        const chartData = getPerformanceChartData();
+                        return chartData.labels.length > 0 && (chartData.datasets.packetLoss || chartData.datasets.jitter || chartData.datasets.stabilityScore) ? (
+                          <Box sx={{ width: '100%', height: 300 }}>
+                            <LineChart
+                              xAxis={[{
+                                scaleType: 'point',
+                                data: chartData.labels,
+                              }]}
+                              series={[
+                                ...(chartData.datasets.packetLoss ? [{
+                                  data: chartData.datasets.packetLoss,
+                                  label: 'Packet Loss (%)',
+                                  color: '#dc004e',
+                                }] : []),
+                                ...(chartData.datasets.jitter ? [{
+                                  data: chartData.datasets.jitter,
+                                  label: 'Jitter (ms)',
+                                  color: '#ed6c02',
+                                }] : []),
+                                ...(chartData.datasets.stabilityScore ? [{
+                                  data: chartData.datasets.stabilityScore,
+                                  label: 'Stability Score',
+                                  color: '#2e7d32',
+                                }] : []),
+                              ]}
+                              width={undefined}
+                              height={300}
+                              margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                            />
+                          </Box>
+                        ) : (
+                          <Alert severity="info">
+                            No quality metrics available for the selected time range.
+                          </Alert>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Performance Details Table */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Performance Summary
+                    </Typography>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Metric</TableCell>
+                            <TableCell>Average</TableCell>
+                            <TableCell>Minimum</TableCell>
+                            <TableCell>Maximum</TableCell>
+                            <TableCell>Data Points</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell><strong>Download Throughput</strong></TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.download?.avg)}</TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.download?.min)}</TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.download?.max)}</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Upload Throughput</strong></TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.upload?.avg)}</TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.upload?.min)}</TableCell>
+                            <TableCell>{formatThroughput(performanceData.metrics?.throughput?.upload?.max)}</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Network Latency</strong></TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.network?.avg)}</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.network?.min)}</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.network?.max)}</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Internet Latency</strong></TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.internet?.avg)}</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.internet?.min)}</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.internet?.max)}</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>DNS Latency</strong></TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.dns?.avg)}</TableCell>
+                            <TableCell>N/A</TableCell>
+                            <TableCell>N/A</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Packet Loss</strong></TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.packetLoss?.avg)}</TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.packetLoss?.min)}</TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.packetLoss?.max)}</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><strong>Stability Score</strong></TableCell>
+                            <TableCell>{formatPercentage(performanceData.metrics?.quality?.stabilityScore?.avg)}</TableCell>
+                            <TableCell>N/A</TableCell>
+                            <TableCell>N/A</TableCell>
+                            <TableCell>{performanceData.count || 0}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+
+          {!performanceLoading && (!performanceData || !performanceData.metrics) && (
+            <Alert severity="info">
+              No performance data available for this monitor. 
+              Make sure the monitor is online and collecting performance metrics.
+            </Alert>
           )}
         </Paper>
       )}
