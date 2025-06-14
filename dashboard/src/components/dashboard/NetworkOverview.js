@@ -73,15 +73,15 @@ function NetworkOverview() {
       
       <Grid container spacing={2}>
         {statCards.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid item xs={6} sm={6} md={6} key={index}>
             <Card variant="outlined">
-              <CardContent>
+              <CardContent sx={{ py: 1.5 }}>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
                     <Typography color="text.secondary" gutterBottom variant="caption">
                       {stat.title}
                     </Typography>
-                    <Typography variant="h4">
+                    <Typography variant="h5">
                       {stat.value}
                     </Typography>
                     {stat.subtitle && (
