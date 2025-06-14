@@ -15,6 +15,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCoverageSettings, selectSignalThresholds, selectHeatmapSettings, selectDefaultCoverageArea } from '../../store/slices/coverageSettingsSlice';
 // import SignalHeatmapOptimized from './SignalHeatmapOptimized';
+import SimpleHeatmap from './SimpleHeatmap';
 
 const CoverageArea = ({ area, viewSettings, canvasRef }) => {
   const canvasOverlayRef = useRef(null);
@@ -112,6 +113,8 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     }
 
     console.log('SignalHeatmap: Starting render with', monitors.length, 'monitors');
+    console.log('SignalHeatmap: Canvas size:', canvasRef_local.current.width, 'x', canvasRef_local.current.height);
+    console.log('SignalHeatmap: View settings:', viewSettings);
     const canvas = canvasRef_local.current;
     const ctx = canvas.getContext('2d');
     const { zoom, panX, panY } = viewSettings;
@@ -138,7 +141,16 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     // Active monitors only
     const activeMonitors = monitors.filter(m => m.position && m.status === 'active');
     
+    console.log('SignalHeatmap: Active monitors:', activeMonitors.length);
+    console.log('SignalHeatmap: Monitor details:', activeMonitors.map(m => ({
+      name: m.name,
+      position: m.position,
+      status: m.status,
+      wifiConnection: m.wifiConnection
+    })));
+    
     if (activeMonitors.length === 0) {
+      console.log('SignalHeatmap: No active monitors with positions, skipping render');
       ctx.restore();
       return;
     }
@@ -450,7 +462,7 @@ const CoverageOverlay = ({
     <>
       {/* Signal Heatmap */}
       {shouldShowHeatmap && (
-        <SignalHeatmap
+        <SimpleHeatmap
           monitors={monitors}
           viewSettings={viewSettings}
           canvasRef={canvasRef}
