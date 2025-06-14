@@ -356,9 +356,8 @@ const FloorPlanViewer = ({
         })).unwrap();
         console.log('FloorPlanViewer: Redux position update response:', response);
         
-        // Also refresh monitors list to ensure full sync
-        console.log('FloorPlanViewer: Refreshing monitors list');
-        dispatch(fetchMonitors());
+        // No need to call fetchMonitors() - the Redux thunk already updates the state
+        console.log('FloorPlanViewer: Position update completed, Redux state should be updated');
         
         if (onMonitorDrag) {
           onMonitorDrag(data.monitor, { x: Math.round(x), y: Math.round(y) });
