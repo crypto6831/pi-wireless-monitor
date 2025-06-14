@@ -420,17 +420,18 @@ class WiFiScanner:
                 lines = result.stdout.strip().split('\n')
                 for line in lines:
                     if line.startswith('yes:'):  # Active connection
-                        parts = line.split(':')
-                        if len(parts) >= 8:
+                        # Parse nmcli output with escaped BSSID handling
+                        parsed_data = self._parse_nmcli_wifi_line(line)
+                        if parsed_data:
                             connection_info = {
-                                'ssid': parts[1] if parts[1] else 'Hidden',
-                                'bssid': self._clean_bssid(parts[2]) if parts[2] else None,
-                                'signal_strength': self._parse_signal_strength(parts[3]),
-                                'channel': self._parse_int(parts[4]),
-                                'frequency': self._parse_int(parts[5]),
-                                'link_speed': self._parse_rate(parts[6]),
-                                'rx_rate': self._parse_rate(parts[6]),
-                                'tx_rate': self._parse_rate(parts[6]),
+                                'ssid': parsed_data.get('ssid', 'Hidden'),
+                                'bssid': parsed_data.get('bssid'),
+                                'signal_strength': self._parse_signal_strength(parsed_data.get('signal')),
+                                'channel': self._parse_int(parsed_data.get('channel')),
+                                'frequency': self._parse_frequency_mhz(parsed_data.get('frequency')),
+                                'link_speed': self._parse_rate(parsed_data.get('rate')),
+                                'rx_rate': self._parse_rate(parsed_data.get('rate')),
+                                'tx_rate': self._parse_rate(parsed_data.get('rate')),
                                 'connection_status': 'connected',
                                 'timestamp': datetime.utcnow().isoformat()
                             }
@@ -668,4 +669,83 @@ class WiFiScanner:
         # For now, return basic structure
         logger.info(f"Starting connection stability monitoring for {duration_minutes} minutes")
         
-        return stability_info 
+        return stability_info
+    
+    def _parse_nmcli_wifi_line(self, line: str) -> Dict:
+        """Parse a single line from nmcli wifi output with proper BSSID handling"""
+        try:
+            # Example line: yes:SmartHome:6C\:5A\:B0\:7B\:09\:2F:56:48:5240 MHz:540 Mbit/s:Infra
+            
+            # First, find and extract the BSSID (pattern: XX\:XX\:XX\:XX\:XX\:XX)
+            bssid_pattern = r'([A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2})'
+            bssid_match = re.search(bssid_pattern, line)
+            
+            if not bssid_match:
+                return {}
+            
+            bssid_raw = bssid_match.group(1)
+            bssid_clean = bssid_raw.replace('\\:', ':')
+            
+            # Split the line and reconstruct without BSSID issues
+            parts = line.split(':')
+            
+            # Find where BSSID starts and ends in the split parts
+            bssid_start_idx = None
+            bssid_end_idx = None
+            
+            for i, part in enumerate(parts):
+                if bssid_raw.startswith(part):
+                    bssid_start_idx = i
+                    # BSSID spans multiple parts due to \: splitting
+                    remaining_bssid = bssid_raw[len(part):]
+                    current_idx = i + 1
+                    while remaining_bssid and current_idx < len(parts):
+                        if remaining_bssid.startswith('\\' + parts[current_idx]):
+                            remaining_bssid = remaining_bssid[len('\\' + parts[current_idx]):]
+                            current_idx += 1
+                        else:
+                            break
+                    bssid_end_idx = current_idx - 1
+                    break
+            
+            if bssid_start_idx is None:
+                return {}
+            
+            # Reconstruct the fields
+            active = parts[0]  # yes/no
+            ssid = parts[1] if len(parts) > 1 else ''
+            # BSSID already extracted
+            # Fields after BSSID
+            remaining_parts = parts[bssid_end_idx + 1:] if bssid_end_idx is not None else []
+            
+            signal = remaining_parts[0] if len(remaining_parts) > 0 else ''
+            channel = remaining_parts[1] if len(remaining_parts) > 1 else ''
+            frequency = remaining_parts[2] if len(remaining_parts) > 2 else ''
+            rate = remaining_parts[3] if len(remaining_parts) > 3 else ''
+            
+            return {
+                'active': active,
+                'ssid': ssid,
+                'bssid': bssid_clean,
+                'signal': signal,
+                'channel': channel,
+                'frequency': frequency,
+                'rate': rate
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing nmcli wifi line: {e}")
+            return {}
+    
+    def _parse_frequency_mhz(self, freq_str: str) -> Optional[int]:
+        """Parse frequency from string like '5240 MHz'"""
+        try:
+            if not freq_str:
+                return None
+            # Extract number from string like "5240 MHz"
+            freq_match = re.search(r'(\d+)', freq_str)
+            if freq_match:
+                return int(freq_match.group(1))
+            return None
+        except (ValueError, TypeError):
+            return None 
