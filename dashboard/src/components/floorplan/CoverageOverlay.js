@@ -445,15 +445,15 @@ const CoverageOverlay = ({
   const shouldShowHeatmap = (showHeatmap && (heatmapSettings.enabled !== false)) && (coverageType === 'heatmap' || coverageType === 'both');
   const shouldShowAreas = coverageType === 'areas' || coverageType === 'both';
 
-  // Debug logging
-  console.log('CoverageOverlay Debug:', {
-    showHeatmap,
-    heatmapEnabled: heatmapSettings.enabled,
-    coverageType,
-    shouldShowHeatmap,
-    monitorsCount: monitors.length,
-    effectiveIntensity: heatmapIntensity !== 0.5 ? heatmapIntensity : heatmapSettings.intensity
-  });
+  // Debug logging (commented out to reduce console noise)
+  // console.log('CoverageOverlay Debug:', {
+  //   showHeatmap,
+  //   heatmapEnabled: heatmapSettings.enabled,
+  //   coverageType,
+  //   shouldShowHeatmap,
+  //   monitorsCount: monitors.length,
+  //   effectiveIntensity: heatmapIntensity !== 0.5 ? heatmapIntensity : heatmapSettings.intensity
+  // });
 
   // Use global heatmap intensity if local not specified
   const effectiveIntensity = heatmapIntensity !== 0.5 ? heatmapIntensity : heatmapSettings.intensity;
