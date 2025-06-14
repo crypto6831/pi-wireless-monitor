@@ -22,7 +22,16 @@ export const updateMonitorPosition = createAsyncThunk(
   'monitors/updatePosition',
   async ({ monitorId, position }) => {
     const response = await apiService.updateMonitorPosition(monitorId, position);
-    return { monitorId, position };
+    console.log('Redux updateMonitorPosition: API response:', response.data);
+    return { 
+      monitorId, 
+      position: {
+        x: position.x,
+        y: position.y
+      },
+      locationId: position.locationId,
+      floorId: position.floorId
+    };
   }
 );
 
@@ -78,10 +87,20 @@ const monitorsSlice = createSlice({
       })
       // Update monitor position
       .addCase(updateMonitorPosition.fulfilled, (state, action) => {
-        const { monitorId, position } = action.payload;
+        const { monitorId, position, locationId, floorId } = action.payload;
         const monitor = state.list.find(m => m._id === monitorId);
         if (monitor) {
           monitor.position = position;
+          monitor.locationId = locationId;
+          monitor.floorId = floorId;
+          console.log('Redux: Updated monitor in state:', {
+            name: monitor.name,
+            position: monitor.position,
+            locationId: monitor.locationId,
+            floorId: monitor.floorId
+          });
+        } else {
+          console.log('Redux: Monitor not found in state:', monitorId);
         }
       });
   },

@@ -41,7 +41,7 @@ import {
   clearError,
 } from '../../store/slices/floorPlanSlice';
 import { uploadFloorPlan } from '../../store/slices/locationsSlice';
-import { fetchMonitors } from '../../store/slices/monitorsSlice';
+import { fetchMonitors, updateMonitorPosition } from '../../store/slices/monitorsSlice';
 import { apiService } from '../../services/api';
 
 const FloorPlanViewer = ({ 
@@ -348,12 +348,15 @@ const FloorPlanViewer = ({
           position
         });
         
-        // Update monitor position via API
-        const response = await apiService.updateMonitorPosition(data.monitor._id, position);
-        console.log('FloorPlanViewer: Position update response:', response);
-        console.log('FloorPlanViewer: Updated monitor data:', response.data);
+        // Update monitor position via Redux thunk (which handles both API call and state update)
+        console.log('FloorPlanViewer: Dispatching updateMonitorPosition Redux action');
+        const response = await dispatch(updateMonitorPosition({
+          monitorId: data.monitor._id,
+          position
+        })).unwrap();
+        console.log('FloorPlanViewer: Redux position update response:', response);
         
-        // Refresh monitors list
+        // Also refresh monitors list to ensure full sync
         console.log('FloorPlanViewer: Refreshing monitors list');
         dispatch(fetchMonitors());
         
