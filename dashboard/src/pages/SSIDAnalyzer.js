@@ -1276,8 +1276,8 @@ const SSIDAnalyzer = () => {
                           <TableRow>
                             <TableCell><strong>DNS Latency</strong></TableCell>
                             <TableCell>{formatLatency(performanceData.metrics?.latency?.dns?.avg)}</TableCell>
-                            <TableCell>N/A</TableCell>
-                            <TableCell>N/A</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.dns?.min)}</TableCell>
+                            <TableCell>{formatLatency(performanceData.metrics?.latency?.dns?.max)}</TableCell>
                             <TableCell>{performanceData.count || 0}</TableCell>
                           </TableRow>
                           <TableRow>
