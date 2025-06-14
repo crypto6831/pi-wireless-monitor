@@ -64,39 +64,38 @@ function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* System Health */}
-        <Grid item xs={12} md={6}>
+        {/* System Metrics Charts - Moved up for better visibility */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 2 }}>
+            <MetricsChart />
+          </Paper>
+        </Grid>
+
+        {/* System Health - Compact vital signs */}
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <SystemHealth />
           </Paper>
         </Grid>
 
-        {/* Alert Summary */}
+        {/* Network Overview - Reduced width */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <AlertSummary />
-          </Paper>
-        </Grid>
-
-        {/* Network Overview */}
-        <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2 }}>
             <NetworkOverview />
           </Paper>
         </Grid>
 
-        {/* Recent Activity */}
-        <Grid item xs={12} md={4}>
+        {/* Recent Activity - Expanded width */}
+        <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <RecentActivity />
           </Paper>
         </Grid>
 
-        {/* Metrics Charts */}
+        {/* Alert Summary - Full width for visibility when needed */}
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
-            {console.log('Dashboard: About to render MetricsChart - monitors:', monitors.length)}
-            <MetricsChart />
+            <AlertSummary />
           </Paper>
         </Grid>
       </Grid>
