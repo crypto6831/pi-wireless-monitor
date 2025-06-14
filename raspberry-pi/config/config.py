@@ -62,5 +62,6 @@ API_ENDPOINTS = {
     'networks': f'{SERVER_URL}/api/networks',
     'devices': f'{SERVER_URL}/api/devices',
     'metrics': f'{SERVER_URL}/api/metrics',
-    'alerts': f'{SERVER_URL}/api/alerts'
+    'alerts': f'{SERVER_URL}/api/alerts',
+    'ssid-analyzer/connection': f'{SERVER_URL}/api/ssid-analyzer/connection'
 } 
