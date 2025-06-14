@@ -250,7 +250,7 @@ const ChannelAnalyzer = () => {
               >
                 <MenuItem value="all">All Monitors</MenuItem>
                 {monitors.map((monitor) => (
-                  <MenuItem key={monitor._id} value={monitor._id}>
+                  <MenuItem key={monitor._id} value={monitor.monitorId}>
                     {monitor.name}
                   </MenuItem>
                 ))}
