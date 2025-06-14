@@ -286,7 +286,12 @@ const SSIDAnalyzer = () => {
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>Channel</strong></TableCell>
-                        <TableCell>{connectionStatus.channel || 'Unknown'}</TableCell>
+                        <TableCell>
+                          {connectionStatus.channel 
+                            ? `${connectionStatus.channel}${connectionStatus.frequency ? ` (${connectionStatus.frequency} MHz)` : ''}`
+                            : 'Unknown'
+                          }
+                        </TableCell>
                         <TableCell><strong>Frequency</strong></TableCell>
                         <TableCell>{connectionStatus.frequency ? `${connectionStatus.frequency} MHz` : 'Unknown'}</TableCell>
                       </TableRow>
