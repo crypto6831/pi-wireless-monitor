@@ -66,6 +66,14 @@ const SSIDAnalyzer = () => {
     return new Date(timestamp).toLocaleString();
   };
 
+  const formatFrequency = (frequency) => {
+    if (!frequency) return '';
+    if (frequency >= 1000) {
+      return `${(frequency / 1000).toFixed(1)} GHz`;
+    }
+    return `${frequency} MHz`;
+  };
+
   const formatUptime = (seconds) => {
     if (!seconds) return '0s';
     const hours = Math.floor(seconds / 3600);
@@ -288,12 +296,12 @@ const SSIDAnalyzer = () => {
                         <TableCell><strong>Channel</strong></TableCell>
                         <TableCell>
                           {connectionStatus.channel 
-                            ? `${connectionStatus.channel}${connectionStatus.frequency ? ` (${connectionStatus.frequency} MHz)` : ''}`
+                            ? `${connectionStatus.channel}${connectionStatus.frequency ? ` (${formatFrequency(connectionStatus.frequency)})` : ''}`
                             : 'Unknown'
                           }
                         </TableCell>
                         <TableCell><strong>Frequency</strong></TableCell>
-                        <TableCell>{connectionStatus.frequency ? `${connectionStatus.frequency} MHz` : 'Unknown'}</TableCell>
+                        <TableCell>{connectionStatus.frequency ? formatFrequency(connectionStatus.frequency) : 'Unknown'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell><strong>RX Rate</strong></TableCell>
