@@ -414,10 +414,24 @@ class APIClient:
         try:
             logger.debug(f"Sending SSID connection status: {connection_data}")
             
-            # Add monitor identification
+            # Map field names from snake_case to camelCase for API
             payload = {
                 'monitorId': config.MONITOR_ID,
-                **connection_data
+                'ssid': connection_data.get('ssid'),
+                'connectionStatus': connection_data.get('connection_status'),
+                'signalStrength': connection_data.get('signal_strength'),
+                'bssid': connection_data.get('bssid'),
+                'channel': connection_data.get('channel'),
+                'frequency': connection_data.get('frequency'),
+                'rxRate': connection_data.get('rx_rate'),
+                'txRate': connection_data.get('tx_rate'),
+                'linkSpeed': connection_data.get('link_speed'),
+                'quality': connection_data.get('quality'),
+                'networkLatency': connection_data.get('network_latency'),
+                'internetLatency': connection_data.get('internet_latency'),
+                'packetLoss': connection_data.get('packet_loss'),
+                'uptime': connection_data.get('uptime'),
+                'timestamp': connection_data.get('timestamp')
             }
             
             response = self._post('ssid-analyzer/connection', payload)
