@@ -69,7 +69,7 @@ const SSIDAnalyzer = () => {
   const formatFrequency = (frequency) => {
     if (!frequency) return '';
     if (frequency >= 1000) {
-      return `${(frequency / 1000).toFixed(1)} GHz`;
+      return `${Math.round(frequency / 1000)} GHz`;
     }
     return `${frequency} MHz`;
   };
