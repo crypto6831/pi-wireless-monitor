@@ -313,19 +313,46 @@ const SSIDAnalyzer = () => {
 
     const { labels, datasets } = performanceHistory.chartData;
     
-    // Format timestamps for display - show fewer labels to avoid overcrowding
-    const formattedLabels = labels.map((timestamp, index) => {
-      const date = new Date(timestamp);
-      // Only show every 3rd label to reduce clutter
-      if (index % 3 === 0 || index === labels.length - 1) {
-        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    // Aggressive sampling - take only 6-8 data points maximum
+    const maxPoints = 6;
+    const totalPoints = labels.length;
+    const step = Math.max(1, Math.floor(totalPoints / (maxPoints - 1)));
+    
+    const sampledIndices = [];
+    for (let i = 0; i < totalPoints; i += step) {
+      sampledIndices.push(i);
+    }
+    // Always include the last point if not already included
+    if (sampledIndices[sampledIndices.length - 1] !== totalPoints - 1) {
+      sampledIndices.push(totalPoints - 1);
+    }
+    
+    // Create clean labels - only show hour:minute
+    const sampledLabels = sampledIndices.map(i => {
+      const date = new Date(labels[i]);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    });
+    
+    // Filter and clean datasets - remove null/undefined values
+    const sampledDatasets = {};
+    Object.keys(datasets).forEach(key => {
+      if (datasets[key] && Array.isArray(datasets[key])) {
+        const rawData = sampledIndices.map(i => datasets[key][i]);
+        // Filter out null/undefined values and ensure numbers
+        sampledDatasets[key] = rawData.map(val => {
+          if (val === null || val === undefined || isNaN(val)) {
+            return 0; // Replace with 0 instead of null
+          }
+          return Number(val);
+        });
       }
-      return '';
     });
 
     return {
-      labels: formattedLabels,
-      datasets
+      labels: sampledLabels,
+      datasets: sampledDatasets
     };
   };
 
