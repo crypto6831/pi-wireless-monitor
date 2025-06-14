@@ -155,6 +155,12 @@ export const apiService = {
   updateCoverageSettings: (data) => api.put('/settings/coverage', data),
   resetCoverageSettings: () => api.post('/settings/coverage/reset'),
   getCoverageSettingsVersion: () => api.get('/settings/coverage/version'),
+  
+  // Heatmap calculations
+  calculateHeatmap: (params) => api.get('/heatmap/calculate', { params }),
+  calculateSignalAtPoint: (data) => api.post('/heatmap/point', data),
+  exportHeatmap: (locationId, floorId, params = {}) => 
+    api.get(`/heatmap/export/${locationId}/${floorId}`, { params }),
 };
 
 export default apiService; 

@@ -98,6 +98,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
   const canvasRef_local = useRef(null);
   const signalThresholds = useSelector(selectSignalThresholds);
   const heatmapSettings = useSelector(selectHeatmapSettings);
+  const coverageSettings = useSelector(state => state.coverageSettings);
 
   useEffect(() => {
     if (!canvasRef_local.current || !canvasRef?.current || !monitors.length) {
@@ -122,85 +123,143 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
 
-    // Generate heatmap
-    const gridSize = 20; // Heatmap resolution
+    // Generate heatmap with improved resolution
+    const gridSize = Math.max(5, Math.min(20, 10 / zoom)); // Adaptive grid size based on zoom
     const width = canvas.width / zoom;
     const height = canvas.height / zoom;
 
     // Use global heatmap intensity if not overridden
     const effectiveIntensity = (heatmapSettings.enabled !== false) ? (intensity || heatmapSettings.intensity) : intensity;
 
+    // ITU-R Indoor Path Loss Model parameters
+    const pathLossExponent = 3.0; // Office environment
+    const floorLoss = 15.0; // dB per floor
+    const wallLoss = 3.0; // dB per wall (simplified)
+    
+    // Create gradient for smooth transitions
+    const createGradient = (ctx, x, y, radius, signal) => {
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      
+      // Map signal to gradient based on thresholds
+      if (signal > signalThresholds.excellent) {
+        gradient.addColorStop(0, `rgba(76, 175, 80, ${effectiveIntensity})`);
+        gradient.addColorStop(0.5, `rgba(76, 175, 80, ${effectiveIntensity * 0.7})`);
+        gradient.addColorStop(1, `rgba(76, 175, 80, 0)`);
+      } else if (signal > signalThresholds.good) {
+        gradient.addColorStop(0, `rgba(139, 195, 74, ${effectiveIntensity})`);
+        gradient.addColorStop(0.5, `rgba(139, 195, 74, ${effectiveIntensity * 0.7})`);
+        gradient.addColorStop(1, `rgba(139, 195, 74, 0)`);
+      } else if (signal > signalThresholds.fair) {
+        gradient.addColorStop(0, `rgba(255, 235, 59, ${effectiveIntensity})`);
+        gradient.addColorStop(0.5, `rgba(255, 235, 59, ${effectiveIntensity * 0.6})`);
+        gradient.addColorStop(1, `rgba(255, 235, 59, 0)`);
+      } else if (signal > signalThresholds.poor) {
+        gradient.addColorStop(0, `rgba(255, 152, 0, ${effectiveIntensity})`);
+        gradient.addColorStop(0.5, `rgba(255, 152, 0, ${effectiveIntensity * 0.5})`);
+        gradient.addColorStop(1, `rgba(255, 152, 0, 0)`);
+      } else {
+        gradient.addColorStop(0, `rgba(244, 67, 54, ${effectiveIntensity})`);
+        gradient.addColorStop(0.5, `rgba(244, 67, 54, ${effectiveIntensity * 0.4})`);
+        gradient.addColorStop(1, `rgba(244, 67, 54, 0)`);
+      }
+      
+      return gradient;
+    };
+
+    // Use gradient-based rendering for each monitor
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.translate(panX, panY);
+    tempCtx.scale(zoom, zoom);
+
+    monitors.forEach(monitor => {
+      if (!monitor.position || monitor.status !== 'active') return;
+      
+      // Use actual monitor WiFi data if available
+      const txPower = monitor.wifiConnection?.rssi ? 
+        monitor.wifiConnection.rssi + 30 : -30; // Estimate TX power
+      const frequency = monitor.wifiConnection?.frequency || 2437; // Default 2.4GHz
+      
+      // Calculate coverage radius based on minimum threshold
+      const minSignal = signalThresholds.poor - 10; // -90 dBm typically
+      const maxDistance = Math.pow(10, (txPower - minSignal) / (10 * pathLossExponent));
+      
+      // Draw radial gradient for this monitor
+      const gradient = createGradient(tempCtx, monitor.position.x, monitor.position.y, maxDistance, txPower);
+      tempCtx.fillStyle = gradient;
+      tempCtx.fillRect(
+        monitor.position.x - maxDistance,
+        monitor.position.y - maxDistance,
+        maxDistance * 2,
+        maxDistance * 2
+      );
+    });
+    
+    // Composite the gradient canvas onto main canvas
+    ctx.globalCompositeOperation = 'screen'; // Additive blending for overlapping signals
+    ctx.drawImage(tempCanvas, -panX, -panY, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Overlay grid-based calculation for more accurate representation
     for (let x = 0; x < width; x += gridSize) {
       for (let y = 0; y < height; y += gridSize) {
-        let totalSignal = 0;
         let maxSignal = -100;
+        let dominantMonitor = null;
 
-        // Calculate signal strength at this point from all monitors
+        // Calculate signal strength at this point using ITU-R model
         monitors.forEach(monitor => {
-          if (!monitor.position) {
-            console.log('Monitor without position:', monitor.name || monitor.id);
-            return;
-          }
+          if (!monitor.position || monitor.status !== 'active') return;
           
-          // Debug first monitor position
-          if (x === 0 && y === 0) {
-            console.log('Monitor position:', monitor.position, 'Monitor name:', monitor.name);
-          }
-
           const distance = Math.sqrt(
             Math.pow(x - monitor.position.x, 2) + 
             Math.pow(y - monitor.position.y, 2)
           );
 
-          // Realistic indoor WiFi signal propagation model
-          const baseSignal = -30; // dBm at 1 meter (typical WiFi transmit power)
-          const pathLoss = 20 * Math.log10(Math.max(distance, 1)); // Free space path loss (simplified)
-          const signal = baseSignal - pathLoss;
-
-          totalSignal += Math.pow(10, signal / 10); // Convert to linear scale
-          maxSignal = Math.max(maxSignal, signal);
+          // Use actual monitor data or defaults
+          const txPower = monitor.wifiConnection?.rssi ? 
+            monitor.wifiConnection.rssi + 30 : -30;
+          const frequency = monitor.wifiConnection?.frequency || 2437;
+          
+          // ITU-R P.1238 Indoor Path Loss
+          const L0 = 20 * Math.log10(frequency) - 28; // Base loss at 1m
+          const Ld = 10 * pathLossExponent * Math.log10(Math.max(distance, 1));
+          const pathLoss = L0 + Ld;
+          
+          const signal = txPower - pathLoss;
+          
+          if (signal > maxSignal) {
+            maxSignal = signal;
+            dominantMonitor = monitor;
+          }
         });
-
-        // Convert back to dBm
-        const averageSignal = totalSignal > 0 ? 10 * Math.log10(totalSignal) : -100;
         
-        // Debug signal calculation for troubleshooting (can be removed in production)
-        if (x === 0 && y === 0) {
-          console.log(`Sample point: totalSignal=${totalSignal.toFixed(2)}, averageSignal=${averageSignal.toFixed(2)}`);
-        }
-        
-        // Map signal strength to color using global thresholds
-        let alpha = 0;
-        let color = '';
+        // Only draw if we have detailed calculation needed
+        if (maxSignal > -100 && gridSize < 10) {
+          let alpha = 0;
+          let color = '';
 
-        if (averageSignal > signalThresholds.excellent) {
-          // Excellent signal (green)
-          color = '76, 175, 80'; // #4CAF50
-          alpha = 0.8;
-        } else if (averageSignal > signalThresholds.good) {
-          // Good signal (light green)
-          color = '139, 195, 74'; // #8BC34A
-          alpha = 0.7;
-        } else if (averageSignal > signalThresholds.fair) {
-          // Fair signal (yellow)
-          color = '255, 235, 59'; // #FFEB3B
-          alpha = 0.6;
-        } else if (averageSignal > signalThresholds.poor) {
-          // Poor signal (orange)
-          color = '255, 152, 0'; // #FF9800
-          alpha = 0.5;
-        } else if (averageSignal > signalThresholds.weak) {
-          // Weak signal (red)
-          color = '244, 67, 54'; // #F44336
-          alpha = 0.4;
-        }
+          if (maxSignal > signalThresholds.excellent) {
+            color = '76, 175, 80';
+            alpha = effectiveIntensity * 0.8;
+          } else if (maxSignal > signalThresholds.good) {
+            color = '139, 195, 74';
+            alpha = effectiveIntensity * 0.7;
+          } else if (maxSignal > signalThresholds.fair) {
+            color = '255, 235, 59';
+            alpha = effectiveIntensity * 0.6;
+          } else if (maxSignal > signalThresholds.poor) {
+            color = '255, 152, 0';
+            alpha = effectiveIntensity * 0.5;
+          } else if (maxSignal > -90) {
+            color = '244, 67, 54';
+            alpha = effectiveIntensity * 0.4;
+          }
 
-        if (alpha > 0) {
-          ctx.fillStyle = `rgba(${color}, ${alpha})`;
-          ctx.fillRect(x, y, gridSize, gridSize);
-          // Log drawing for debugging (remove in production)
-          if (x === 0 && y === 0) {
-            console.log(`Drawing first rect with color rgba(${color}, ${alpha})`);
+          if (alpha > 0) {
+            ctx.fillStyle = `rgba(${color}, ${alpha * 0.3})`; // Subtle overlay
+            ctx.fillRect(x - gridSize/2, y - gridSize/2, gridSize, gridSize);
           }
         }
       }
@@ -208,7 +267,7 @@ const SignalHeatmap = ({ monitors, viewSettings, canvasRef, intensity = 0.5 }) =
 
     ctx.restore();
     console.log('SignalHeatmap: Render completed');
-  }, [monitors, viewSettings, intensity, canvasRef, signalThresholds, heatmapSettings]);
+  }, [monitors, viewSettings, intensity, canvasRef, signalThresholds, heatmapSettings, coverageSettings]);
 
   return (
     <canvas

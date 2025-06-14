@@ -47,6 +47,22 @@ const coverageSettingsSchema = new mongoose.Schema({
     maxInterpolationDistance: { type: Number, default: 50, min: 10, max: 200 }, // meters
   },
   
+  // Environment calibration settings
+  environmentType: {
+    type: String,
+    enum: ['office', 'residential', 'commercial', 'industrial'],
+    default: 'office'
+  },
+  propagationModel: {
+    type: String,
+    enum: ['itu-indoor', 'log-distance', 'multi-wall'],
+    default: 'itu-indoor'
+  },
+  pathLossExponent: { type: Number, default: 3.0, min: 2.0, max: 4.5 },
+  wallLoss: { type: Number, default: 3, min: 0, max: 20 }, // dB per wall
+  floorLoss: { type: Number, default: 15, min: 0, max: 30 }, // dB per floor
+  txPower: { type: Number, default: -30, min: -50, max: 0 }, // dBm
+  
   // Coverage area validation settings
   validationRules: {
     maxAreaSize: { type: Number, default: 10000 }, // square meters

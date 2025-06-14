@@ -489,6 +489,113 @@ function CoverageSettings() {
         </Grid>
       </Paper>
 
+      {/* Environment Calibration */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Environment Calibration
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mb={3}>
+          Adjust signal propagation parameters for your specific environment
+        </Typography>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel>Environment Type</InputLabel>
+              <Select
+                value={tempSettings.environmentType || 'office'}
+                onChange={(e) => updateTempSetting('environmentType', e.target.value)}
+                label="Environment Type"
+              >
+                <MenuItem value="office">Office (cubicles, drywall)</MenuItem>
+                <MenuItem value="residential">Residential (mixed walls)</MenuItem>
+                <MenuItem value="commercial">Commercial/Retail (open space)</MenuItem>
+                <MenuItem value="industrial">Industrial/Warehouse (metal, concrete)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel>Propagation Model</InputLabel>
+              <Select
+                value={tempSettings.propagationModel || 'itu-indoor'}
+                onChange={(e) => updateTempSetting('propagationModel', e.target.value)}
+                label="Propagation Model"
+              >
+                <MenuItem value="itu-indoor">ITU-R Indoor (recommended)</MenuItem>
+                <MenuItem value="log-distance">Log-Distance</MenuItem>
+                <MenuItem value="multi-wall">Multi-Wall Model</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" gutterBottom>
+              Path Loss Exponent
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Higher values = faster signal decay with distance (2.0 = free space, 3.0-4.0 = typical indoor)
+            </Typography>
+            <Slider
+              value={tempSettings.pathLossExponent || 3.0}
+              onChange={(e, value) => updateTempSetting('pathLossExponent', value)}
+              min={2.0}
+              max={4.5}
+              step={0.1}
+              valueLabelDisplay="auto"
+              marks={[
+                { value: 2.0, label: 'Free Space' },
+                { value: 3.0, label: 'Office' },
+                { value: 4.0, label: 'Dense' }
+              ]}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Wall Loss (dB)"
+              type="number"
+              value={tempSettings.wallLoss || 3}
+              onChange={(e) => updateTempSetting('wallLoss', Number(e.target.value))}
+              fullWidth
+              helperText="Signal loss per wall"
+              InputProps={{
+                inputProps: { min: 0, max: 20 }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Floor Loss (dB)"
+              type="number"
+              value={tempSettings.floorLoss || 15}
+              onChange={(e) => updateTempSetting('floorLoss', Number(e.target.value))}
+              fullWidth
+              helperText="Signal loss per floor"
+              InputProps={{
+                inputProps: { min: 0, max: 30 }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="TX Power (dBm)"
+              type="number"
+              value={tempSettings.txPower || -30}
+              onChange={(e) => updateTempSetting('txPower', Number(e.target.value))}
+              fullWidth
+              helperText="Default transmit power"
+              InputProps={{
+                inputProps: { min: -50, max: 0 }
+              }}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
       {/* Auto-Update Settings */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>

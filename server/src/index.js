@@ -23,6 +23,7 @@ const floorPlansRouter = require('./routes/floorPlans');
 const activitiesRouter = require('./routes/activities');
 const coverageRouter = require('./routes/coverage');
 const coverageSettingsRouter = require('./routes/coverageSettings');
+const heatmapRouter = require('./routes/heatmap');
 
 // Create Express app
 const app = express();
@@ -80,6 +81,7 @@ app.use('/api/locations', [locationsRouter, floorPlansRouter]);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/coverage', coverageRouter);
 app.use('/api/settings/coverage', coverageSettingsRouter);
+app.use('/api/heatmap', heatmapRouter);
 
 // Socket.IO status endpoint
 app.get('/api/socket/status', (req, res) => {
