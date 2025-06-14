@@ -254,7 +254,7 @@ const ChannelAnalyzer = () => {
       }],
       series,
       height: 400,
-      margin: { top: 50, right: 30, left: 150, bottom: 80 },
+      margin: { top: 50, right: 30, left: 80, bottom: 80 },
     };
   };
 
@@ -496,29 +496,41 @@ const ChannelAnalyzer = () => {
 
               {timelineData.length > 0 ? (
                 selectedChannels.length > 0 ? (
-                  <LineChart
-                    {...formatTimelineDataForChart()}
-                    yAxis={[{ 
-                      min: -100, 
-                      max: -20,
-                      label: 'Signal Strength (dBm)',
-                      valueFormatter: (value) => `${value} dBm`,
-                      tickMinStep: 10,
-                      labelStyle: { fill: '#ffffff' },
-                      tickLabelStyle: { fill: '#ffffff' },
-                    }]}
-                    grid={{ horizontal: true, vertical: true }}
-                    slotProps={{
-                      legend: {
-                        direction: 'row',
-                        position: { vertical: 'top', horizontal: 'middle' },
-                        padding: 0,
-                      },
-                      axisLabel: {
-                        style: { fill: '#ffffff', fontSize: '14px' },
-                      },
-                    }}
-                  />
+                  <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      sx={{
+                        position: 'absolute',
+                        left: '-40px',
+                        top: '50%',
+                        transform: 'rotate(-90deg) translateY(-50%)',
+                        transformOrigin: 'center',
+                        fontSize: '14px',
+                        color: '#ffffff',
+                        whiteSpace: 'nowrap',
+                        zIndex: 10,
+                      }}
+                    >
+                      Signal Strength (dBm)
+                    </Typography>
+                    <LineChart
+                      {...formatTimelineDataForChart()}
+                      yAxis={[{ 
+                        min: -100, 
+                        max: -20,
+                        valueFormatter: (value) => `${value} dBm`,
+                        tickMinStep: 10,
+                        tickLabelStyle: { fill: '#ffffff' },
+                      }]}
+                      grid={{ horizontal: true, vertical: true }}
+                      slotProps={{
+                        legend: {
+                          direction: 'row',
+                          position: { vertical: 'top', horizontal: 'middle' },
+                          padding: 0,
+                        },
+                      }}
+                    />
+                  </Box>
                 ) : (
                   <Alert severity="info">
                     Please select channels from the filter above to view the timeline.
