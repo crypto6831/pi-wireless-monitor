@@ -675,58 +675,38 @@ class WiFiScanner:
         """Parse a single line from nmcli wifi output with proper BSSID handling"""
         try:
             # Example line: yes:SmartHome:6C\:5A\:B0\:7B\:09\:2F:56:48:5240 MHz:540 Mbit/s:Infra
+            # The issue is that BSSID has escaped colons which get split
             
-            # First, find and extract the BSSID (pattern: XX\:XX\:XX\:XX\:XX\:XX)
-            bssid_pattern = r'([A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2}\\:[A-Fa-f0-9]{2})'
-            bssid_match = re.search(bssid_pattern, line)
-            
-            if not bssid_match:
-                return {}
-            
-            bssid_raw = bssid_match.group(1)
-            bssid_clean = bssid_raw.replace('\\:', ':')
-            
-            # Split the line and reconstruct without BSSID issues
             parts = line.split(':')
-            
-            # Find where BSSID starts and ends in the split parts
-            bssid_start_idx = None
-            bssid_end_idx = None
-            
-            for i, part in enumerate(parts):
-                if bssid_raw.startswith(part):
-                    bssid_start_idx = i
-                    # BSSID spans multiple parts due to \: splitting
-                    remaining_bssid = bssid_raw[len(part):]
-                    current_idx = i + 1
-                    while remaining_bssid and current_idx < len(parts):
-                        if remaining_bssid.startswith('\\' + parts[current_idx]):
-                            remaining_bssid = remaining_bssid[len('\\' + parts[current_idx]):]
-                            current_idx += 1
-                        else:
-                            break
-                    bssid_end_idx = current_idx - 1
-                    break
-            
-            if bssid_start_idx is None:
+            if len(parts) < 8:
                 return {}
             
-            # Reconstruct the fields
             active = parts[0]  # yes/no
-            ssid = parts[1] if len(parts) > 1 else ''
-            # BSSID already extracted
-            # Fields after BSSID
-            remaining_parts = parts[bssid_end_idx + 1:] if bssid_end_idx is not None else []
+            ssid = parts[1]    # SSID name
             
-            signal = remaining_parts[0] if len(remaining_parts) > 0 else ''
-            channel = remaining_parts[1] if len(remaining_parts) > 1 else ''
-            frequency = remaining_parts[2] if len(remaining_parts) > 2 else ''
-            rate = remaining_parts[3] if len(remaining_parts) > 3 else ''
+            # BSSID spans parts[2] through parts[7] due to escaped colons
+            # Format: 6C\:5A\:B0\:7B\:09\:2F becomes ['6C\\', '5A\\', 'B0\\', '7B\\', '09\\', '2F']
+            bssid_parts = []
+            for i in range(2, 8):  # BSSID should be in positions 2-7
+                if i < len(parts):
+                    part = parts[i]
+                    # Remove trailing backslash if present
+                    if part.endswith('\\'):
+                        part = part[:-1]
+                    bssid_parts.append(part)
+            
+            bssid = ':'.join(bssid_parts) if len(bssid_parts) == 6 else None
+            
+            # Remaining fields start after the BSSID (position 8+)
+            signal = parts[8] if len(parts) > 8 else ''
+            channel = parts[9] if len(parts) > 9 else ''
+            frequency = parts[10] if len(parts) > 10 else ''
+            rate = parts[11] if len(parts) > 11 else ''
             
             return {
                 'active': active,
                 'ssid': ssid,
-                'bssid': bssid_clean,
+                'bssid': bssid,
                 'signal': signal,
                 'channel': channel,
                 'frequency': frequency,
