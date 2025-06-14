@@ -178,6 +178,10 @@ export const apiService = {
   getSSIDIncidentStats: (monitorId, params = {}) => api.get(`/ssid-incidents/stats/${monitorId}`, { params }),
   getActiveIncidents: (monitorId = null) => api.get(`/ssid-incidents/active${monitorId ? `/${monitorId}` : ''}`),
   getIncidentTimeline: (monitorId, params = {}) => api.get(`/ssid-incidents/timeline/${monitorId}`, { params }),
+  
+  // Phase 3.3: Enhanced timeline and comparison
+  getDetailedIncidentTimeline: (monitorId, params = {}) => api.get(`/ssid-incidents/timeline/${monitorId}/detailed`, { params }),
+  compareIncidentPeriods: (monitorId, params = {}) => api.get(`/ssid-incidents/compare/${monitorId}`, { params }),
 
   // Phase 3: Performance Analytics
   getSSIDPerformance: (monitorId, params = {}) => api.get(`/ssid-analyzer/performance/${monitorId}`, { params }),

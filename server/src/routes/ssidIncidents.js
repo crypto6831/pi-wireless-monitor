@@ -423,4 +423,261 @@ router.get('/timeline/:monitorId', async (req, res) => {
   }
 });
 
+// Phase 3.3: Enhanced timeline with detailed incident markers
+router.get('/timeline/:monitorId/detailed', async (req, res) => {
+  try {
+    const { monitorId } = req.params;
+    const { timeRange = '24h', incidentTypes, severityFilter } = req.query;
+
+    // Calculate time range
+    const now = new Date();
+    let startTime;
+    
+    switch (timeRange) {
+      case '1h': startTime = new Date(now - 60 * 60 * 1000); break;
+      case '6h': startTime = new Date(now - 6 * 60 * 60 * 1000); break;
+      case '24h': startTime = new Date(now - 24 * 60 * 60 * 1000); break;
+      case '7d': startTime = new Date(now - 7 * 24 * 60 * 60 * 1000); break;
+      case '30d': startTime = new Date(now - 30 * 24 * 60 * 60 * 1000); break;
+      default: startTime = new Date(now - 24 * 60 * 60 * 1000);
+    }
+
+    // Build query
+    const query = {
+      monitorId,
+      startTime: { $gte: startTime }
+    };
+
+    // Add filters
+    if (incidentTypes) {
+      const types = incidentTypes.split(',');
+      query.incidentType = { $in: types };
+    }
+
+    if (severityFilter && severityFilter !== 'all') {
+      query.severity = severityFilter;
+    }
+
+    // Get detailed incidents with performance correlation
+    const incidents = await SSIDIncident.find(query)
+      .sort({ startTime: 1 })
+      .lean();
+
+    // Enhance incidents with additional context
+    const enhancedIncidents = incidents.map(incident => ({
+      ...incident,
+      displayTime: incident.startTime,
+      endTime: incident.endTime || (incident.resolved ? 
+        new Date(incident.startTime.getTime() + (incident.duration || 0) * 1000) : 
+        null),
+      durationFormatted: incident.duration ? 
+        formatDuration(incident.duration) : 'Ongoing',
+      severityColor: getSeverityColor(incident.severity),
+      typeIcon: getIncidentTypeIcon(incident.incidentType)
+    }));
+
+    // Calculate timeline metrics
+    const metrics = {
+      totalIncidents: enhancedIncidents.length,
+      totalDowntime: enhancedIncidents.reduce((sum, inc) => sum + (inc.duration || 0), 0),
+      avgDuration: enhancedIncidents.length > 0 ? 
+        enhancedIncidents.reduce((sum, inc) => sum + (inc.duration || 0), 0) / enhancedIncidents.length : 0,
+      incidentsByType: enhancedIncidents.reduce((acc, inc) => {
+        acc[inc.incidentType] = (acc[inc.incidentType] || 0) + 1;
+        return acc;
+      }, {}),
+      incidentsBySeverity: enhancedIncidents.reduce((acc, inc) => {
+        acc[inc.severity || 'unknown'] = (acc[inc.severity || 'unknown'] || 0) + 1;
+        return acc;
+      }, {})
+    };
+
+    res.json({
+      success: true,
+      data: {
+        incidents: enhancedIncidents,
+        metrics,
+        timeRange,
+        filters: {
+          incidentTypes: incidentTypes ? incidentTypes.split(',') : null,
+          severityFilter
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting detailed timeline:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get detailed timeline'
+    });
+  }
+});
+
+// Phase 3.3: Incident comparison endpoint
+router.get('/compare/:monitorId', async (req, res) => {
+  try {
+    const { monitorId } = req.params;
+    const { 
+      baselineStart, 
+      baselineEnd, 
+      comparisonStart, 
+      comparisonEnd,
+      metricType = 'incidents' 
+    } = req.query;
+
+    // Validate required parameters
+    if (!baselineStart || !baselineEnd || !comparisonStart || !comparisonEnd) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: baselineStart, baselineEnd, comparisonStart, comparisonEnd'
+      });
+    }
+
+    // Convert dates
+    const baseline = {
+      start: new Date(baselineStart),
+      end: new Date(baselineEnd)
+    };
+    
+    const comparison = {
+      start: new Date(comparisonStart),
+      end: new Date(comparisonEnd)
+    };
+
+    // Get incidents for both periods
+    const [baselineIncidents, comparisonIncidents] = await Promise.all([
+      SSIDIncident.find({
+        monitorId,
+        startTime: { $gte: baseline.start, $lte: baseline.end }
+      }).lean(),
+      SSIDIncident.find({
+        monitorId,
+        startTime: { $gte: comparison.start, $lte: comparison.end }
+      }).lean()
+    ]);
+
+    // Calculate metrics for both periods
+    const calculatePeriodMetrics = (incidents) => ({
+      totalIncidents: incidents.length,
+      totalDowntime: incidents.reduce((sum, inc) => sum + (inc.duration || 0), 0),
+      avgDuration: incidents.length > 0 ? 
+        incidents.reduce((sum, inc) => sum + (inc.duration || 0), 0) / incidents.length : 0,
+      incidentsByType: incidents.reduce((acc, inc) => {
+        acc[inc.incidentType] = (acc[inc.incidentType] || 0) + 1;
+        return acc;
+      }, {}),
+      incidentsBySeverity: incidents.reduce((acc, inc) => {
+        acc[inc.severity || 'unknown'] = (acc[inc.severity || 'unknown'] || 0) + 1;
+        return acc;
+      }, {}),
+      disconnectionRate: incidents.filter(inc => inc.incidentType === 'disconnection').length,
+      signalDropRate: incidents.filter(inc => inc.incidentType === 'signal_drop').length
+    });
+
+    const baselineMetrics = calculatePeriodMetrics(baselineIncidents);
+    const comparisonMetrics = calculatePeriodMetrics(comparisonIncidents);
+
+    // Calculate changes and trends
+    const changes = {
+      totalIncidents: {
+        absolute: comparisonMetrics.totalIncidents - baselineMetrics.totalIncidents,
+        percentage: baselineMetrics.totalIncidents > 0 ? 
+          ((comparisonMetrics.totalIncidents - baselineMetrics.totalIncidents) / baselineMetrics.totalIncidents * 100) : 0
+      },
+      totalDowntime: {
+        absolute: comparisonMetrics.totalDowntime - baselineMetrics.totalDowntime,
+        percentage: baselineMetrics.totalDowntime > 0 ? 
+          ((comparisonMetrics.totalDowntime - baselineMetrics.totalDowntime) / baselineMetrics.totalDowntime * 100) : 0
+      },
+      avgDuration: {
+        absolute: comparisonMetrics.avgDuration - baselineMetrics.avgDuration,
+        percentage: baselineMetrics.avgDuration > 0 ? 
+          ((comparisonMetrics.avgDuration - baselineMetrics.avgDuration) / baselineMetrics.avgDuration * 100) : 0
+      }
+    };
+
+    // Determine trends
+    const getTrend = (change) => {
+      if (Math.abs(change.percentage) < 5) return 'stable';
+      return change.percentage > 0 ? 'increasing' : 'decreasing';
+    };
+
+    const trends = {
+      incidents: getTrend(changes.totalIncidents),
+      downtime: getTrend(changes.totalDowntime),
+      duration: getTrend(changes.avgDuration)
+    };
+
+    res.json({
+      success: true,
+      data: {
+        baseline: {
+          period: { start: baseline.start, end: baseline.end },
+          metrics: baselineMetrics,
+          incidents: baselineIncidents
+        },
+        comparison: {
+          period: { start: comparison.start, end: comparison.end },
+          metrics: comparisonMetrics,
+          incidents: comparisonIncidents
+        },
+        analysis: {
+          changes,
+          trends,
+          summary: {
+            overallTrend: trends.incidents,
+            significantChanges: Object.entries(changes)
+              .filter(([_, change]) => Math.abs(change.percentage) > 10)
+              .map(([metric, change]) => ({
+                metric,
+                change: change.percentage,
+                trend: change.percentage > 0 ? 'worse' : 'better'
+              }))
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error comparing incidents:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to compare incidents'
+    });
+  }
+});
+
+// Helper functions for enhanced timeline
+function formatDuration(seconds) {
+  if (!seconds) return '0s';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+  if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+function getSeverityColor(severity) {
+  const colors = {
+    'low': '#4CAF50',
+    'medium': '#FF9800',
+    'high': '#F44336',
+    'critical': '#9C27B0'
+  };
+  return colors[severity] || '#757575';
+}
+
+function getIncidentTypeIcon(type) {
+  const icons = {
+    'disconnection': 'wifi_off',
+    'reconnection': 'wifi',
+    'signal_drop': 'signal_wifi_4_bar',
+    'timeout': 'timer'
+  };
+  return icons[type] || 'error';
+}
+
 module.exports = router;

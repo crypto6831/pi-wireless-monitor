@@ -51,7 +51,7 @@ const SSIDAnalyzer = () => {
   const [incidentData, setIncidentData] = useState([]);
   const [incidentStats, setIncidentStats] = useState(null);
   const [activeIncidents, setActiveIncidents] = useState([]);
-  const [timelineData, setTimelineData] = useState([]);
+  const [oldTimelineData, setOldTimelineData] = useState([]);
   const [timeRange, setTimeRange] = useState('24h');
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
@@ -61,6 +61,18 @@ const SSIDAnalyzer = () => {
   const [performanceTimeRange, setPerformanceTimeRange] = useState('24h');
   const [performanceMetric, setPerformanceMetric] = useState('all');
   const [performanceLoading, setPerformanceLoading] = useState(false);
+
+  // Phase 3.3: Timeline and comparison state
+  const [timelineData, setTimelineData] = useState([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineTimeRange, setTimelineTimeRange] = useState('24h');
+  const [timelineFilters, setTimelineFilters] = useState({
+    incidentTypes: 'all',
+    severityFilter: 'all'
+  });
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonData, setComparisonData] = useState(null);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
 
   const monitors = useSelector((state) => state.monitors.list);
 
@@ -305,6 +317,55 @@ const SSIDAnalyzer = () => {
     }
   };
 
+  // Phase 3.3: Fetch detailed incident timeline
+  const fetchIncidentTimeline = async (monitorId) => {
+    try {
+      setTimelineLoading(true);
+      
+      const params = {
+        timeRange: timelineTimeRange,
+        incidentTypes: timelineFilters.incidentTypes === 'all' ? undefined : timelineFilters.incidentTypes,
+        severityFilter: timelineFilters.severityFilter === 'all' ? undefined : timelineFilters.severityFilter
+      };
+
+      const response = await apiService.getDetailedIncidentTimeline(monitorId, params);
+      
+      if (response.data.success) {
+        setTimelineData(response.data.data);
+      }
+
+    } catch (err) {
+      console.error('Error fetching incident timeline:', err);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
+
+  // Phase 3.3: Fetch incident comparison data
+  const fetchIncidentComparison = async (monitorId, baselineStart, baselineEnd, comparisonStart, comparisonEnd) => {
+    try {
+      setComparisonLoading(true);
+      
+      const params = {
+        baselineStart: baselineStart.toISOString(),
+        baselineEnd: baselineEnd.toISOString(),
+        comparisonStart: comparisonStart.toISOString(),
+        comparisonEnd: comparisonEnd.toISOString()
+      };
+
+      const response = await apiService.compareIncidentPeriods(monitorId, params);
+      
+      if (response.data.success) {
+        setComparisonData(response.data.data);
+      }
+
+    } catch (err) {
+      console.error('Error fetching incident comparison:', err);
+    } finally {
+      setComparisonLoading(false);
+    }
+  };
+
   // Prepare chart data for performance metrics
   const getPerformanceChartData = () => {
     if (!performanceHistory || !performanceHistory.chartData || performanceHistory.chartData.labels.length === 0) {
@@ -392,6 +453,13 @@ const SSIDAnalyzer = () => {
       fetchPerformanceAnalytics(selectedMonitor);
     }
   }, [selectedMonitor, performanceTimeRange, performanceMetric]);
+
+  // Phase 3.3: Timeline analytics effect
+  useEffect(() => {
+    if (selectedMonitor) {
+      fetchIncidentTimeline(selectedMonitor);
+    }
+  }, [selectedMonitor, timelineTimeRange, timelineFilters]);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 2 }}>
@@ -1217,6 +1285,262 @@ const SSIDAnalyzer = () => {
             <Alert severity="info">
               No performance data available for this monitor. 
               Make sure the monitor is online and collecting performance metrics.
+            </Alert>
+          )}
+        </Paper>
+      )}
+
+      {/* Phase 3.3: Incident Timeline and Analysis */}
+      {selectedMonitor && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">
+              <TimelineIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Incident Timeline & Analysis
+            </Typography>
+            <Box display="flex" gap={2}>
+              {/* Timeline filters */}
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Incident Types</InputLabel>
+                <Select
+                  value={timelineFilters.incidentTypes}
+                  onChange={(e) => setTimelineFilters({...timelineFilters, incidentTypes: e.target.value})}
+                  label="Incident Types"
+                >
+                  <MenuItem value="all">All Types</MenuItem>
+                  <MenuItem value="disconnection">Disconnections</MenuItem>
+                  <MenuItem value="signal_drop">Signal Drops</MenuItem>
+                  <MenuItem value="timeout">Timeouts</MenuItem>
+                  <MenuItem value="reconnection">Reconnections</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <FormControl size="small" sx={{ minWidth: 100 }}>
+                <InputLabel>Severity</InputLabel>
+                <Select
+                  value={timelineFilters.severityFilter}
+                  onChange={(e) => setTimelineFilters({...timelineFilters, severityFilter: e.target.value})}
+                  label="Severity"
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
+                  <MenuItem value="critical">Critical</MenuItem>
+                </Select>
+              </FormControl>
+
+              <ToggleButtonGroup
+                value={timelineTimeRange}
+                exclusive
+                onChange={(e, newValue) => newValue && setTimelineTimeRange(newValue)}
+                size="small"
+              >
+                <ToggleButton value="1h">1H</ToggleButton>
+                <ToggleButton value="6h">6H</ToggleButton>
+                <ToggleButton value="24h">24H</ToggleButton>
+                <ToggleButton value="7d">7D</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </Box>
+
+          {timelineLoading && (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!timelineLoading && timelineData && (
+            <Grid container spacing={3}>
+              {/* Timeline Metrics Cards */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <WarningIcon sx={{ mr: 1, color: 'error.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Total Incidents
+                      </Typography>
+                    </Box>
+                    <Typography variant="h5">
+                      {timelineData.metrics?.totalIncidents || 0}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <AccessTimeIcon sx={{ mr: 1, color: 'warning.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Total Downtime
+                      </Typography>
+                    </Box>
+                    <Typography variant="h5">
+                      {formatDuration(timelineData.metrics?.totalDowntime || 0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <AccessTimeIcon sx={{ mr: 1, color: 'info.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Avg Duration
+                      </Typography>
+                    </Box>
+                    <Typography variant="h5">
+                      {formatDuration(timelineData.metrics?.avgDuration || 0)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <RouterIcon sx={{ mr: 1, color: 'success.main' }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Disconnections
+                      </Typography>
+                    </Box>
+                    <Typography variant="h5">
+                      {timelineData.metrics?.incidentsByType?.disconnection || 0}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Interactive Timeline Visualization */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Incident Timeline ({timelineTimeRange})
+                    </Typography>
+                    {timelineData.incidents && timelineData.incidents.length > 0 ? (
+                      <Box sx={{ position: 'relative', height: 200, overflow: 'auto' }}>
+                        {timelineData.incidents.map((incident, index) => (
+                          <Box
+                            key={incident._id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              p: 2,
+                              mb: 1,
+                              backgroundColor: 'background.paper',
+                              border: `2px solid ${incident.severityColor}`,
+                              borderRadius: 1,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: 'action.hover'
+                              }
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: incident.severityColor,
+                                mr: 2,
+                                flexShrink: 0
+                              }}
+                            />
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                {formatIncidentType(incident.incidentType)} - {incident.ssid}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatTimestamp(incident.displayTime)} • {incident.durationFormatted} • {incident.severity || 'medium'} severity
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={incident.severity || 'medium'}
+                              size="small"
+                              color={getIncidentSeverityColor(incident.severity)}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Alert severity="info">
+                        No incidents found for the selected time range and filters.
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Incident Breakdown Charts */}
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Incidents by Type
+                    </Typography>
+                    {timelineData.metrics?.incidentsByType && Object.keys(timelineData.metrics.incidentsByType).length > 0 ? (
+                      <Box>
+                        {Object.entries(timelineData.metrics.incidentsByType).map(([type, count]) => (
+                          <Box key={type} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                              {formatIncidentType(type)}
+                            </Typography>
+                            <Chip label={count} size="small" variant="outlined" />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No incident data available
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Incidents by Severity
+                    </Typography>
+                    {timelineData.metrics?.incidentsBySeverity && Object.keys(timelineData.metrics.incidentsBySeverity).length > 0 ? (
+                      <Box>
+                        {Object.entries(timelineData.metrics.incidentsBySeverity).map(([severity, count]) => (
+                          <Box key={severity} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                              {severity}
+                            </Typography>
+                            <Chip 
+                              label={count} 
+                              size="small" 
+                              color={getIncidentSeverityColor(severity)}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No severity data available
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+
+          {!timelineLoading && (!timelineData || !timelineData.incidents) && (
+            <Alert severity="info">
+              No timeline data available for this monitor. 
+              Make sure the monitor is online and has incident tracking enabled.
             </Alert>
           )}
         </Paper>
