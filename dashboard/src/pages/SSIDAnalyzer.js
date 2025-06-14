@@ -21,6 +21,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  ToggleButton,
+  ToggleButtonGroup,
+  Divider,
 } from '@mui/material';
 import {
   Wifi as WifiIcon,
@@ -29,7 +32,11 @@ import {
   Speed as SpeedIcon,
   AccessTime as AccessTimeIcon,
   NetworkCheck as NetworkCheckIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckCircleIcon,
+  Timeline as TimelineIcon,
 } from '@mui/icons-material';
+import { LineChart } from '@mui/x-charts/LineChart';
 import { useSelector } from 'react-redux';
 import apiService from '../services/api';
 
@@ -39,6 +46,14 @@ const SSIDAnalyzer = () => {
   const [error, setError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [overviewData, setOverviewData] = useState([]);
+  
+  // Stability analysis state
+  const [incidentData, setIncidentData] = useState([]);
+  const [incidentStats, setIncidentStats] = useState(null);
+  const [activeIncidents, setActiveIncidents] = useState([]);
+  const [timelineData, setTimelineData] = useState([]);
+  const [timeRange, setTimeRange] = useState('24h');
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const monitors = useSelector((state) => state.monitors.list);
 
@@ -85,6 +100,57 @@ const SSIDAnalyzer = () => {
     return `${secs}s`;
   };
 
+  const getIncidentSeverityColor = (severity) => {
+    switch (severity) {
+      case 'critical': return 'error';
+      case 'high': return 'error';
+      case 'medium': return 'warning';
+      case 'low': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const formatIncidentType = (type) => {
+    switch (type) {
+      case 'disconnection': return 'Disconnection';
+      case 'reconnection': return 'Reconnection';
+      case 'signal_drop': return 'Signal Drop';
+      case 'timeout': return 'Timeout';
+      default: return type;
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0s';
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  // Prepare chart data for incident timeline
+  const getTimelineChartData = () => {
+    if (!timelineData || timelineData.length === 0) {
+      return { labels: [], datasets: { disconnections: [], signalDrops: [] } };
+    }
+
+    const labels = timelineData.map(item => {
+      const date = new Date(item._id);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    });
+
+    const disconnections = timelineData.map(item => item.disconnections || 0);
+    const signalDrops = timelineData.map(item => item.signalDrops || 0);
+
+    return {
+      labels,
+      datasets: { disconnections, signalDrops }
+    };
+  };
+
   // Fetch connection status for selected monitor
   const fetchConnectionStatus = async (monitorId) => {
     try {
@@ -120,6 +186,42 @@ const SSIDAnalyzer = () => {
     }
   };
 
+  // Fetch incident analysis data
+  const fetchIncidentAnalysis = async (monitorId) => {
+    try {
+      setAnalysisLoading(true);
+      
+      // Fetch incident data in parallel
+      const [incidentsResponse, statsResponse, activeResponse, timelineResponse] = await Promise.all([
+        apiService.getSSIDIncidents(monitorId, { timeRange, limit: 100 }),
+        apiService.getSSIDIncidentStats(monitorId, { timeRange }),
+        apiService.getActiveIncidents(monitorId),
+        apiService.getIncidentTimeline(monitorId, { timeRange, granularity: 'hour' })
+      ]);
+
+      if (incidentsResponse.data.success) {
+        setIncidentData(incidentsResponse.data.data);
+      }
+
+      if (statsResponse.data.success) {
+        setIncidentStats(statsResponse.data.data);
+      }
+
+      if (activeResponse.data.success) {
+        setActiveIncidents(activeResponse.data.data);
+      }
+
+      if (timelineResponse.data.success) {
+        setTimelineData(timelineResponse.data.data);
+      }
+
+    } catch (err) {
+      console.error('Error fetching incident analysis:', err);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchOverview();
     
@@ -137,10 +239,15 @@ const SSIDAnalyzer = () => {
   useEffect(() => {
     if (selectedMonitor) {
       fetchConnectionStatus(selectedMonitor);
+      fetchIncidentAnalysis(selectedMonitor);
     } else {
       setConnectionStatus(null);
+      setIncidentData([]);
+      setIncidentStats(null);
+      setActiveIncidents([]);
+      setTimelineData([]);
     }
-  }, [selectedMonitor]);
+  }, [selectedMonitor, timeRange]);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 2 }}>
@@ -343,6 +450,223 @@ const SSIDAnalyzer = () => {
               No connection data available for this monitor. 
               Make sure the monitor is online and sending SSID data.
             </Alert>
+          )}
+        </Paper>
+      )}
+
+      {/* Stability Analysis Section */}
+      {selectedMonitor && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">
+              Stability Analysis - {monitors.find(m => m.monitorId === selectedMonitor)?.name}
+            </Typography>
+            <ToggleButtonGroup
+              value={timeRange}
+              exclusive
+              onChange={(e, newValue) => newValue && setTimeRange(newValue)}
+              size="small"
+            >
+              <ToggleButton value="1h">1H</ToggleButton>
+              <ToggleButton value="6h">6H</ToggleButton>
+              <ToggleButton value="24h">24H</ToggleButton>
+              <ToggleButton value="7d">7D</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {analysisLoading && (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!analysisLoading && (
+            <Grid container spacing={3}>
+              {/* Active Incidents */}
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+                      <Typography variant="h6">Active Incidents</Typography>
+                    </Box>
+                    {activeIncidents.length > 0 ? (
+                      <Box>
+                        {activeIncidents.map((incident, index) => (
+                          <Box key={index} mb={1}>
+                            <Chip
+                              icon={<WarningIcon />}
+                              label={`${formatIncidentType(incident.incidentType)} - ${formatDuration((new Date() - new Date(incident.startTime)) / 1000)}`}
+                              color={getIncidentSeverityColor(incident.severity)}
+                              size="small"
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box display="flex" alignItems="center">
+                        <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
+                        <Typography color="success.main">No active incidents</Typography>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Stability Metrics */}
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <TimelineIcon sx={{ mr: 1 }} />
+                      <Typography variant="h6">Stability Metrics</Typography>
+                    </Box>
+                    {incidentStats?.stability ? (
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Uptime
+                          </Typography>
+                          <Typography variant="h6">
+                            {incidentStats.stability.uptime}%
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Total Incidents
+                          </Typography>
+                          <Typography variant="h6">
+                            {incidentStats.stability.incidents}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Disconnections
+                          </Typography>
+                          <Typography variant="h6">
+                            {incidentStats.stability.disconnections}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Signal Drops
+                          </Typography>
+                          <Typography variant="h6">
+                            {incidentStats.stability.signalDrops}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    ) : (
+                      <Typography color="text.secondary">
+                        No stability data available
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Incident Timeline Chart */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Incident Timeline ({timeRange})
+                    </Typography>
+                    {(() => {
+                      const chartData = getTimelineChartData();
+                      return chartData.labels.length > 0 ? (
+                        <Box sx={{ width: '100%', height: 300 }}>
+                          <LineChart
+                            xAxis={[{
+                              scaleType: 'point',
+                              data: chartData.labels,
+                            }]}
+                            series={[
+                              {
+                                data: chartData.datasets.disconnections,
+                                label: 'Disconnections',
+                                color: '#dc004e',
+                              },
+                              {
+                                data: chartData.datasets.signalDrops,
+                                label: 'Signal Drops',
+                                color: '#ed6c02',
+                              },
+                            ]}
+                            width={undefined}
+                            height={300}
+                            margin={{ left: 60, right: 20, top: 20, bottom: 60 }}
+                          />
+                        </Box>
+                      ) : (
+                        <Alert severity="info">
+                          No incident data available for the selected time range.
+                        </Alert>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Recent Incidents List */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Recent Incidents
+                    </Typography>
+                    {incidentData.length > 0 ? (
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Type</TableCell>
+                              <TableCell>Severity</TableCell>
+                              <TableCell>Start Time</TableCell>
+                              <TableCell>Duration</TableCell>
+                              <TableCell>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {incidentData.slice(0, 10).map((incident) => (
+                              <TableRow key={incident._id}>
+                                <TableCell>
+                                  {formatIncidentType(incident.incidentType)}
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={incident.severity || 'unknown'}
+                                    color={getIncidentSeverityColor(incident.severity)}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(incident.startTime).toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  {incident.duration ? formatDuration(incident.duration) : 'Ongoing'}
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={incident.resolved ? 'Resolved' : 'Active'}
+                                    color={incident.resolved ? 'success' : 'warning'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      <Alert severity="info">
+                        No incidents recorded for the selected time range.
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           )}
         </Paper>
       )}

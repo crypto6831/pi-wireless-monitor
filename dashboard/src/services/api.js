@@ -172,6 +172,12 @@ export const apiService = {
   getSSIDHistory: (monitorId, params = {}) => api.get(`/ssid-analyzer/history/${monitorId}`, { params }),
   getSSIDStability: (monitorId, params = {}) => api.get(`/ssid-analyzer/stability/${monitorId}`, { params }),
   getSSIDOverview: () => api.get('/ssid-analyzer/overview'),
+
+  // SSID Incident Tracking
+  getSSIDIncidents: (monitorId, params = {}) => api.get(`/ssid-incidents/monitor/${monitorId}`, { params }),
+  getSSIDIncidentStats: (monitorId, params = {}) => api.get(`/ssid-incidents/stats/${monitorId}`, { params }),
+  getActiveIncidents: (monitorId = null) => api.get(`/ssid-incidents/active${monitorId ? `/${monitorId}` : ''}`),
+  getIncidentTimeline: (monitorId, params = {}) => api.get(`/ssid-incidents/timeline/${monitorId}`, { params }),
 };
 
 export default apiService; 
