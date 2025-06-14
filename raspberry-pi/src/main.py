@@ -186,6 +186,9 @@ class PiWirelessMonitor:
             # Get current SSID connection status
             connection_status = self.scanner.get_current_ssid_connection_status()
             
+            # Debug: Log what we received
+            logger.info(f"SSID connection data collected: {connection_status}")
+            
             if connection_status:
                 # Send to server
                 success = self.api_client.send_ssid_connection_status(connection_status)
@@ -194,7 +197,7 @@ class PiWirelessMonitor:
                     status = connection_status.get('connection_status', 'unknown')
                     ssid = connection_status.get('ssid', 'Unknown')
                     signal = connection_status.get('signal_strength', 0)
-                    logger.debug(f"SSID status sent: {status} to '{ssid}' ({signal} dBm)")
+                    logger.info(f"SSID status sent: {status} to '{ssid}' ({signal} dBm)")
                 else:
                     logger.warning("Failed to send SSID connection status")
             else:
